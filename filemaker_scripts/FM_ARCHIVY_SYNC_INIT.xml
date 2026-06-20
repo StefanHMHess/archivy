@@ -1,0 +1,39 @@
+<fmxmlsnippet type="FMObjectList">
+<Step enable="True" id="89" name="# (comment)"><Text>ARCHIVY SYNC INIT - setzt globale Variablen fuer Supabase und den persoenlichen Inhaber.</Text></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["https://pjwfrshrhikcubssytfw.supabase.co"]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$$SUPABASE_URL</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqd2Zyc2hyaGlrY3Vic3N5dGZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2OTk1MjMsImV4cCI6MjA5NzI3NTUyM30.Nhv5yK1RkDYtwJc-A4zB7b1OJCNgZK89Y2kpyaenXM4"]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$$SUPABASE_KEY</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["stefan"]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$$INHABER_ID</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[100000]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$$SYNC_LIMIT</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["Verträge"]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$$FM_VERTRAEGE_TABELLE</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["vertrag_id"]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$$FM_PK_FELD</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["Vertrag_Vorgänge neu"]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$$FM_VORGAENGE_TABELLE</Name>
+</Step>
+<Step enable="True" id="89" name="# (comment)"><Text>Optional: Passe $$FM_VERTRAEGE_TABELLE / $$FM_PK_FELD an deine FileMaker-Namen an.</Text></Step>
+</fmxmlsnippet>

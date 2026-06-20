@@ -1,0 +1,12 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Hintergrund -->
+  <rect width="512" height="512" rx="112" fill="#0f766e"/>
+  <!-- Ordner Körper: x=46..466, y=274..466 -->
+  <rect x="46" y="274" width="420" height="192" rx="30" fill="#0d9488"/>
+  <!-- Ordner Deckel: gleiche Breite x=46..466, Reiter links bis x=240, Oberkante y=166 -->
+  <path d="M46,274 Q46,224 86,224 L240,224 L274,166 L426,166 Q466,166 466,224 L466,284 L46,284 Z" fill="#0f9f91"/>
+  <!-- Trennlinie -->
+  <rect x="46" y="264" width="420" height="26" fill="#14b8a6"/>
+  <!-- A: Icon-Mitte y=256, font-size=350, baseline=256+(350*0.36)=256+126=382 -->
+  <text x="256" y="382" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="350" font-weight="500" fill="#f0fdfa">A</text>
+</svg>

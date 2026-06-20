@@ -1,0 +1,23 @@
+{
+  "name": "archivy",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "import:filemaker:vertraege": "node import_filemaker_vertraege.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.44.0",
+    "pdfjs-dist": "5.4.296",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-pdf": "^10.4.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.3.1"
+  }
+}

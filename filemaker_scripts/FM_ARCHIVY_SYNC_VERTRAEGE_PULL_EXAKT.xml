@@ -1,0 +1,220 @@
+<fmxmlsnippet type="FMObjectList">
+<Step enable="True" id="89" name="# (comment)"><Text>ARCHIVY SYNC VERTRAEGE PULL (exakt) - schreibt Supabase-Daten in die echte Tabelle Verträge.</Text></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$$SUPABASE_KEY]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$key</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $$LAST_PULL_VERTRAEGE ) ; "1970-01-01T00:00:00Z" ; $$LAST_PULL_VERTRAEGE )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$seit</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("Text.EncodeToURL"; $seit; "UTF-8")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$seitURL</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$$SUPABASE_URL & "/rest/v1/vertraege?vertragsbesitzer_id=eq." & Lower ( $$INHABER_ID ) & "&app_modified_at=gt." & $seitURL & "&order=app_modified_at.asc&select=vertrag_id,gruppe,untergruppe,firma,kontakt,beschreibung,vertragsnummer,iban,bic,bank,kosten_pro_rate,kosten_jaehrlich,zahlungsweise,vertrags_datum,vertrags_beginn,vertrags_ablauf,notizen,app_modified_at&limit=" & $$SYNC_LIMIT]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$url</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.New")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$c</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionURL"; $c; $url)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionHTTPHeader"; $c; "apikey: " & $key; "Authorization: Bearer " & $key)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.Perform"; $c)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.GetResultAsText"; $c; "UTF-8")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$resp</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.GetResponseCode"; $c)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$http</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.Cleanup"; $c)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $resp ; 1 ) = "[" ; ValueCount ( JSONListKeys ( $resp ; "" ) ) ; 0 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$anzahl</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$i</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$ok</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$fehler</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$seit]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$maxTs</Name>
+</Step>
+<Step enable="True" id="71" name="Loop"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$i</Name>
+</Step>
+<Step enable="True" id="72" name="Exit Loop If">
+<Calculation><![CDATA[$i > $anzahl]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$i - 1]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$idx</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[JSONGetElement ( $resp ; "[" & $idx & "].vertrag_id" )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrag_id</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let ( w = JSONGetElement ( $resp ; "[" & $idx & "].gruppe" ) ; If ( w = "null" ; "" ; w ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$gruppe</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let ( w = JSONGetElement ( $resp ; "[" & $idx & "].untergruppe" ) ; If ( w = "null" ; "" ; w ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$untergruppe</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let ( w = JSONGetElement ( $resp ; "[" & $idx & "].firma" ) ; If ( w = "null" ; "" ; w ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$firma</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let ( w = JSONGetElement ( $resp ; "[" & $idx & "].kontakt" ) ; If ( w = "null" ; "" ; w ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$kontakt</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let ( w = JSONGetElement ( $resp ; "[" & $idx & "].beschreibung" ) ; If ( w = "null" ; "" ; w ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$beschreibung</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let ( w = JSONGetElement ( $resp ; "[" & $idx & "].vertragsnummer" ) ; If ( w = "null" ; "" ; w ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertragsnummer</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let ( w = JSONGetElement ( $resp ; "[" & $idx & "].iban" ) ; If ( w = "null" ; "" ; w ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$iban</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let ( w = JSONGetElement ( $resp ; "[" & $idx & "].bic" ) ; If ( w = "null" ; "" ; w ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$bic</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let ( w = JSONGetElement ( $resp ; "[" & $idx & "].bank" ) ; If ( w = "null" ; "" ; w ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$bank</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let ( w = JSONGetElement ( $resp ; "[" & $idx & "].kosten_pro_rate" ) ; If ( w = "null" ; "" ; w ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$kosten_rate</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let ( w = JSONGetElement ( $resp ; "[" & $idx & "].kosten_jaehrlich" ) ; If ( w = "null" ; "" ; w ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$kosten_jahr</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let ( w = JSONGetElement ( $resp ; "[" & $idx & "].zahlungsweise" ) ; If ( w = "null" ; "" ; w ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$zahlungsweise</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let ( w = JSONGetElement ( $resp ; "[" & $idx & "].vertrags_datum" ) ; If ( w = "null" ; "" ; w ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrags_datum</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let ( w = JSONGetElement ( $resp ; "[" & $idx & "].vertrags_beginn" ) ; If ( w = "null" ; "" ; w ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrags_beginn</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let ( w = JSONGetElement ( $resp ; "[" & $idx & "].vertrags_ablauf" ) ; If ( w = "null" ; "" ; w ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrags_ablauf</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let ( w = JSONGetElement ( $resp ; "[" & $idx & "].notizen" ) ; If ( w = "null" ; "" ; w ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrag</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("FM.ExecuteFileSQL"; Get(FileName); "UPDATE \"Verträge\" SET \"Gruppe\"=?, \"Untergruppe\"=?, \"Firma\"=?, \"Kontakt\"=?, \"Beschreibung\"=?, \"Vertragsnummer\"=?, \"IBAN\"=?, \"BIC\"=?, \"Bank\"=?, \"Kosten pro Rate\"=?, \"Kosten jährlich\"=?, \"Zahlungsweise\"=?, \"Vertrags_Datum\"=?, \"Vertrags_Beginn\"=?, \"Vertrags_Ablauf\"=?, \"Vertrag\"=? WHERE \"Vertrag_ID\"=?"; 9; 13; $gruppe; $untergruppe; $firma; $kontakt; $beschreibung; $vertragsnummer; $iban; $bic; $bank; $kosten_rate; $kosten_jahr; $zahlungsweise; $vertrags_datum; $vertrags_beginn; $vertrags_ablauf; $vertrag; $vertrag_id)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$upd</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$ok + If ( Left ( $upd ; 5 ) = "[MBS]" ; 0 ; 1 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$ok</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$fehler & If ( Left ( $upd ; 5 ) = "[MBS]" ; "Vertrag_ID " & $vertrag_id & ": " & $upd & ¶ ; "" )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$fehler</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let ( w = JSONGetElement ( $resp ; "[" & $idx & "].app_modified_at" ) ; If ( w = "null" ; $maxTs ; w ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$rowTs</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( $rowTs &gt; $maxTs ; $rowTs ; $maxTs )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$maxTs</Name>
+</Step>
+<Step enable="True" id="73" name="End Loop"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$maxTs]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$$LAST_PULL_VERTRAEGE</Name>
+</Step>
+<Step enable="True" id="133" name="Show Custom Dialog">
+<Title><Calculation><![CDATA["Archivy Sync Pull - Verträge exakt"]]></Calculation></Title>
+<Message><Calculation><![CDATA["Gelesen: " & $anzahl & ¶ & "Aktualisiert: " & $ok & ¶ & If ( IsEmpty ( $fehler ) ; "Fehler: keine" ; "Fehler:" & ¶ & Left ( $fehler ; 1000 ) )]]></Calculation></Message>
+<Buttons>
+<Button CommitState="Yes" ID="1"><Label>OK</Label></Button>
+</Buttons>
+</Step>
+</fmxmlsnippet>

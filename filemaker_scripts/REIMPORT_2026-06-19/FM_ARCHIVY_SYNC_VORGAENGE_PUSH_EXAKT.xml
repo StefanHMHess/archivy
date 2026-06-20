@@ -1,0 +1,367 @@
+﻿<fmxmlsnippet type="FMObjectList">
+<Step enable="True" id="89" name="# (comment)"><Text>ARCHIVY SYNC VORGAENGE PUSH (exakt) - synchronisiert Vertraege_vorgaenge, die ueber Vertraege.Vertrag_ID verknuepft sind und deren Vertrag Archivy_sync = x hat.</Text></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+Let([
+	ts = GetAsTimestamp ( Get ( CurrentHostTimestamp ) ) ;
+	d = GetAsDate ( ts ) ;
+	t = GetAsTime ( ts )
+] ;
+	Year ( d ) & "-" & Right ( "0" & Month ( d ) ; 2 ) & "-" & Right ( "0" & Day ( d ) ; 2 ) & "T" &
+	Right ( "0" & Hour ( t ) ; 2 ) & ":" & Right ( "0" & Minute ( t ) ; 2 ) & ":" & Right ( "0" & Int ( Seconds ( t ) ) ; 2 ) & "Z"
+)
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$ts_iso</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$$SUPABASE_KEY]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$key</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$$SUPABASE_URL & "/rest/v1/vorgaenge?on_conflict=vorgang_id"]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$url</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+MBS("FM.SQL.Execute"; "";
+"SELECT \"Vertrag_ID\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Archivy_sync\" = 'x' OR \"Archivy_sync\" = 'X'")
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_marked</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql_marked ; 5 ) = "[MBS]" ; "[]" ; MBS("FM.SQL.JSONRecords"; $sql_marked; "vertrag_id") )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$json_marked</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $json_marked ; 1 ) = "[" ; ValueCount ( JSONListKeys ( $json_marked ; "" ) ) ; 0 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$marked_count</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$marked_list</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$m</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$marked_sql_list</Name>
+</Step>
+<Step enable="True" id="71" name="Loop"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$m + 1]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$m</Name>
+</Step>
+<Step enable="True" id="72" name="Exit Loop If">
+<Calculation><![CDATA[$m > $marked_count]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$m - 1]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$midx</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Lower ( TrimAll ( GetAsText ( JSONGetElement ( $json_marked ; "[" & $midx & "].vertrag_id" ) ) ; 1 ; 1 ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$mk</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[TrimAll ( GetAsText ( JSONGetElement ( $json_marked ; "[" & $midx & "].vertrag_id" ) ) ; 1 ; 1 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$mk_raw</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $mk ) ; $marked_list ; List ( $marked_list ; $mk ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$marked_list</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $mk_raw ) ; $marked_sql_list ; List ( $marked_sql_list ; "'" & Substitute ( $mk_raw ; "'" ; "''" ) & "'" ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$marked_sql_list</Name>
+</Step>
+<Step enable="True" id="73" name="End Loop"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql_marked ; 5 ) = "[MBS]" ; "" ; MBS("FM.SQL.Release"; $sql_marked) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$rel_marked</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+MBS("FM.SQL.Execute"; "";
+"SELECT \"Vorgang_ID\", \"Vertrag\", \"Vorgang_Art\", \"Art der Erledigung\", \"Beschreibung der Erledigung\", \"Beschreibung\", \"Datum\", \"Frist\", \"Datei\", \"Erledigung\", \"Nachfrist\", \"Erledigt\", \"Ersteller\", \"Verantwortlicher\", \"SB\", \"BVH\", \"BA\", \"GEW\", \"AN\", \"A_NR\", \"Kunde\", \"WE\", \"Grundstück\", \"Makler\", \"Interessent\" FROM \"" & $$FM_VORGAENGE_TABELLE & "\" WHERE \"Vertrag\" IN (" & Substitute ( $marked_sql_list ; ¶ ; "," ) & ")")
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+If ( Left ( $sql ; 5 ) = "[MBS]" ; "[]" ; MBS("FM.SQL.JSONRecords"; $sql;
+"vorgang_id" & ¶ &
+"vertrag" & ¶ &
+"vorgang_art" & ¶ &
+"art_der_erledigung" & ¶ &
+"beschreibung_der_erledigung" & ¶ &
+"beschreibung" & ¶ &
+"datum" & ¶ &
+"frist" & ¶ &
+"datei" & ¶ &
+"erledigung" & ¶ &
+"nachfrist" & ¶ &
+"erledigt" & ¶ &
+"ersteller" & ¶ &
+"verantwortlicher" & ¶ &
+"sb" & ¶ &
+"bvh" & ¶ &
+"ba" & ¶ &
+"gew" & ¶ &
+"an" & ¶ &
+"a_nr" & ¶ &
+"kunde" & ¶ &
+"we" & ¶ &
+"grundstueck" & ¶ &
+"makler" & ¶ &
+"interessent"))
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$json</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql ; 5 ) = "[MBS]" ; Left ( $sql ; 300 ) ; "" )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_err</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $json ; 1 ) = "[" and PatternCount ( $json ; "Syntax error" ) = 0 and PatternCount ( $json ; "Line 1, Column" ) = 0 ; ValueCount ( JSONListKeys ( $json ; "" ) ) ; 0 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$anzahl</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$i</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$ok</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$skip</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$fehler</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( not IsEmpty ( $sql_err ) ; "SQL_ERROR: " & $sql_err ; Left ( $json ; 1 ) = "[" and PatternCount ( $json ; "Syntax error" ) = 0 and PatternCount ( $json ; "Line 1, Column" ) = 0 ; "" ; Left ( "JSON_PARSE_ERROR: " & $json ; 200 ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$fehler</Name>
+</Step>
+<Step enable="True" id="71" name="Loop"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$i</Name>
+</Step>
+<Step enable="True" id="72" name="Exit Loop If">
+<Calculation><![CDATA[$i > $anzahl]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$i - 1]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$idx</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Lower ( TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].vertrag" ) ) ; 1 ; 1 ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrag_key</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[PatternCount ( "¶" & $marked_list & "¶" ; "¶" & $vertrag_key & "¶" ) > 0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$is_marked</Name>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$is_marked]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+JSONSetElement ( "{}" ;
+[ "vorgang_id" ; JSONGetElement ( $json ; "[" & $idx & "].vorgang_id" ) ; JSONString ] ;
+[ "vertragsbesitzer_id" ; Lower ( $$INHABER_ID ) ; JSONString ] ;
+[ "vertrag" ; JSONGetElement ( $json ; "[" & $idx & "].vertrag" ) ; JSONString ] ;
+[ "vorgang_art" ; JSONGetElement ( $json ; "[" & $idx & "].vorgang_art" ) ; JSONString ] ;
+[ "kurzbeschreibung" ; Let([
+	bde=TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].beschreibung_der_erledigung" ) ) ; 1 ; 1 ) ;
+	ade=TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].art_der_erledigung" ) ) ; 1 ; 1 )
+];
+	Case ( not IsEmpty ( bde ) ; bde ; ade )
+) ; JSONString ] ;
+[ "beschreibung" ; JSONGetElement ( $json ; "[" & $idx & "].beschreibung" ) ; JSONString ] ;
+[ "datum" ; Let([
+	d_raw=TrimAll(GetAsText(JSONGetElement($json;"["&$idx&"].datum"));1;1);
+	d=GetValue(Substitute(d_raw;" ";"¶");1)
+];Case(
+	IsEmpty(d);"";
+	PatternCount(d;"-")=2;Left(d;10);
+	PatternCount(d;".")=2;Let([
+		p1=Position(d;".";1;1);p2=Position(d;".";1;2);
+		day=Left(d;p1-1);mon=Mid(d;p1+1;p2-p1-1);
+		yr0=GetValue(Substitute(Mid(d;p2+1;99);" ";"¶");1);
+		yr=Case(Length(yr0)=2;"20"&yr0;yr0)
+	];yr&"-"&Right("0"&mon;2)&"-"&Right("0"&day;2));
+	"";
+	PatternCount(d;"/")=2;Let([
+		p1=Position(d;"/";1;1);p2=Position(d;"/";1;2);
+		mon=Left(d;p1-1);day=Mid(d;p1+1;p2-p1-1);
+		yr0=GetValue(Substitute(Mid(d;p2+1;99);" ";"¶");1);
+		yr=Case(Length(yr0)=2;"20"&yr0;yr0)
+	];yr&"-"&Right("0"&mon;2)&"-"&Right("0"&day;2));
+	""
+)) ; If(IsEmpty(Let([d_raw=TrimAll(GetAsText(JSONGetElement($json;"["&$idx&"].datum"));1;1);d=GetValue(Substitute(d_raw;" ";"¶");1)];Case(IsEmpty(d);"";PatternCount(d;"-")=2;Left(d;10);PatternCount(d;".")=2;Let([p1=Position(d;".";1;1);p2=Position(d;".";1;2);day=Left(d;p1-1);mon=Mid(d;p1+1;p2-p1-1);yr0=GetValue(Substitute(Mid(d;p2+1;99);" ";"¶");1);yr=Case(Length(yr0)=2;"20"&yr0;yr0)];yr&"-"&Right("0"&mon;2)&"-"&Right("0"&day;2));PatternCount(d;"/")=2;Let([p1=Position(d;"/";1;1);p2=Position(d;"/";1;2);mon=Left(d;p1-1);day=Mid(d;p1+1;p2-p1-1);yr0=GetValue(Substitute(Mid(d;p2+1;99);" ";"¶");1);yr=Case(Length(yr0)=2;"20"&yr0;yr0)];yr&"-"&Right("0"&mon;2)&"-"&Right("0"&day;2));"")));JSONNull;JSONString) ] ;
+[ "frist" ; Let([
+	d_raw=TrimAll(GetAsText(JSONGetElement($json;"["&$idx&"].frist"));1;1);
+	d=GetValue(Substitute(d_raw;" ";"¶");1)
+];Case(
+	IsEmpty(d);"";
+	PatternCount(d;"-")=2;Left(d;10);
+	PatternCount(d;".")=2;Let([
+		p1=Position(d;".";1;1);p2=Position(d;".";1;2);
+		day=Left(d;p1-1);mon=Mid(d;p1+1;p2-p1-1);
+		yr0=GetValue(Substitute(Mid(d;p2+1;99);" ";"¶");1);
+		yr=Case(Length(yr0)=2;"20"&yr0;yr0)
+	];yr&"-"&Right("0"&mon;2)&"-"&Right("0"&day;2));
+	"";
+	PatternCount(d;"/")=2;Let([
+		p1=Position(d;"/";1;1);p2=Position(d;"/";1;2);
+		mon=Left(d;p1-1);day=Mid(d;p1+1;p2-p1-1);
+		yr0=GetValue(Substitute(Mid(d;p2+1;99);" ";"¶");1);
+		yr=Case(Length(yr0)=2;"20"&yr0;yr0)
+	];yr&"-"&Right("0"&mon;2)&"-"&Right("0"&day;2));
+	""
+)) ; If(IsEmpty(Let([d_raw=TrimAll(GetAsText(JSONGetElement($json;"["&$idx&"].frist"));1;1);d=GetValue(Substitute(d_raw;" ";"¶");1)];Case(IsEmpty(d);"";PatternCount(d;"-")=2;Left(d;10);PatternCount(d;".")=2;Let([p1=Position(d;".";1;1);p2=Position(d;".";1;2);day=Left(d;p1-1);mon=Mid(d;p1+1;p2-p1-1);yr0=GetValue(Substitute(Mid(d;p2+1;99);" ";"¶");1);yr=Case(Length(yr0)=2;"20"&yr0;yr0)];yr&"-"&Right("0"&mon;2)&"-"&Right("0"&day;2));PatternCount(d;"/")=2;Let([p1=Position(d;"/";1;1);p2=Position(d;"/";1;2);mon=Left(d;p1-1);day=Mid(d;p1+1;p2-p1-1);yr0=GetValue(Substitute(Mid(d;p2+1;99);" ";"¶");1);yr=Case(Length(yr0)=2;"20"&yr0;yr0)];yr&"-"&Right("0"&mon;2)&"-"&Right("0"&day;2));"")));JSONNull;JSONString) ] ;
+[ "datei_pfad" ; Let([
+	dp=TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].datei" ) ) ; 1 ; 1 )
+];
+	If ( IsEmpty ( dp ) ; "" ; dp )
+) ; JSONString ] ;
+[ "erledigt" ; Case ( Lower ( JSONGetElement ( $json ; "[" & $idx & "].erledigt" ) ) = "x" or Lower ( JSONGetElement ( $json ; "[" & $idx & "].erledigt" ) ) = "true" or JSONGetElement ( $json ; "[" & $idx & "].erledigt" ) = "1" ; True ; False ) ; JSONBoolean ] ;
+[ "ersteller" ; JSONGetElement ( $json ; "[" & $idx & "].ersteller" ) ; JSONString ] ;
+[ "verantwortlicher" ; JSONGetElement ( $json ; "[" & $idx & "].verantwortlicher" ) ; JSONString ] ;
+[ "sb" ; JSONGetElement ( $json ; "[" & $idx & "].sb" ) ; JSONString ] ;
+[ "sync_state" ; "geaendert" ; JSONString ] ;
+[ "app_modified_at" ; If ( IsEmpty ( $ts_iso ) ; "1970-01-01T00:00:00Z" ; $ts_iso ) ; JSONString ]
+)
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$obj</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["[" & $obj & "]"]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$body</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.New")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$c</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionURL"; $c; $url)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionPost"; $c; 1)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionHTTPHeader"; $c; "apikey: " & $key; "Authorization: Bearer " & $key; "Content-Type: application/json"; "Prefer: resolution=merge-duplicates,return=minimal")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionPostFields"; $c; $body)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.Perform"; $c)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.GetResponseCode"; $c)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$http</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.GetResultAsText"; $c; "UTF-8")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$resp</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.Cleanup"; $c)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$http = 200 or $http = 201 or $http = 204]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$ok + 1]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$ok</Name>
+</Step>
+<Step enable="True" id="69" name="Else"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$fehler & "Vorgang_ID " & JSONGetElement ( $json ; "[" & $idx & "].vorgang_id" ) & ": HTTP " & $http & " - " & Left ( $resp ; 200 ) & ¶]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$fehler</Name>
+</Step>
+<Step enable="True" id="70" name="End If"></Step>
+<Step enable="True" id="69" name="Else"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$skip + 1]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$skip</Name>
+</Step>
+<Step enable="True" id="70" name="End If"></Step>
+<Step enable="True" id="73" name="End Loop"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql ; 5 ) = "[MBS]" ; "" ; MBS("FM.SQL.Release"; $sql) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$rel</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+"VORGAENGE: markiert=" & $marked_count & " verarbeitet=" & $anzahl & " ok=" & $ok & " skip=" & $skip & " fehler=" & If(IsEmpty($fehler);"keine";Left($fehler;500))
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$$SYNC_RESULT_VO</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("Msgbox"; $$SYNC_RESULT_VO)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$msg</Name>
+</Step>
+</fmxmlsnippet>
+
+
+

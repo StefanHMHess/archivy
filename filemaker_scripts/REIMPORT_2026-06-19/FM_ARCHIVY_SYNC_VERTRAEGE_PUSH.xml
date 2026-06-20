@@ -1,0 +1,150 @@
+<fmxmlsnippet type="FMObjectList">
+<Step enable="True" id="89" name="# (comment)"><Text>ARCHIVY SYNC VERTRAEGE PUSH - schreibt geaenderte FileMaker-Vertraege nach Supabase via REST Upsert.</Text></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$$SUPABASE_KEY]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$key</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$$SUPABASE_URL & "/rest/v1/vertraege?on_conflict=vertrag_id"]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$url</Name>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[IsEmpty ( $key ) or IsEmpty ( $$SUPABASE_URL ) or IsEmpty ( $$INHABER_ID )]]></Calculation>
+</Step>
+<Step enable="True" id="89" name="# (comment)"><Text>Bitte zuerst Script FM_ARCHIVY_SYNC_INIT ausfuehren und URL/KEY/INHABER setzen.</Text></Step>
+<Step enable="True" id="70" name="End If"></Step>
+<Step enable="True" id="89" name="# (comment)"><Text>Hinweis: Dieses Script erwartet ein Layout auf deiner Vertraege-Tabelle und Felder wie unten in Set Field Schritten.</Text></Step>
+<Step enable="True" id="96" name="Go to Layout">
+<LayoutDestination value="Current layout"/>
+</Step>
+<Step enable="True" id="69" name="Else"></Step>
+<Step enable="True" id="89" name="# (comment)"><Text>Falls du explizit ein Vertraege-Layout brauchst, ersetze den vorherigen Schritt manuell mit deinem Layoutnamen.</Text></Step>
+<Step enable="True" id="70" name="End If"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$ok</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$fehler</Name>
+</Step>
+<Step enable="True" id="71" name="Loop"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Vertraege::vertrag_id]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrag_id</Name>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[not IsEmpty ( $vertrag_id ) and Vertraege::sync_state = "geaendert"]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+JSONSetElement ( "{}" ;
+[ "vertrag_id" ; Vertraege::vertrag_id ; JSONString ] ;
+[ "vertragsbesitzer_id" ; $$INHABER_ID ; JSONString ] ;
+[ "gruppe" ; Vertraege::gruppe ; JSONString ] ;
+[ "untergruppe" ; Vertraege::untergruppe ; JSONString ] ;
+[ "firma" ; Vertraege::firma ; JSONString ] ;
+[ "beschreibung" ; Vertraege::beschreibung ; JSONString ] ;
+[ "vertragsnummer" ; Vertraege::vertragsnummer ; JSONString ] ;
+[ "kosten_jaehrlich" ; Vertraege::kosten_jaehrlich ; JSONNumber ] ;
+[ "aktiv" ; Vertraege::aktiv ; JSONBoolean ] ;
+[ "sync_state" ; "geaendert" ; JSONString ] ;
+[ "app_modified_at" ; Get ( CurrentHostTimestamp ) ; JSONString ]
+)
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$obj</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["[" & $obj & "]"]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$body</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.New")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$c</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionURL"; $c; $url)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionPost"; $c; 1)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionHTTPHeader"; $c;
+"apikey: " & $key;
+"Authorization: Bearer " & $key;
+"Content-Type: application/json";
+"Prefer: resolution=merge-duplicates,return=minimal"
+)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionPostFields"; $c; $body)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.Perform"; $c)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.GetResponseCode"; $c)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$http</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.GetResultAsText"; $c; "UTF-8")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$resp</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.Cleanup"; $c)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$http = 200 or $http = 201 or $http = 204]]></Calculation>
+</Step>
+<Step enable="True" id="118" name="Set Field">
+<Field table="Vertraege" id="sync_state" name="sync_state"/>
+<Calculation><![CDATA["synchronisiert"]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$ok + 1]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$ok</Name>
+</Step>
+<Step enable="True" id="69" name="Else"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$fehler & "Vertrag " & $vertrag_id & " HTTP " & $http & ": " & Left ( $resp ; 200 ) & ¶]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$fehler</Name>
+</Step>
+<Step enable="True" id="70" name="End If"></Step>
+<Step enable="True" id="70" name="End If"></Step>
+<Step enable="True" id="77" name="Go to Record/Request/Page">
+<Next value="True"/>
+<Exit value="True"/>
+</Step>
+<Step enable="True" id="73" name="End Loop"></Step>
+<Step enable="True" id="133" name="Show Custom Dialog">
+<Title><Calculation><![CDATA["Archivy Sync: Vertraege Push"]]></Calculation></Title>
+<Message><Calculation><![CDATA["Erfolgreich synchronisiert: " & $ok & ¶ & If ( IsEmpty ( $fehler ) ; "Keine Fehler." ; "Fehler:" & ¶ & Left ( $fehler ; 1000 ) )]]></Calculation></Message>
+<Buttons>
+<Button CommitState="Yes" ID="1"><Label>OK</Label></Button>
+</Buttons>
+</Step>
+</fmxmlsnippet>

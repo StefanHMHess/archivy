@@ -1,0 +1,9 @@
+<svg width="420" height="140" viewBox="0 0 420 140" xmlns="http://www.w3.org/2000/svg">
+  <rect width="420" height="140" fill="white"/>
+  <rect x="10" y="85" width="100" height="45" rx="7" fill="#0f766e"/>
+  <path d="M10,85 Q10,73 18,73 L55,73 L63,61 L97,61 Q105,61 105,73 L105,87 L10,87 Z" fill="#0d9488"/>
+  <rect x="10" y="83" width="100" height="6" fill="#14b8a6"/>
+  <text x="57" y="111" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="66" font-weight="500" fill="#f0fdfa">A</text>
+  <text x="128" y="102" font-family="Arial, Helvetica, sans-serif" font-size="52" font-weight="400" fill="#111827" letter-spacing="-1">Archivy</text>
+  <text x="129" y="122" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#6b7280" letter-spacing="3">DOCUMENT MANAGEMENT</text>
+</svg>

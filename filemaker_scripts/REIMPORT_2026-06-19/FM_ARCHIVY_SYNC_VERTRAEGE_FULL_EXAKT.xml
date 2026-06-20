@@ -1,0 +1,22 @@
+<fmxmlsnippet type="FMObjectList">
+<Step enable="True" id="89" name="# (comment)"><Text>ARCHIVY VERTRAEGE FULL SYNC (exakt) - fuehrt Init, Vorgaenge-Push, Vertraege-Push und Pull exakt nacheinander aus.</Text></Step>
+<Step enable="True" id="1" name="Perform Script">
+<Script id="" name="FM_ARCHIVY_SYNC_INIT"/>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Script id="" name="FM_ARCHIVY_SYNC_VORGAENGE_PUSH_EXAKT"/>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Script id="" name="FM_ARCHIVY_SYNC_VERTRAEGE_PUSH_EXAKT"/>
+</Step>
+<Step enable="True" id="1" name="Perform Script">
+<Script id="" name="FM_ARCHIVY_SYNC_VERTRAEGE_PULL_EXAKT"/>
+</Step>
+<Step enable="True" id="133" name="Show Custom Dialog">
+<Title><Calculation><![CDATA["Archivy Sync exakt"]]></Calculation></Title>
+<Message><Calculation><![CDATA["Verträge Full Sync exakt wurde ausgeführt (Init -> Vorgaenge Push -> Vertraege Push -> Pull exakt)."]]></Calculation></Message>
+<Buttons>
+<Button CommitState="Yes" ID="1"><Label>OK</Label></Button>
+</Buttons>
+</Step>
+</fmxmlsnippet>

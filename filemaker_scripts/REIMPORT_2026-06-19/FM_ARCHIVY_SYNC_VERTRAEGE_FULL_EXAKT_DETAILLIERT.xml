@@ -1,0 +1,258 @@
+<fmxmlsnippet type="FMObjectList">
+<Step enable="True" id="89" name="# (comment)"><Text>ARCHIVY VERTRAEGE FULL SYNC (detailliert) - zeigt vorher/nachher Anzahlen und detaillierte Fehlerinfo.</Text></Step>
+<Step enable="True" id="133" name="Show Custom Dialog">
+<Title><Calculation><![CDATA["Archivy Sync startet"]]></Calculation></Title>
+<Message><Calculation><![CDATA["Das detaillierte Script wurde gestartet."]]></Calculation></Message>
+<Buttons>
+<Button CommitState="Yes" ID="1"><Label>OK</Label></Button>
+</Buttons>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertraege_vor</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vorgaenge_vor</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_v_err</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_vo_err</Name>
+</Step>
+<Step enable="True" id="89" name="# (comment)"><Text>=== PRE-CHECK: Zaehle markierte Vertraege und Vorgaenge ===</Text></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+MBS("FM.SQL.Execute"; "";
+"SELECT COUNT(*) FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Archivy_sync\" = 'x'")
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_v</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql_v ; 5 ) = "[MBS]" ; 0 ; GetAsNumber ( MBS("FM.SQL.Text"; $sql_v; 0; 0) ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertraege_vor</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql_v ; 5 ) = "[MBS]" ; $sql_v ; "" )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_v_err</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql_v ; 5 ) = "[MBS]" ; "" ; MBS("FM.SQL.Release"; $sql_v) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$rel_v</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+MBS("FM.SQL.Execute"; "";
+"SELECT \"Vertrag_ID\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Archivy_sync\" = 'x'")
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_marked</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql_marked ; 5 ) = "[MBS]" ; "[]" ; MBS("FM.SQL.JSONRecords"; $sql_marked; "vertrag_id") )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$json_marked</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $json_marked ; 1 ) = "[" ; ValueCount ( JSONListKeys ( $json_marked ; "" ) ) ; 0 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$marked_count</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$marked_list</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$marked_sql_list</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$m</Name>
+</Step>
+<Step enable="True" id="71" name="Loop"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$m + 1]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$m</Name>
+</Step>
+<Step enable="True" id="72" name="Exit Loop If">
+<Calculation><![CDATA[$m > $marked_count]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$m - 1]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$midx</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Lower ( TrimAll ( GetAsText ( JSONGetElement ( $json_marked ; "[" & $midx & "].vertrag_id" ) ) ; 1 ; 1 ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$mk</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[TrimAll ( GetAsText ( JSONGetElement ( $json_marked ; "[" & $midx & "].vertrag_id" ) ) ; 1 ; 1 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$mk_raw</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $mk ) ; $marked_list ; List ( $marked_list ; $mk ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$marked_list</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $mk_raw ) ; $marked_sql_list ; List ( $marked_sql_list ; "'" & Substitute ( $mk_raw ; "'" ; "''" ) & "'" ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$marked_sql_list</Name>
+</Step>
+<Step enable="True" id="73" name="End Loop"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql_marked ; 5 ) = "[MBS]" ; "" ; MBS("FM.SQL.Release"; $sql_marked) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$rel_marked</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+If (
+$marked_count = 0 or IsEmpty ( $marked_sql_list ) ;
+"" ;
+MBS("FM.SQL.Execute"; "";
+"SELECT COUNT(*) FROM \"" & $$FM_VORGAENGE_TABELLE & "\" WHERE \"Vertrag\" IN (" & Substitute ( $marked_sql_list ; ¶ ; "," ) & ")")
+)
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_vo</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+If (
+$marked_count = 0 or IsEmpty ( $marked_sql_list ) ;
+0 ;
+If ( Left ( $sql_vo ; 5 ) = "[MBS]" ; 0 ; GetAsNumber ( MBS("FM.SQL.Text"; $sql_vo; 0; 0) ) )
+)
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vorgaenge_vor</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+If (
+$marked_count = 0 or IsEmpty ( $marked_sql_list ) ;
+"" ;
+If ( Left ( $sql_vo ; 5 ) = "[MBS]" ; $sql_vo ; "" )
+)
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_vo_err</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql_vo ; 5 ) = "[MBS]" ; "" ; MBS("FM.SQL.Release"; $sql_vo) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$rel_vo</Name>
+</Step>
+<Step enable="True" id="133" name="Show Custom Dialog">
+<Title><Calculation><![CDATA["Archivy Sync - PRE-CHECK"]]></Calculation></Title>
+<Message><Calculation><![CDATA[
+"PRE-SYNC CHECK" & ¶ & ¶ &
+"Verträge mit Archivy_sync = 'x': " & $vertraege_vor & ¶ &
+"Vorgänge (verknüpft): " & $vorgaenge_vor & ¶ & ¶ &
+"Inhaber: " & $$INHABER_ID & ¶ &
+"FM Tabelle Vertraege: " & $$FM_VERTRAEGE_TABELLE & ¶ &
+"FM Tabelle Vorgaenge: " & $$FM_VORGAENGE_TABELLE & ¶ &
+"Supabase URL: " & If ( IsEmpty ( $$SUPABASE_URL ) ; "LEER!" ; "OK" ) & ¶ &
+"Supabase KEY: " & If ( IsEmpty ( $$SUPABASE_KEY ) ; "LEER!" ; "OK (gekuerzt)" ) & ¶ &
+If ( IsEmpty ( $sql_v_err ) ; "" ; "SQL Fehler Vertraege: " & Left ( $sql_v_err ; 150 ) & ¶ ) &
+If ( IsEmpty ( $sql_vo_err ) ; "" ; "SQL Fehler Vorgaenge: " & Left ( $sql_vo_err ; 150 ) & ¶ )
+]]></Calculation></Message>
+<Buttons>
+<Button CommitState="Yes" ID="1"><Label>SYNC starten</Label></Button>
+<Button CommitState="No" ID="2"><Label>ABBRECHEN</Label></Button>
+</Buttons>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[Get ( LastMessageChoice ) = 2]]></Calculation>
+</Step>
+<Step enable="True" id="133" name="Show Custom Dialog">
+<Title><Calculation><![CDATA["Abgebrochen"]]></Calculation></Title>
+<Message><Calculation><![CDATA["Sync wurde abgebrochen."]]></Calculation></Message>
+<Buttons>
+<Button CommitState="Yes" ID="1"><Label>OK</Label></Button>
+</Buttons>
+</Step>
+<Step enable="True" id="75" name="Exit Script">
+<Value><Calculation><![CDATA["abgebrochen"]]></Calculation></Value>
+</Step>
+<Step enable="True" id="70" name="End If"></Step>
+<Step enable="True" id="89" name="# (comment)"><Text>=== INIT ===</Text></Step>
+<Step enable="True" id="1" name="Perform Script">
+<Script id="" name="FM_ARCHIVY_SYNC_INIT"/>
+</Step>
+<Step enable="True" id="89" name="# (comment)"><Text>=== PUSH VORGAENGE ===</Text></Step>
+<Step enable="True" id="1" name="Perform Script">
+<Script id="" name="FM_ARCHIVY_SYNC_VORGAENGE_PUSH_EXAKT"/>
+</Step>
+<Step enable="True" id="89" name="# (comment)"><Text>=== PUSH VERTRAEGE ===</Text></Step>
+<Step enable="True" id="1" name="Perform Script">
+<Script id="" name="FM_ARCHIVY_SYNC_VERTRAEGE_PUSH_EXAKT"/>
+</Step>
+<Step enable="True" id="89" name="# (comment)"><Text>=== PULL ===</Text></Step>
+<Step enable="True" id="1" name="Perform Script">
+<Script id="" name="FM_ARCHIVY_SYNC_VERTRAEGE_PULL_EXAKT"/>
+</Step>
+<Step enable="True" id="89" name="# (comment)"><Text>=== POST-CHECK: Zaehle nach dem Sync ===</Text></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+MBS("FM.SQL.Execute"; "";
+"SELECT COUNT(*) FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Archivy_sync\" = 'x'")
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_nach</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql_nach ; 5 ) = "[MBS]" ; 0 ; GetAsNumber ( MBS("FM.SQL.Text"; $sql_nach; 0; 0) ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertraege_nach</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql_nach ; 5 ) = "[MBS]" ; "" ; MBS("FM.SQL.Release"; $sql_nach) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$rel_nach</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$vertraege_vor - $vertraege_nach]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertraege_gesynct</Name>
+</Step>
+<Step enable="True" id="133" name="Show Custom Dialog">
+<Title><Calculation><![CDATA["Archivy Sync - ERLEDIGT"]]></Calculation></Title>
+<Message><Calculation><![CDATA[
+"SYNC ABGESCHLOSSEN" & ¶ & ¶ &
+"VERTRAEGE:" & ¶ &
+"  Markiert VOR Sync:  " & $vertraege_vor & ¶ &
+"  Markiert NACH Sync: " & $vertraege_nach & ¶ &
+"  Uebertragen:        " & $vertraege_gesynct & ¶ & ¶ &
+"VORGAENGE:" & ¶ &
+"  Verknuepft:         " & $vorgaenge_vor & ¶ & ¶ &
+"HINWEISE:" & ¶ &
+If ( $vertraege_gesynct = 0 ; "WARNUNG: Keine Vertraege uebertragen!" & ¶ ; "" ) &
+If ( $vertraege_nach > 0 ; "WARNUNG: Noch " & $vertraege_nach & " Vertraege mit Archivy_sync='x' vorhanden!" & ¶ ; "" ) &
+If ( $vertraege_gesynct > 0 ; "OK: " & $vertraege_gesynct & " Vertraege erfolgreich uebertragen." & ¶ ; "" )
+]]></Calculation></Message>
+<Buttons>
+<Button CommitState="Yes" ID="1"><Label>OK</Label></Button>
+</Buttons>
+</Step>
+</fmxmlsnippet>
