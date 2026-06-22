@@ -11,6 +11,8 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.vers
 const BUCKET = 'archivy-dokumente'
 
 export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate, onClose }) {
+  const containerRef = useRef(null)
+  const touchStartX = useRef(0)
   const [vorgang, setVorgang] = useState(null)
   const [entwurf, setEntwurf] = useState(null)
   const [vertragMeta, setVertragMeta] = useState(null)
@@ -26,6 +28,31 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
   const [dateiUrl, setDateiUrl] = useState(null)
   const [fotoUrl, setFotoUrl] = useState(null)
   const [pdfVollbild, setPdfVollbild] = useState(false)
+  const [pdfRotation, setPdfRotation] = useState(0)
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const handleTouchStart = (e) => {
+      touchStartX.current = e.touches[0].clientX
+    }
+
+    const handleTouchEnd = (e) => {
+      const touchEndX = e.changedTouches[0].clientX
+      const swipeDistance = touchEndX - touchStartX.current
+      if (swipeDistance > 80) {
+        onClose?.()
+      }
+    }
+
+    container.addEventListener('touchstart', handleTouchStart)
+    container.addEventListener('touchend', handleTouchEnd)
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart)
+      container.removeEventListener('touchend', handleTouchEnd)
+    }
+  }, [onClose])
 
   useEffect(() => {
     laddenVorgang()
@@ -96,6 +123,7 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
       datum: cleanDate(daten.datum),
       frist: cleanDate(daten.frist),
       erledigt: Boolean(daten.erledigt),
+      erledigung: cleanDate(daten.erledigung),
       verantwortlicher: cleanText(daten.verantwortlicher),
       ersteller: cleanText(daten.ersteller),
       app_modified_at: new Date().toISOString(),
@@ -280,7 +308,7 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
   const beschreibungAnzeige = daten.beschreibung || daten.kurzbeschreibung || null
 
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <div ref={containerRef} style={{ maxWidth: 1000, margin: '0 auto' }}>
       {/* PDF Vollbild-Overlay */}
       {pdfVollbild && dateiUrl && (
         <div
@@ -316,112 +344,133 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
         </div>
       )}
       {/* Header */}
-      <div style={{ display: 'grid', gap: T.sp3, marginBottom: T.sp6 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: T.sp3 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: T.sp2, position: 'sticky', top: 0, zIndex: 10, background: T.bg, paddingTop: 6, paddingBottom: 6, gap: T.sp1, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: T.sp2, flex: 1, minWidth: 0 }}>
           {logoSrc ? (
             <img
               src={logoSrc}
               alt={firmaTitel}
-              style={{ width: 56, height: 56, borderRadius: 12, border: `1px solid ${T.border}`, objectFit: 'cover', background: '#fff' }}
+              style={{ width: 48, height: 48, borderRadius: 12, border: `1px solid ${T.border}`, objectFit: 'cover', background: '#fff', flexShrink: 0 }}
             />
           ) : (
-            <div style={{ width: 56, height: 56, borderRadius: 12, border: `1px solid ${T.border}`, background: '#dbeafe', color: '#1d4ed8', display: 'grid', placeItems: 'center', fontWeight: 700 }}>
+            <div style={{ width: 48, height: 48, borderRadius: 12, border: `1px solid ${T.border}`, background: '#dbeafe', color: '#1d4ed8', display: 'grid', placeItems: 'center', fontWeight: 700, flexShrink: 0, fontSize: 14 }}>
               {logoText(firmaTitel)}
             </div>
           )}
-          <div>
-            <div style={{ color: T.textMuted, fontSize: 13, marginBottom: 2 }}>
+          {/* Title Column */}
+          <div style={{ minWidth: 0 }}>
+            <span style={{ display: 'block', marginBottom: 1, background: 'transparent', color: T.text, padding: 0, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>Vorgang</span>
+            <div style={{ color: T.textMuted, fontSize: 12, marginBottom: 2 }}>
               {firmaTitel}
             </div>
-            <h1 style={{ fontSize: 30, fontWeight: 800, margin: 0, lineHeight: 1.1 }}>{titelNotiz}</h1>
+            <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{titelNotiz}</h1>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: T.sp2, alignItems: 'center', flexWrap: 'wrap' }}>
-          {speicherStatus ? (
-            <span style={{ fontSize: 12, color: speicherStatus.ok ? '#166534' : T.danger, whiteSpace: 'nowrap' }}>{speicherStatus.text}</span>
-          ) : null}
-          <button
-            type="button"
-            onClick={handleNeuVorgang}
-            disabled={erstelltNeu}
-            style={{
-              background: T.bgCard,
-              border: `1px solid ${T.border}`,
-              borderRadius: T.r2,
-              padding: `${T.sp2} ${T.sp3}`,
-              cursor: erstelltNeu ? 'not-allowed' : 'pointer',
-              opacity: erstelltNeu ? 0.7 : 1,
-              fontWeight: 700,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {erstelltNeu ? 'Anlegen…' : '+ Neuer Vorgang'}
-          </button>
-          <button
-            type="button"
-            onClick={speichereVorgang}
-            disabled={speichert}
-            style={{
-              background: T.primary,
-              color: '#fff',
-              border: 'none',
-              borderRadius: T.r2,
-              padding: `${T.sp2} ${T.sp3}`,
-              cursor: speichert ? 'not-allowed' : 'pointer',
-              opacity: speichert ? 0.7 : 1,
-              fontWeight: 700,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {speichert ? 'Speichert…' : 'Speichern'}
-          </button>
-          {vorgangIds.length > 1 && (
-            <>
-              <button
-                onClick={() => hasPrev && onNavigate?.(vorgangIds[idx - 1])}
-                disabled={!hasPrev}
-                style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, cursor: hasPrev ? 'pointer' : 'not-allowed', opacity: hasPrev ? 1 : 0.4, fontWeight: 700, whiteSpace: 'nowrap' }}
-              >
-                ‹ Vorherige
-              </button>
-              <span style={{ fontSize: 13, color: T.textMuted }}>{idx + 1} / {vorgangIds.length}</span>
-              <button
-                onClick={() => hasNext && onNavigate?.(vorgangIds[idx + 1])}
-                disabled={!hasNext}
-                style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, cursor: hasNext ? 'pointer' : 'not-allowed', opacity: hasNext ? 1 : 0.4, fontWeight: 700, whiteSpace: 'nowrap' }}
-              >
-                Nächste ›
-              </button>
-            </>
-          )}
-          <button
-            onClick={onClose}
-            style={{
-              background: T.bg, border: `1px solid ${T.border}`, borderRadius: T.r2,
-              padding: `${T.sp2} ${T.sp3}`, cursor: 'pointer', fontWeight: 500, whiteSpace: 'nowrap',
-            }}
-          >
-            ← Zurück
-          </button>
-          <button
-            onClick={handleVorgangLoeschen}
-            disabled={loeschend}
-            style={{
-              background: '#fff1f2',
-              color: '#b91c1c',
-              border: `1px solid ${T.border}`,
-              borderRadius: T.r2,
-              padding: `${T.sp2} ${T.sp3}`,
-              cursor: loeschend ? 'not-allowed' : 'pointer',
-              fontWeight: 600,
-              opacity: loeschend ? 0.7 : 1,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {loeschend ? 'Lösche…' : 'Löschen'}
-          </button>
+        {/* Right: Navigation Buttons */}
+        <div style={{ display: 'flex', gap: T.sp1, alignItems: 'center', flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={handleNeuVorgang}
+              disabled={erstelltNeu}
+              style={{
+                background: T.bgCard,
+                border: `1px solid ${T.border}`,
+                borderRadius: T.r2,
+                padding: `6px 10px`,
+                cursor: erstelltNeu ? 'not-allowed' : 'pointer',
+                opacity: erstelltNeu ? 0.7 : 1,
+                fontWeight: 700,
+                fontSize: 13,
+                whiteSpace: 'nowrap',
+                minHeight: 40,
+                display: 'flex',
+                alignItems: 'center',
+              }}
+              title="Neuen Vorgang erstellen"
+            >
+              {erstelltNeu ? '+' : '+ Neu'}
+            </button>
+            <button
+              onClick={handleVorgangLoeschen}
+              disabled={loeschend}
+              style={{
+                background: '#fff1f2',
+                color: '#b91c1c',
+                border: `1px solid ${T.border}`,
+                borderRadius: T.r2,
+                padding: `6px 10px`,
+                cursor: loeschend ? 'not-allowed' : 'pointer',
+                fontWeight: 600,
+                fontSize: 13,
+                opacity: loeschend ? 0.7 : 1,
+                whiteSpace: 'nowrap',
+                minHeight: 40,
+                display: 'flex',
+                alignItems: 'center',
+              }}
+              title="Diesen Vorgang löschen"
+            >
+              {loeschend ? '…' : '🗑️'}
+            </button>
+            {vorgangIds.length > 1 && (
+              <>
+                <button
+                  onClick={() => hasPrev && onNavigate?.(vorgangIds[idx - 1])}
+                  disabled={!hasPrev}
+                  style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: 6, cursor: hasPrev ? 'pointer' : 'not-allowed', opacity: hasPrev ? 1 : 0.4, fontWeight: 700, fontSize: 16, minWidth: 40, minHeight: 40, display: 'grid', placeItems: 'center' }}
+                  title="Vorheriger Vorgang"
+                >
+                  ‹
+                </button>
+                <span style={{ fontSize: 11, color: T.textMuted, minWidth: 35, textAlign: 'center', fontWeight: 600 }}>{idx + 1}/{vorgangIds.length}</span>
+                <button
+                  onClick={() => hasNext && onNavigate?.(vorgangIds[idx + 1])}
+                  disabled={!hasNext}
+                  style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: 6, cursor: hasNext ? 'pointer' : 'not-allowed', opacity: hasNext ? 1 : 0.4, fontWeight: 700, fontSize: 16, minWidth: 40, minHeight: 40, display: 'grid', placeItems: 'center' }}
+                  title="Nächster Vorgang"
+                >
+                  ›
+                </button>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={speichereVorgang}
+              disabled={speichert}
+              style={{
+                background: T.primary,
+                color: '#fff',
+                border: 'none',
+                borderRadius: T.r2,
+                padding: '6px 12px',
+                cursor: speichert ? 'not-allowed' : 'pointer',
+                opacity: speichert ? 0.7 : 1,
+                fontWeight: 700,
+                fontSize: 13,
+                whiteSpace: 'nowrap',
+                minHeight: 40,
+                display: 'flex',
+                alignItems: 'center',
+              }}
+              title="Änderungen speichern"
+            >
+              {speichert ? '…' : '✓'}
+            </button>
+            <button
+              onClick={onClose}
+              style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: '6px 10px', cursor: 'pointer', fontWeight: 600, minHeight: 40, display: 'flex', alignItems: 'center', fontSize: 16 }}
+              title="Zurück"
+            >
+              ✕
+            </button>
         </div>
       </div>
+
+      {speicherStatus && (
+        <div style={{ background: speicherStatus.ok ? '#dcfce7' : '#fee', color: speicherStatus.ok ? '#166534' : T.danger, padding: T.sp2, borderRadius: T.r2, marginBottom: T.sp4, fontSize: 13 }}>
+          {speicherStatus.text}
+        </div>
+      )}
 
       {fehler && (
         <div style={{ background: '#fee', color: T.danger, padding: T.sp3, borderRadius: T.r2, marginBottom: T.sp4 }}>
@@ -441,17 +490,9 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
             <EditDateFeld label="Datum" value={daten.datum} onChange={v => setFeld('datum', v)} />
             <EditDateFeld label="Frist" value={daten.frist} onChange={v => setFeld('frist', v)} />
             <EditCheckFeld label="Erledigt" value={Boolean(daten.erledigt)} onChange={v => setFeld('erledigt', v)} />
+            <EditDateFeld label="Erledigungsdatum" value={daten.erledigung} onChange={v => setFeld('erledigung', v)} />
             <EditTextFeld label="Verantwortlich" value={daten.verantwortlicher} onChange={v => setFeld('verantwortlicher', v)} />
-            <EditTextFeld label="Ersteller" value={daten.ersteller} onChange={v => setFeld('ersteller', v)} />
           </div>
-
-          {/* Beschreibung */}
-          {beschreibungAnzeige && (
-            <div style={{ marginTop: T.sp6 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: T.sp2 }}>Beschreibung</h3>
-              <p style={{ whiteSpace: 'pre-wrap', color: T.textMain, lineHeight: 1.6 }}>{beschreibungAnzeige}</p>
-            </div>
-          )}
         </div>
 
         {/* Rechte Spalte: PDF & Foto */}
@@ -459,7 +500,26 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
 
           {/* PDF */}
           <div>
-            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: T.sp3 }}>Dokument</h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: T.sp3 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>Dokument</h3>
+              {dateiUrl && (
+                <button
+                  onClick={() => setPdfRotation((prev) => (prev + 90) % 360)}
+                  style={{
+                    padding: '4px 12px',
+                    background: T.primary,
+                    color: T.textOnTeal,
+                    border: 'none',
+                    borderRadius: T.r2,
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: 12,
+                  }}
+                >
+                  ↺ Drehen
+                </button>
+              )}
+            </div>
             <div
               style={{
                 background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: T.sp4,
@@ -479,7 +539,7 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
                     style={{ cursor: 'zoom-in' }}
                     title="Klicken für Vollansicht"
                   >
-                    <Page pageNumber={1} width={300} renderTextLayer={false} />
+                    <Page pageNumber={1} width={300} renderTextLayer={false} rotate={pdfRotation} />
                   </div>
                 </Document>
               ) : (

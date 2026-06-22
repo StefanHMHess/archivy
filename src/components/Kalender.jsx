@@ -44,7 +44,7 @@ export default function Kalender({ owner, onSelectVorgang }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: T.sp5 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: T.sp5, position: 'sticky', top: 0, zIndex: 10, background: T.bg, paddingTop: T.sp3, paddingBottom: T.sp3 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700 }}>Kalender</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: T.sp2 }}>
           <button onClick={() => setMonat(addMonate(monat, -1))} style={navBtnStyle()}>{'<'}</button>

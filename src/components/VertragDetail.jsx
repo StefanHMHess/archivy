@@ -7,6 +7,8 @@ const FIXED_SECRET_MASK = '••••••••••'
 const DEFAULT_ZAHLUNGSWEISEN = ['Abbuchung', 'Amex', 'Dauerauftrag', 'Mastercard', 'Eingang', 'Überweisungen']
 
 export default function VertragDetail({ vertragId, vertragIds = [], owner, onNavigate, onSelectVorgang, onClose }) {
+  const containerRef = useRef(null)
+  const touchStartX = useRef(0)
   const [vertrag, setVertrag] = useState(null)
   const [entwurf, setEntwurf] = useState(null)
   const [vorgaenge, setVorgaenge] = useState([])
@@ -19,6 +21,30 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
   const [kopiert, setKopiert] = useState(false)
   const [zahlungsweisen, setZahlungsweisen] = useState(DEFAULT_ZAHLUNGSWEISEN)
   const [datumSortAsc, setDatumSortAsc] = useState(true)
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const handleTouchStart = (e) => {
+      touchStartX.current = e.touches[0].clientX
+    }
+
+    const handleTouchEnd = (e) => {
+      const touchEndX = e.changedTouches[0].clientX
+      const swipeDistance = touchEndX - touchStartX.current
+      if (swipeDistance > 80) {
+        onClose?.()
+      }
+    }
+
+    container.addEventListener('touchstart', handleTouchStart)
+    container.addEventListener('touchend', handleTouchEnd)
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart)
+      container.removeEventListener('touchend', handleTouchEnd)
+    }
+  }, [onClose])
 
   useEffect(() => {
     async function ladeZahlungsweisen() {
@@ -307,122 +333,152 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
   }
 
   return (
-    <div style={{ width: '100%' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: T.sp6 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: T.sp3 }}>
+    <div ref={containerRef} style={{ width: '100%' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: T.sp2, position: 'sticky', top: 0, zIndex: 10, background: T.bg, paddingTop: 6, paddingBottom: 6, gap: T.sp1, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: T.sp2, flex: 1, minWidth: 0 }}>
           <LogoPreview vertrag={daten} logoFehler={logoFehler} setLogoFehler={setLogoFehler} />
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700 }}>{daten.firma || 'Vertrag'}</h1>
-            <p style={{ margin: 0, color: T.textMuted, display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Title Column */}
+          <div style={{ minWidth: 0 }}>
+            <span style={{ display: 'block', marginBottom: 1, background: 'transparent', color: T.text, padding: 0, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>Vertrag</span>
+            <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{daten.firma || 'Vertrag'}</h1>
+            <p style={{ margin: 0, marginTop: 2, color: T.textMuted, fontSize: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
               <span>{daten.gruppe || 'Keine Gruppe'}</span>
-              <span style={{ fontSize: 12, border: `1px solid ${T.border}`, borderRadius: 999, padding: '1px 8px', background: T.bg }}>{quelle}</span>
+              <span style={{ fontSize: 11, background: T.bg, padding: 0 }}>{quelle}</span>
             </p>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: T.sp2, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          {speicherStatus ? (
-            <span style={{ fontSize: 12, color: speicherStatus.ok ? '#166534' : T.danger, marginRight: T.sp1 }}>{speicherStatus.text}</span>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => setDatumSortAsc(v => !v)}
-            style={{
-              background: T.bgCard,
-              border: `1px solid ${T.border}`,
-              borderRadius: T.r2,
-              padding: `${T.sp2} ${T.sp3}`,
-              cursor: 'pointer',
-              fontWeight: 700,
-              whiteSpace: 'nowrap',
-            }}
-            title="Zugehörige Vorgänge nach Datum sortieren"
-          >
-            Vorgänge: Datum {datumSortAsc ? '↑' : '↓'}
-          </button>
-          <button
-            type="button"
-            onClick={kopiereVertrag}
-            disabled={kopiert}
-            style={{
-              background: T.bgCard,
-              border: `1px solid ${T.border}`,
-              borderRadius: T.r2,
-              padding: `${T.sp2} ${T.sp3}`,
-              cursor: kopiert ? 'not-allowed' : 'pointer',
-              opacity: kopiert ? 0.7 : 1,
-              fontWeight: 700,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {kopiert ? 'Kopiert…' : '+ Kopieren'}
-          </button>
-          <button
-            type="button"
-            onClick={speichereVertrag}
-            disabled={speichert}
-            style={{
-              background: T.primary,
-              color: '#fff',
-              border: 'none',
-              borderRadius: T.r2,
-              padding: `${T.sp2} ${T.sp3}`,
-              fontWeight: 700,
-              cursor: speichert ? 'not-allowed' : 'pointer',
-              opacity: speichert ? 0.7 : 1,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {speichert ? 'Speichert…' : 'Speichern'}
-          </button>
-          {vertragIds.length > 1 && (
-            <>
-              <button
-                onClick={() => hasPrev && onNavigate?.(vertragIds[idx - 1])}
-                disabled={!hasPrev}
-                style={{
-                  background: T.bgCard,
-                  border: `1px solid ${T.border}`,
-                  borderRadius: T.r2,
-                  padding: `${T.sp2} ${T.sp3}`,
-                  cursor: hasPrev ? 'pointer' : 'not-allowed',
-                  opacity: hasPrev ? 1 : 0.4,
-                  fontWeight: 700,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                ‹ Vorherige
-              </button>
-              <span style={{ fontSize: 13, color: T.textMuted }}>{idx + 1} / {vertragIds.length}</span>
-              <button
-                onClick={() => hasNext && onNavigate?.(vertragIds[idx + 1])}
-                disabled={!hasNext}
-                style={{
-                  background: T.bgCard,
-                  border: `1px solid ${T.border}`,
-                  borderRadius: T.r2,
-                  padding: `${T.sp2} ${T.sp3}`,
-                  cursor: hasNext ? 'pointer' : 'not-allowed',
-                  opacity: hasNext ? 1 : 0.4,
-                  fontWeight: 700,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Nächste ›
-              </button>
-            </>
-          )}
-          <button
-            onClick={onClose}
-            style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, cursor: 'pointer', whiteSpace: 'nowrap' }}
-          >
-            ← Zurück
-          </button>
+        <div style={{ display: 'flex', gap: T.sp1, flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center', flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={() => setDatumSortAsc(v => !v)}
+              style={{
+                background: T.bgCard,
+                border: `1px solid ${T.border}`,
+                borderRadius: T.r2,
+                padding: `6px 10px`,
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: 13,
+                whiteSpace: 'nowrap',
+                minHeight: 40,
+                display: 'flex',
+                alignItems: 'center',
+              }}
+              title="Zugehörige Vorgänge nach Datum sortieren"
+            >
+              {datumSortAsc ? '↑' : '↓'}
+            </button>
+            <button
+              type="button"
+              onClick={kopiereVertrag}
+              disabled={kopiert}
+              style={{
+                background: T.bgCard,
+                border: `1px solid ${T.border}`,
+                borderRadius: T.r2,
+                padding: `6px 10px`,
+                cursor: kopiert ? 'not-allowed' : 'pointer',
+                opacity: kopiert ? 0.7 : 1,
+                fontWeight: 700,
+                fontSize: 13,
+                whiteSpace: 'nowrap',
+                minHeight: 40,
+                display: 'flex',
+                alignItems: 'center',
+              }}
+              title="Diesen Vertrag kopieren"
+            >
+              {kopiert ? '…' : '📋'}
+            </button>
+            {vertragIds.length > 1 && (
+              <>
+                <button
+                  onClick={() => hasPrev && onNavigate?.(vertragIds[idx - 1])}
+                  disabled={!hasPrev}
+                  style={{
+                    background: T.bgCard,
+                    border: `1px solid ${T.border}`,
+                    borderRadius: T.r2,
+                    padding: 6,
+                    cursor: hasPrev ? 'pointer' : 'not-allowed',
+                    opacity: hasPrev ? 1 : 0.4,
+                    fontWeight: 700,
+                    fontSize: 16,
+                    minWidth: 40,
+                    minHeight: 40,
+                    display: 'grid',
+                    placeItems: 'center',
+                  }}
+                  title="Vorheriger Vertrag"
+                >
+                  ‹
+                </button>
+                <span style={{ fontSize: 11, color: T.textMuted, minWidth: 35, textAlign: 'center', fontWeight: 600 }}>{idx + 1}/{vertragIds.length}</span>
+                <button
+                  onClick={() => hasNext && onNavigate?.(vertragIds[idx + 1])}
+                  disabled={!hasNext}
+                  style={{
+                    background: T.bgCard,
+                    border: `1px solid ${T.border}`,
+                    borderRadius: T.r2,
+                    padding: 6,
+                    cursor: hasNext ? 'pointer' : 'not-allowed',
+                    opacity: hasNext ? 1 : 0.4,
+                    fontWeight: 700,
+                    fontSize: 16,
+                    minWidth: 40,
+                    minHeight: 40,
+                    display: 'grid',
+                    placeItems: 'center',
+                  }}
+                  title="Nächster Vertrag"
+                >
+                  ›
+                </button>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={speichereVertrag}
+              disabled={speichert}
+              style={{
+                background: T.primary,
+                color: '#fff',
+                border: 'none',
+                borderRadius: T.r2,
+                padding: '6px 12px',
+                fontWeight: 700,
+                fontSize: 13,
+                cursor: speichert ? 'not-allowed' : 'pointer',
+                opacity: speichert ? 0.7 : 1,
+                whiteSpace: 'nowrap',
+                minHeight: 40,
+                display: 'flex',
+                alignItems: 'center',
+              }}
+              title="Änderungen speichern"
+            >
+              {speichert ? '…' : '✓'}
+            </button>
+            <button
+              onClick={onClose}
+              style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: '6px 10px', cursor: 'pointer', fontWeight: 600, minHeight: 40, display: 'flex', alignItems: 'center', fontSize: 16 }}
+              title="Zurück"
+            >
+              ✕
+            </button>
         </div>
       </div>
 
       {fehler && (
         <div style={{ background: '#fee', color: T.danger, padding: T.sp3, borderRadius: T.r2, marginBottom: T.sp4 }}>
           {fehler}
+        </div>
+      )}
+
+      {speicherStatus && (
+        <div style={{ background: speicherStatus.ok ? '#dcfce7' : '#fee', color: speicherStatus.ok ? '#166534' : T.danger, padding: T.sp2, borderRadius: T.r2, marginBottom: T.sp4, fontSize: 13 }}>
+          {speicherStatus.text}
         </div>
       )}
 

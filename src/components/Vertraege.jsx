@@ -166,7 +166,7 @@ export default function Vertraege({ owner, onSelectContract }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: T.sp3, marginBottom: T.sp5 }}>
+      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: T.sp3, marginBottom: T.sp5, position: 'sticky', top: 0, zIndex: 10, background: T.bg, paddingTop: T.sp3, paddingBottom: T.sp3 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700 }}>Verträge</h1>
         <input
           value={suche}
