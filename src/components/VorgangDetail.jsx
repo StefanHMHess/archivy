@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
@@ -12,11 +12,17 @@ const BUCKET = 'archivy-dokumente'
 
 export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate, onClose }) {
   const [vorgang, setVorgang] = useState(null)
+  const [entwurf, setEntwurf] = useState(null)
+  const [vertragMeta, setVertragMeta] = useState(null)
   const [laden, setLaden] = useState(true)
   const [fehler, setFehler] = useState(null)
+  const [speichert, setSpeichert] = useState(false)
+  const [speicherStatus, setSpeicherStatus] = useState(null)
   const [pdfError, setPdfError] = useState(null)
   const [pdfPages, setPdfPages] = useState(0)
   const [uploading, setUploading] = useState(false)
+  const [loeschend, setLoeschend] = useState(false)
+  const [erstelltNeu, setErstelltNeu] = useState(false)
   const [dateiUrl, setDateiUrl] = useState(null)
   const [fotoUrl, setFotoUrl] = useState(null)
   const [pdfVollbild, setPdfVollbild] = useState(false)
@@ -53,9 +59,66 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
       setLaden(false)
       return
     }
+
+    let vertragInfo = null
+    if (data?.vertrag) {
+      const vertragKey = String(data.vertrag).trim()
+      const { data: vertragData } = await supabase
+        .from('vertraege')
+        .select('firma, datei_pfad_2, vertrags_datum, vertrags_ablauf')
+        .ilike('vertrag_id', vertragKey)
+        .maybeSingle()
+      vertragInfo = vertragData ?? null
+    }
+
     setVorgang(data)
+    setEntwurf(data)
+    setVertragMeta(vertragInfo)
     setFehler(null)
     setLaden(false)
+  }
+
+  function setFeld(name, value) {
+    setEntwurf(prev => ({ ...(prev ?? {}), [name]: value }))
+    setSpeicherStatus(null)
+  }
+
+  async function speichereVorgang() {
+    const daten = entwurf ?? vorgang
+    if (!daten) return
+
+    setSpeichert(true)
+    setSpeicherStatus(null)
+
+    const payload = {
+      beschreibung: cleanText(daten.beschreibung),
+      kurzbeschreibung: cleanText(daten.kurzbeschreibung),
+      datum: cleanDate(daten.datum),
+      frist: cleanDate(daten.frist),
+      erledigt: Boolean(daten.erledigt),
+      verantwortlicher: cleanText(daten.verantwortlicher),
+      ersteller: cleanText(daten.ersteller),
+      app_modified_at: new Date().toISOString(),
+      sync_state: 'geaendert',
+    }
+
+    const { data, error } = await supabase
+      .from('vorgaenge')
+      .update(payload)
+      .eq('vorgang_id', vorgang_id)
+      .select('*')
+      .single()
+
+    setSpeichert(false)
+
+    if (error) {
+      setSpeicherStatus({ ok: false, text: error.message })
+      return
+    }
+
+    setVorgang(data)
+    setEntwurf(data)
+    setSpeicherStatus({ ok: true, text: 'Gespeichert' })
   }
 
   async function handleDateiUpload(e) {
@@ -76,6 +139,7 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
 
       if (error) throw error
       setVorgang(prev => ({ ...prev, datei_pfad: pfad }))
+      setEntwurf(prev => ({ ...prev, datei_pfad: pfad }))
     } catch (err) {
       setFehler(err.message)
     } finally {
@@ -101,6 +165,7 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
 
       if (error) throw error
       setVorgang(prev => ({ ...prev, foto_pfad: pfad }))
+      setEntwurf(prev => ({ ...prev, foto_pfad: pfad }))
     } catch (err) {
       setFehler(err.message)
     } finally {
@@ -123,6 +188,7 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
 
       if (error) throw error
       setVorgang(prev => ({ ...prev, datei_pfad: null }))
+      setEntwurf(prev => ({ ...prev, datei_pfad: null }))
       setDateiUrl(null)
       setPdfError(null)
     } catch (err) {
@@ -132,12 +198,86 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
     }
   }
 
+  async function handleVorgangLoeschen() {
+    if (!vorgang) return
+    const ok = window.confirm('Vorgang wirklich loeschen? Diese Aktion kann nicht rueckgaengig gemacht werden.')
+    if (!ok) return
+
+    setLoeschend(true)
+    setFehler(null)
+    try {
+      const pfade = [vorgang.datei_pfad, vorgang.foto_pfad].filter(Boolean)
+      for (const pfad of pfade) {
+        try {
+          await deleteFile(BUCKET, pfad)
+        } catch {
+          // Continue even if a storage object no longer exists.
+        }
+      }
+
+      const { error } = await supabase
+        .from('vorgaenge')
+        .delete()
+        .eq('vorgang_id', vorgang_id)
+
+      if (error) throw error
+      onClose?.()
+    } catch (err) {
+      setFehler(err.message)
+    } finally {
+      setLoeschend(false)
+    }
+  }
+
+  async function handleNeuVorgang() {
+    const basis = entwurf ?? vorgang
+    const ownerId = basis?.vertragsbesitzer_id
+    if (!ownerId) {
+      setFehler('Neuer Vorgang braucht einen Vertragsbesitzer.')
+      return
+    }
+
+    setErstelltNeu(true)
+    const nowIso = new Date().toISOString()
+    const vorgang_id_neu = `archivy-vorgang-${Date.now()}`
+    const today = nowIso.slice(0, 10)
+
+    const { data, error } = await supabase
+      .from('vorgaenge')
+      .insert({
+        vorgang_id: vorgang_id_neu,
+        vertragsbesitzer_id: ownerId,
+        vertrag: basis?.vertrag ?? null,
+        beschreibung: 'Neuer Vorgang',
+        kurzbeschreibung: '',
+        datum: today,
+        sync_state: 'geaendert',
+        app_modified_at: nowIso,
+      })
+      .select('vorgang_id')
+      .single()
+
+    setErstelltNeu(false)
+    if (error) {
+      setFehler(`Vorgang konnte nicht angelegt werden: ${error.message}`)
+      return
+    }
+
+    onNavigate?.(data?.vorgang_id || vorgang_id_neu)
+  }
+
   if (laden) return <p style={{ color: T.textMuted }}>Wird geladen…</p>
   if (!vorgang) return <p style={{ color: T.danger }}>Vorgang nicht gefunden</p>
+
+  const daten = entwurf ?? vorgang
 
   const idx = vorgangIds.indexOf(vorgang_id)
   const hasPrev = idx > 0
   const hasNext = idx >= 0 && idx < vorgangIds.length - 1
+  const firmaTitel = vertragMeta?.firma || 'Unbekannte Firma'
+  const titelNotiz = daten.kurzbeschreibung || daten.beschreibung || 'Vorgang'
+  const logoSrc = normalisiereLogoQuelle(vertragMeta?.datei_pfad_2)
+  const beschreibungAnzeige = daten.beschreibung || daten.kurzbeschreibung || null
 
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
@@ -176,20 +316,71 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
         </div>
       )}
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: T.sp6 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Vorgang</h1>
-          <div style={{ color: T.textMuted, fontSize: 13, marginTop: T.sp1 }}>
-            {vorgang.beschreibung || '—'}
+      <div style={{ display: 'grid', gap: T.sp3, marginBottom: T.sp6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: T.sp3 }}>
+          {logoSrc ? (
+            <img
+              src={logoSrc}
+              alt={firmaTitel}
+              style={{ width: 56, height: 56, borderRadius: 12, border: `1px solid ${T.border}`, objectFit: 'cover', background: '#fff' }}
+            />
+          ) : (
+            <div style={{ width: 56, height: 56, borderRadius: 12, border: `1px solid ${T.border}`, background: '#dbeafe', color: '#1d4ed8', display: 'grid', placeItems: 'center', fontWeight: 700 }}>
+              {logoText(firmaTitel)}
+            </div>
+          )}
+          <div>
+            <div style={{ color: T.textMuted, fontSize: 13, marginBottom: 2 }}>
+              {firmaTitel}
+            </div>
+            <h1 style={{ fontSize: 30, fontWeight: 800, margin: 0, lineHeight: 1.1 }}>{titelNotiz}</h1>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: T.sp2, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: T.sp2, alignItems: 'center', flexWrap: 'wrap' }}>
+          {speicherStatus ? (
+            <span style={{ fontSize: 12, color: speicherStatus.ok ? '#166534' : T.danger, whiteSpace: 'nowrap' }}>{speicherStatus.text}</span>
+          ) : null}
+          <button
+            type="button"
+            onClick={handleNeuVorgang}
+            disabled={erstelltNeu}
+            style={{
+              background: T.bgCard,
+              border: `1px solid ${T.border}`,
+              borderRadius: T.r2,
+              padding: `${T.sp2} ${T.sp3}`,
+              cursor: erstelltNeu ? 'not-allowed' : 'pointer',
+              opacity: erstelltNeu ? 0.7 : 1,
+              fontWeight: 700,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {erstelltNeu ? 'Anlegen…' : '+ Neuer Vorgang'}
+          </button>
+          <button
+            type="button"
+            onClick={speichereVorgang}
+            disabled={speichert}
+            style={{
+              background: T.primary,
+              color: '#fff',
+              border: 'none',
+              borderRadius: T.r2,
+              padding: `${T.sp2} ${T.sp3}`,
+              cursor: speichert ? 'not-allowed' : 'pointer',
+              opacity: speichert ? 0.7 : 1,
+              fontWeight: 700,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {speichert ? 'Speichert…' : 'Speichern'}
+          </button>
           {vorgangIds.length > 1 && (
             <>
               <button
                 onClick={() => hasPrev && onNavigate?.(vorgangIds[idx - 1])}
                 disabled={!hasPrev}
-                style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, cursor: hasPrev ? 'pointer' : 'not-allowed', opacity: hasPrev ? 1 : 0.4, fontWeight: 700 }}
+                style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, cursor: hasPrev ? 'pointer' : 'not-allowed', opacity: hasPrev ? 1 : 0.4, fontWeight: 700, whiteSpace: 'nowrap' }}
               >
                 ‹ Vorherige
               </button>
@@ -197,7 +388,7 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
               <button
                 onClick={() => hasNext && onNavigate?.(vorgangIds[idx + 1])}
                 disabled={!hasNext}
-                style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, cursor: hasNext ? 'pointer' : 'not-allowed', opacity: hasNext ? 1 : 0.4, fontWeight: 700 }}
+                style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, cursor: hasNext ? 'pointer' : 'not-allowed', opacity: hasNext ? 1 : 0.4, fontWeight: 700, whiteSpace: 'nowrap' }}
               >
                 Nächste ›
               </button>
@@ -207,10 +398,27 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
             onClick={onClose}
             style={{
               background: T.bg, border: `1px solid ${T.border}`, borderRadius: T.r2,
-              padding: `${T.sp2} ${T.sp4}`, cursor: 'pointer', fontWeight: 500,
+              padding: `${T.sp2} ${T.sp3}`, cursor: 'pointer', fontWeight: 500, whiteSpace: 'nowrap',
             }}
           >
             ← Zurück
+          </button>
+          <button
+            onClick={handleVorgangLoeschen}
+            disabled={loeschend}
+            style={{
+              background: '#fff1f2',
+              color: '#b91c1c',
+              border: `1px solid ${T.border}`,
+              borderRadius: T.r2,
+              padding: `${T.sp2} ${T.sp3}`,
+              cursor: loeschend ? 'not-allowed' : 'pointer',
+              fontWeight: 600,
+              opacity: loeschend ? 0.7 : 1,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {loeschend ? 'Lösche…' : 'Löschen'}
           </button>
         </div>
       </div>
@@ -228,27 +436,20 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
         <div>
           <h2 style={{ fontSize: 14, fontWeight: 700, color: T.textMuted, marginBottom: T.sp3 }}>Details</h2>
           <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: T.sp4 }}>
-            {[
-              ['Vorgang', vorgang.beschreibung],
-              ['Notiz', vorgang.kurzbeschreibung],
-              ['Datum', vorgang.datum],
-              ['Frist', vorgang.frist],
-              ['Erledigt', vorgang.erledigt ? 'Ja' : 'Nein'],
-              ['Verantwortlich', vorgang.verantwortlicher],
-              ['Ersteller', vorgang.ersteller],
-            ].map(([label, wert]) => (
-              <div key={label} style={{ marginBottom: T.sp3, paddingBottom: T.sp3, borderBottom: `1px solid ${T.border}` }}>
-                <div style={{ fontSize: 12, color: T.textMuted, fontWeight: 600 }}>{label}</div>
-                <div style={{ marginTop: T.sp1 }}>{wert ?? '—'}</div>
-              </div>
-            ))}
+            <EditTextFeld label="Vorgang" value={daten.beschreibung} onChange={v => setFeld('beschreibung', v)} multiline />
+            <EditTextFeld label="Notiz" value={daten.kurzbeschreibung} onChange={v => setFeld('kurzbeschreibung', v)} multiline />
+            <EditDateFeld label="Datum" value={daten.datum} onChange={v => setFeld('datum', v)} />
+            <EditDateFeld label="Frist" value={daten.frist} onChange={v => setFeld('frist', v)} />
+            <EditCheckFeld label="Erledigt" value={Boolean(daten.erledigt)} onChange={v => setFeld('erledigt', v)} />
+            <EditTextFeld label="Verantwortlich" value={daten.verantwortlicher} onChange={v => setFeld('verantwortlicher', v)} />
+            <EditTextFeld label="Ersteller" value={daten.ersteller} onChange={v => setFeld('ersteller', v)} />
           </div>
 
           {/* Beschreibung */}
-          {vorgang.beschreibung && (
+          {beschreibungAnzeige && (
             <div style={{ marginTop: T.sp6 }}>
               <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: T.sp2 }}>Beschreibung</h3>
-              <p style={{ whiteSpace: 'pre-wrap', color: T.textMain, lineHeight: 1.6 }}>{vorgang.beschreibung}</p>
+              <p style={{ whiteSpace: 'pre-wrap', color: T.textMain, lineHeight: 1.6 }}>{beschreibungAnzeige}</p>
             </div>
           )}
         </div>
@@ -302,7 +503,7 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
                 {uploading ? 'Wird hochgeladen…' : '📄 Datei hochladen'}
                 <input type="file" onChange={handleDateiUpload} disabled={uploading} style={{ display: 'none' }} />
               </label>
-              {vorgang.datei_pfad && (
+              {daten.datei_pfad && (
                 <button
                   onClick={handleDateiLoeschen}
                   disabled={uploading}
@@ -349,4 +550,306 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
       </div>
     </div>
   )
+}
+
+function formatDateDisplay(value) {
+  if (!value) return null
+  const text = String(value).trim()
+
+  // Keep plain ISO dates timezone-safe by formatting manually.
+  const isoDate = text.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (isoDate) {
+    const [, year, month, day] = isoDate
+    return `${day}.${month}.${year}`
+  }
+
+  const d = new Date(text)
+  if (Number.isNaN(d.getTime())) return text
+
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const year = d.getFullYear()
+  return `${day}.${month}.${year}`
+}
+
+function logoText(name) {
+  if (!name) return '—'
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  const letters = (parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')
+  return (letters || parts[0].slice(0, 2)).toUpperCase()
+}
+
+function normalisiereLogoQuelle(value) {
+  if (!value || typeof value !== 'string') return null
+  const v = value.trim()
+  if (!v) return null
+  if (v.startsWith('http://') || v.startsWith('https://') || v.startsWith('data:image/')) return v
+  if (/^[A-Za-z0-9+/=\r\n]+$/.test(v) && v.length > 120) return `data:image/png;base64,${v.replace(/\s+/g, '')}`
+  return null
+}
+
+function EditTextFeld({ label, value, onChange, type = 'text', multiline = false }) {
+  return (
+    <div style={{ marginBottom: T.sp3, paddingBottom: T.sp3, borderBottom: `1px solid ${T.border}` }}>
+      <div style={{ fontSize: 12, color: T.textMuted, fontWeight: 600 }}>{label}</div>
+      {multiline ? (
+        <textarea
+          value={value ?? ''}
+          onChange={e => onChange(e.target.value)}
+          rows={3}
+          style={{ width: '100%', marginTop: T.sp1, padding: '6px 8px', border: `1px solid ${T.border}`, borderRadius: 8, background: '#fff', outline: 'none' }}
+        />
+      ) : (
+        <input
+          type={type}
+          value={value ?? ''}
+          onChange={e => onChange(e.target.value)}
+          style={{ width: '100%', marginTop: T.sp1, padding: '6px 8px', border: `1px solid ${T.border}`, borderRadius: 8, background: '#fff', outline: 'none' }}
+        />
+      )}
+    </div>
+  )
+}
+
+function EditCheckFeld({ label, value, onChange }) {
+  return (
+    <div style={{ marginBottom: T.sp2 }}>
+      <div style={{ fontSize: 12, color: T.textMuted, fontWeight: 600 }}>{label}</div>
+      <label style={{ marginTop: T.sp1, display: 'inline-flex', alignItems: 'center', gap: T.sp2 }}>
+        <input type="checkbox" checked={Boolean(value)} onChange={e => onChange(e.target.checked)} />
+        <span>{value ? 'Ja' : 'Nein'}</span>
+      </label>
+    </div>
+  )
+}
+
+function EditDateFeld({ label, value, onChange }) {
+  const containerRef = useRef(null)
+  const [open, setOpen] = useState(false)
+  const [text, setText] = useState(formatDateDisplay(value) || '')
+  const selectedIso = cleanDate(value)
+  const selectedDate = isoDateToDate(selectedIso)
+  const [viewMonth, setViewMonth] = useState(() => startOfMonth(selectedDate ?? new Date()))
+
+  useEffect(() => {
+    setText(formatDateDisplay(value) || '')
+  }, [value])
+
+  useEffect(() => {
+    if (!open) return
+
+    function onDocClick(e) {
+      if (!containerRef.current?.contains(e.target)) {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [open])
+
+  useEffect(() => {
+    if (open) {
+      setViewMonth(startOfMonth(selectedDate ?? new Date()))
+    }
+  }, [open, selectedIso])
+
+  function onBlur() {
+    const iso = cleanDate(text)
+    if (!iso) {
+      onChange('')
+      setText('')
+      return
+    }
+    onChange(iso)
+    setText(formatDateDisplay(iso) || '')
+  }
+
+  function waehleTag(dayNumber) {
+    const d = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), dayNumber)
+    const iso = toIsoDate(d)
+    onChange(iso)
+    setText(isoToHuman(iso))
+    setOpen(false)
+  }
+
+  return (
+    <div style={{ marginBottom: T.sp3, paddingBottom: T.sp3, borderBottom: `1px solid ${T.border}`, position: 'relative' }} ref={containerRef}>
+      <div style={{ fontSize: 12, color: T.textMuted, fontWeight: 600 }}>{label}</div>
+      <div style={{ marginTop: T.sp1, display: 'grid', gridTemplateColumns: '1fr auto', gap: T.sp2, alignItems: 'end' }}>
+        <input
+          type="text"
+          value={text}
+          onChange={e => setText(e.target.value)}
+          onBlur={onBlur}
+          placeholder=""
+          style={{ width: '100%', padding: '6px 8px', border: `1px solid ${T.border}`, borderRadius: 8, background: '#fff', outline: 'none' }}
+        />
+        <button
+          type="button"
+          onClick={() => setOpen(v => !v)}
+          style={{
+            padding: '6px 10px',
+            borderRadius: 8,
+            border: `1px solid ${T.border}`,
+            background: T.bg,
+            color: T.textMain,
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Kalender
+        </button>
+      </div>
+
+      {open ? (
+        <KalenderPopup
+          viewMonth={viewMonth}
+          selectedDate={selectedDate}
+          onPrev={() => setViewMonth(prevMonth(viewMonth))}
+          onNext={() => setViewMonth(nextMonth(viewMonth))}
+          onSelectDay={waehleTag}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+function KalenderPopup({ viewMonth, selectedDate, onPrev, onNext, onSelectDay }) {
+  const year = viewMonth.getFullYear()
+  const month = viewMonth.getMonth()
+  const first = new Date(year, month, 1)
+  const startOffset = mondayIndex(first.getDay())
+  const dayCount = daysInMonth(year, month)
+  const cells = []
+
+  for (let i = 0; i < startOffset; i += 1) cells.push(null)
+  for (let d = 1; d <= dayCount; d += 1) cells.push(d)
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  return (
+    <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 6, zIndex: 30, width: 260, background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <button type="button" onClick={onPrev} style={kalNavBtnStyle}>‹</button>
+        <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'capitalize' }}>{viewMonth.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}</div>
+        <button type="button" onClick={onNext} style={kalNavBtnStyle}>›</button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 4 }}>
+        {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(w => (
+          <div key={w} style={{ fontSize: 11, color: T.textMuted, textAlign: 'center', fontWeight: 600 }}>{w}</div>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+        {cells.map((day, idx) => {
+          if (!day) return <div key={`e-${idx}`} style={{ height: 28 }} />
+
+          const isSelected = Boolean(
+            selectedDate &&
+            selectedDate.getFullYear() === year &&
+            selectedDate.getMonth() === month &&
+            selectedDate.getDate() === day
+          )
+
+          return (
+            <button
+              key={day}
+              type="button"
+              onClick={() => onSelectDay(day)}
+              style={{
+                height: 28,
+                borderRadius: 6,
+                border: `1px solid ${isSelected ? T.primary : T.border}`,
+                background: isSelected ? '#dbeafe' : T.bg,
+                color: T.textMain,
+                cursor: 'pointer',
+                fontSize: 12,
+              }}
+            >
+              {day}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+const kalNavBtnStyle = {
+  width: 24,
+  height: 24,
+  borderRadius: 6,
+  border: `1px solid ${T.border}`,
+  background: T.bg,
+  color: T.textMain,
+  cursor: 'pointer',
+  fontWeight: 700,
+}
+
+function cleanText(value) {
+  if (value == null) return null
+  const text = String(value).trim()
+  return text === '' ? null : text
+}
+
+function cleanDate(value) {
+  if (!value) return null
+  const text = String(value).trim()
+  if (!text) return null
+  const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (iso) return text
+  const human = text.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/)
+  if (human) {
+    const day = String(Number(human[1])).padStart(2, '0')
+    const month = String(Number(human[2])).padStart(2, '0')
+    return `${human[3]}-${month}-${day}`
+  }
+  const d = new Date(text)
+  if (Number.isNaN(d.getTime())) return null
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  return `${d.getFullYear()}-${month}-${day}`
+}
+
+function mondayIndex(jsDay) {
+  return (jsDay + 6) % 7
+}
+
+function daysInMonth(year, month) {
+  return new Date(year, month + 1, 0).getDate()
+}
+
+function startOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1)
+}
+
+function prevMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth() - 1, 1)
+}
+
+function nextMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 1)
+}
+
+function isoDateToDate(iso) {
+  if (!iso) return null
+  const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!m) return null
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+}
+
+function toIsoDate(date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function isoToHuman(isoText) {
+  const m = String(isoText || '').match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!m) return ''
+  return `${m[3]}.${m[2]}.${m[1]}`
 }

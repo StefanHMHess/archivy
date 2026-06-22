@@ -86,6 +86,33 @@ CREATE INDEX IF NOT EXISTS idx_vertragsbesitzer_name ON vertragsbesitzer (name);
 
 
 -- ============================================================
+-- TABELLE: app_admin (globaler Inhaber-Admin)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS app_admin (
+    id          INTEGER PRIMARY KEY CHECK (id = 1),
+    admin_email TEXT NOT NULL,
+    created_at   TIMESTAMPTZ DEFAULT now() NOT NULL,
+    updated_at   TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+
+-- ============================================================
+-- TABELLE: zahlungsweisen (zentrale Auswahlliste)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS zahlungsweisen (
+    id                   BIGSERIAL PRIMARY KEY,
+    vertragsbesitzer_id  TEXT REFERENCES vertragsbesitzer(id) ON DELETE CASCADE,
+    bezeichnung          TEXT NOT NULL,
+    sort_order           INTEGER DEFAULT 0,
+    aktiv                BOOLEAN DEFAULT true,
+    created_at           TIMESTAMPTZ DEFAULT now() NOT NULL,
+    UNIQUE (vertragsbesitzer_id, bezeichnung)
+);
+
+CREATE INDEX IF NOT EXISTS idx_zahlungsweisen_owner_order ON zahlungsweisen (vertragsbesitzer_id, sort_order, bezeichnung);
+
+
+-- ============================================================
 -- TABELLE: vorgaenge (Herzstück)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS vorgaenge (
@@ -132,6 +159,7 @@ CREATE TABLE IF NOT EXISTS vorgaenge (
     sb                  TEXT,                    -- Sachbearbeiter
 
     -- Sync
+    modified_by         TEXT,
     app_modified_at     TIMESTAMPTZ,
     sync_state          sync_state_enum DEFAULT 'synchronisiert',
     erstellt            TIMESTAMPTZ,
@@ -166,6 +194,14 @@ CREATE TABLE IF NOT EXISTS vertraege (
     firma               TEXT,
     kontakt             TEXT,
     kontakt_adresse_id  TEXT REFERENCES adressen(adresse_id) ON DELETE SET NULL,
+    telefon             TEXT,
+    mobil               TEXT,
+    fax                 TEXT,
+    email               TEXT,
+    webseite            TEXT,
+    zugang              TEXT,
+    passwort            TEXT,
+    diskret             TEXT,
 
     -- Inhalt
     beschreibung        TEXT,
@@ -179,6 +215,7 @@ CREATE TABLE IF NOT EXISTS vertraege (
     bank                TEXT,
 
     -- Kosten
+    jahresraten         NUMERIC(10,2),
     kosten_pro_rate     NUMERIC(12,2),
     kosten_monatlich    NUMERIC(12,2),
     kosten_jaehrlich    NUMERIC(12,2),
@@ -209,6 +246,18 @@ CREATE TABLE IF NOT EXISTS vertraege (
 
 ALTER TABLE IF EXISTS vertraege
     ADD COLUMN IF NOT EXISTS vertragsbesitzer_id TEXT;
+
+ALTER TABLE IF EXISTS vertraege
+    ADD COLUMN IF NOT EXISTS telefon TEXT,
+    ADD COLUMN IF NOT EXISTS mobil TEXT,
+    ADD COLUMN IF NOT EXISTS fax TEXT,
+    ADD COLUMN IF NOT EXISTS email TEXT,
+    ADD COLUMN IF NOT EXISTS webseite TEXT,
+    ADD COLUMN IF NOT EXISTS zugang TEXT,
+    ADD COLUMN IF NOT EXISTS passwort TEXT,
+    ADD COLUMN IF NOT EXISTS diskret TEXT,
+    ADD COLUMN IF NOT EXISTS modified_by TEXT,
+    ADD COLUMN IF NOT EXISTS jahresraten NUMERIC(10,2);
 
 CREATE INDEX IF NOT EXISTS idx_vertraege_gruppe ON vertraege (gruppe);
 CREATE INDEX IF NOT EXISTS idx_vertraege_owner ON vertraege (vertragsbesitzer_id);
@@ -256,10 +305,92 @@ CREATE INDEX IF NOT EXISTS idx_vertraege_log_vertrag ON vertraege_log (vertrag_i
 ALTER TABLE adressen    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vorgaenge   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vertraege   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vertragsbesitzer ENABLE ROW LEVEL SECURITY;
+ALTER TABLE zahlungsweisen ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vorgaenge_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vertraege_log ENABLE ROW LEVEL SECURITY;
 
 -- Authentifizierte Nutzer dürfen alles lesen und schreiben
+DROP POLICY IF EXISTS "auth_lesen" ON app_admin;
+DROP POLICY IF EXISTS "auth_insert" ON app_admin;
+DROP POLICY IF EXISTS "auth_update" ON app_admin;
+DROP POLICY IF EXISTS "auth_delete" ON app_admin;
+CREATE POLICY "auth_lesen" ON app_admin FOR SELECT TO authenticated
+    USING (true);
+CREATE POLICY "auth_insert" ON app_admin FOR INSERT TO authenticated
+    WITH CHECK (
+        id = 1
+        AND admin_email = lower ( auth.jwt() ->> 'email' )
+    );
+CREATE POLICY "auth_update" ON app_admin FOR UPDATE TO authenticated
+    USING (admin_email = lower ( auth.jwt() ->> 'email' ))
+    WITH CHECK (admin_email = lower ( auth.jwt() ->> 'email' ));
+CREATE POLICY "auth_delete" ON app_admin FOR DELETE TO authenticated
+    USING (admin_email = lower ( auth.jwt() ->> 'email' ));
+
+DROP POLICY IF EXISTS "auth_lesen" ON vertragsbesitzer;
+DROP POLICY IF EXISTS "auth_insert" ON vertragsbesitzer;
+DROP POLICY IF EXISTS "auth_update" ON vertragsbesitzer;
+DROP POLICY IF EXISTS "auth_delete" ON vertragsbesitzer;
+CREATE POLICY "auth_lesen"  ON vertragsbesitzer FOR SELECT TO authenticated
+    USING ((auth.jwt() ->> 'email') = ANY (allowed_users));
+CREATE POLICY "auth_insert" ON vertragsbesitzer FOR INSERT TO authenticated
+    WITH CHECK ((auth.jwt() ->> 'email') = ANY (allowed_users));
+CREATE POLICY "auth_update" ON vertragsbesitzer FOR UPDATE TO authenticated
+    USING ((auth.jwt() ->> 'email') = ANY (allowed_users))
+    WITH CHECK ((auth.jwt() ->> 'email') = ANY (allowed_users));
+CREATE POLICY "auth_delete" ON vertragsbesitzer FOR DELETE TO authenticated
+    USING ((auth.jwt() ->> 'email') = ANY (allowed_users));
+
+DROP POLICY IF EXISTS "auth_lesen" ON zahlungsweisen;
+DROP POLICY IF EXISTS "auth_insert" ON zahlungsweisen;
+DROP POLICY IF EXISTS "auth_update" ON zahlungsweisen;
+DROP POLICY IF EXISTS "auth_delete" ON zahlungsweisen;
+CREATE POLICY "auth_lesen" ON zahlungsweisen FOR SELECT TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1
+            FROM vertragsbesitzer vb
+            WHERE vb.id = zahlungsweisen.vertragsbesitzer_id
+                AND (auth.jwt() ->> 'email') = ANY (vb.allowed_users)
+        )
+    );
+CREATE POLICY "auth_insert" ON zahlungsweisen FOR INSERT TO authenticated
+    WITH CHECK (
+        EXISTS (
+            SELECT 1
+            FROM vertragsbesitzer vb
+            WHERE vb.id = zahlungsweisen.vertragsbesitzer_id
+                AND (auth.jwt() ->> 'email') = ANY (vb.allowed_users)
+        )
+    );
+CREATE POLICY "auth_update" ON zahlungsweisen FOR UPDATE TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1
+            FROM vertragsbesitzer vb
+            WHERE vb.id = zahlungsweisen.vertragsbesitzer_id
+                AND (auth.jwt() ->> 'email') = ANY (vb.allowed_users)
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1
+            FROM vertragsbesitzer vb
+            WHERE vb.id = zahlungsweisen.vertragsbesitzer_id
+                AND (auth.jwt() ->> 'email') = ANY (vb.allowed_users)
+        )
+    );
+CREATE POLICY "auth_delete" ON zahlungsweisen FOR DELETE TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1
+            FROM vertragsbesitzer vb
+            WHERE vb.id = zahlungsweisen.vertragsbesitzer_id
+                AND (auth.jwt() ->> 'email') = ANY (vb.allowed_users)
+        )
+    );
+
 DROP POLICY IF EXISTS "auth_lesen" ON adressen;
 DROP POLICY IF EXISTS "auth_insert" ON adressen;
 DROP POLICY IF EXISTS "auth_update" ON adressen;
@@ -270,11 +401,53 @@ CREATE POLICY "auth_update" ON adressen    FOR UPDATE TO authenticated USING (tr
 DROP POLICY IF EXISTS "auth_lesen" ON vorgaenge;
 DROP POLICY IF EXISTS "auth_insert" ON vorgaenge;
 DROP POLICY IF EXISTS "auth_update" ON vorgaenge;
+DROP POLICY IF EXISTS "auth_delete" ON vorgaenge;
 DROP POLICY IF EXISTS "fm_sync_insert" ON vorgaenge;
 DROP POLICY IF EXISTS "fm_sync_update" ON vorgaenge;
-CREATE POLICY "auth_lesen"  ON vorgaenge   FOR SELECT TO authenticated USING (true);
-CREATE POLICY "auth_insert" ON vorgaenge   FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "auth_update" ON vorgaenge   FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "auth_lesen"  ON vorgaenge   FOR SELECT TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1
+            FROM vertragsbesitzer vb
+            WHERE vb.id = vorgaenge.vertragsbesitzer_id
+                AND (auth.jwt() ->> 'email') = ANY (vb.allowed_users)
+        )
+    );
+CREATE POLICY "auth_insert" ON vorgaenge   FOR INSERT TO authenticated
+    WITH CHECK (
+        EXISTS (
+            SELECT 1
+            FROM vertragsbesitzer vb
+            WHERE vb.id = vorgaenge.vertragsbesitzer_id
+                AND (auth.jwt() ->> 'email') = ANY (vb.allowed_users)
+        )
+    );
+CREATE POLICY "auth_update" ON vorgaenge   FOR UPDATE TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1
+            FROM vertragsbesitzer vb
+            WHERE vb.id = vorgaenge.vertragsbesitzer_id
+                AND (auth.jwt() ->> 'email') = ANY (vb.allowed_users)
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1
+            FROM vertragsbesitzer vb
+            WHERE vb.id = vorgaenge.vertragsbesitzer_id
+                AND (auth.jwt() ->> 'email') = ANY (vb.allowed_users)
+        )
+    );
+CREATE POLICY "auth_delete" ON vorgaenge   FOR DELETE TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1
+            FROM vertragsbesitzer vb
+            WHERE vb.id = vorgaenge.vertragsbesitzer_id
+                AND (auth.jwt() ->> 'email') = ANY (vb.allowed_users)
+        )
+    );
 -- FileMaker Sync (anon key, service-to-service): schreibt nur Datensaetze mit gueltigem Besitzer
 CREATE POLICY "fm_sync_insert" ON vorgaenge FOR INSERT TO anon WITH CHECK (vertragsbesitzer_id IS NOT NULL AND vertragsbesitzer_id <> '');
 CREATE POLICY "fm_sync_update" ON vorgaenge FOR UPDATE TO anon USING (vertragsbesitzer_id IS NOT NULL AND vertragsbesitzer_id <> '');
@@ -282,11 +455,53 @@ CREATE POLICY "fm_sync_update" ON vorgaenge FOR UPDATE TO anon USING (vertragsbe
 DROP POLICY IF EXISTS "auth_lesen" ON vertraege;
 DROP POLICY IF EXISTS "auth_insert" ON vertraege;
 DROP POLICY IF EXISTS "auth_update" ON vertraege;
+DROP POLICY IF EXISTS "auth_delete" ON vertraege;
 DROP POLICY IF EXISTS "fm_sync_insert" ON vertraege;
 DROP POLICY IF EXISTS "fm_sync_update" ON vertraege;
-CREATE POLICY "auth_lesen"  ON vertraege   FOR SELECT TO authenticated USING (true);
-CREATE POLICY "auth_insert" ON vertraege   FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "auth_update" ON vertraege   FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "auth_lesen"  ON vertraege   FOR SELECT TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1
+            FROM vertragsbesitzer vb
+            WHERE vb.id = vertraege.vertragsbesitzer_id
+                AND (auth.jwt() ->> 'email') = ANY (vb.allowed_users)
+        )
+    );
+CREATE POLICY "auth_insert" ON vertraege   FOR INSERT TO authenticated
+    WITH CHECK (
+        EXISTS (
+            SELECT 1
+            FROM vertragsbesitzer vb
+            WHERE vb.id = vertraege.vertragsbesitzer_id
+                AND (auth.jwt() ->> 'email') = ANY (vb.allowed_users)
+        )
+    );
+CREATE POLICY "auth_update" ON vertraege   FOR UPDATE TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1
+            FROM vertragsbesitzer vb
+            WHERE vb.id = vertraege.vertragsbesitzer_id
+                AND (auth.jwt() ->> 'email') = ANY (vb.allowed_users)
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1
+            FROM vertragsbesitzer vb
+            WHERE vb.id = vertraege.vertragsbesitzer_id
+                AND (auth.jwt() ->> 'email') = ANY (vb.allowed_users)
+        )
+    );
+CREATE POLICY "auth_delete" ON vertraege   FOR DELETE TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1
+            FROM vertragsbesitzer vb
+            WHERE vb.id = vertraege.vertragsbesitzer_id
+                AND (auth.jwt() ->> 'email') = ANY (vb.allowed_users)
+        )
+    );
 -- FileMaker Sync (anon key, service-to-service): schreibt nur Datensaetze mit gueltigem Besitzer
 CREATE POLICY "fm_sync_insert" ON vertraege FOR INSERT TO anon WITH CHECK (vertragsbesitzer_id IS NOT NULL AND vertragsbesitzer_id <> '');
 CREATE POLICY "fm_sync_update" ON vertraege FOR UPDATE TO anon USING (vertragsbesitzer_id IS NOT NULL AND vertragsbesitzer_id <> '');

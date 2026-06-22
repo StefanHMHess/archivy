@@ -1,0 +1,422 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" >
+<html>
+<head>
+<title>Monkeybread Software - MBS FileMaker Plugin: FM.SQL.Field</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+<link rel="stylesheet" type="text/css" href="copy.css">
+<meta charset="UTF-8">
+<meta http-equiv="content-type" content="text/html; charset=utf-8"> 
+<meta name="theme-color" content="#163064">
+<meta name="author" content="Christian Schmitz">
+<meta name="publisher" content="Christian Schmitz"> 
+<meta name="robots" content="index,follow"> 
+<meta name="REVISIT-AFTER" content="7 days"> 
+<meta name="keywords" content="claris, filemaker, plugin, plug-in, plugins, plug-ins"> 
+<link rel="shortcut icon" href="/FMPluginIcon.ico" TYPE="image/x-icon">
+<link rel="stylesheet" type="text/css" href="/layout/screen.css" media="screen">
+<link rel="stylesheet" type="text/css" href="/layout/print.css" media="print">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!--[if IE]>
+<link rel="stylesheet" type="text/css" href="https://www.monkeybreadsoftware.de/layout/screenIE.css">
+<![endif]-->
+
+</head>
+
+<body>
+<script type="text/javascript" src="/moreless.js"></script>
+
+<ul id="tablist">
+<li><a href="https://www.monkeybreadsoftware.de/">Home</a></li>
+<li><a href="https://www.mbsplugins.de/filemaker">Blog</a></li>
+<li><a class="current" href="https://www.monkeybreadsoftware.com/filemaker/">FileMaker Plugin</a></li>
+<li><a href="https://www.monkeybreadsoftware.de/xojo/">Xojo Plugins</a></li>
+</ul>
+
+<div id="main">
+<div id="maintop"></div>
+<div id="content">
+<main>
+
+
+
+
+<table border=0 width="100%" class="HelpNavigation" id="HelpNavigation" cellspacing=3 cellpadding=3>
+<tr>
+<td width=50>
+<a href="index.shtml">Components</a>
+</td>
+<td width=50>
+<a href="all.shtml">All</a> 
+</td>
+<td width=50>
+<a href="new.shtml">New</a>
+</td>
+<td colspan=2>
+<a href="mac.shtml" translate=no>MacOS</a> 
+</td>
+<td colspan=2>
+<a href="win.shtml" translate=no>Windows</a> 
+</td>
+<td colspan=2>
+<a href="linux.shtml" translate=no>Linux</a> 
+</td>
+<td colspan=2>
+<a href="ios.shtml" translate=no>iOS</a> 
+</td>
+</tr>
+
+<tr>
+<td width=50>
+<a href="https://www.mbsplugins.eu/MBS-FileMaker-Plugin-Examples/">Examples</a>
+</td>
+<td width=50 colspan=2>
+<a href="cross.shtml">Mac &amp; Win</a>
+</td>
+<td width=50>
+<a href="server.shtml">Server</a> 
+</td>
+<td width=50>
+<a href="client.shtml">Client</a>
+</td>
+<td width=50>
+<a href="https://www.monkeybreadsoftware.com/filemaker/guide/">Guides</a>
+</td>
+<td width=50>
+<a href="stat.shtml">Statistic</a>
+</td>
+<td width=50>
+<a href="filemaker-magazin-functions.shtml" translate=no>FMM</a>
+</td>
+<td width=50>
+<a href="blog-entries.shtml">Blog</a>
+</td>
+<td width=50>
+<a href="deprecated.shtml">Deprecated</a>
+</td>
+<td width=50>
+<a href="old.shtml">Old</a>
+</td>
+</tr>
+
+
+</table>
+
+<div id="search"></div>
+<script src="searchFileMaker.js"></script>
+
+
+<script type="text/javascript" src="copy.js"></script>
+<h2 translate="no">FM.SQL.Field</h2>
+<p lang="en">
+Queries field value for given position in result.<BR>
+</p>
+
+<table lang="en" cellpadding=3 width="100%">
+<tr>
+<td class=grau>Component</td>
+<td class=grau title="Introduced in version">Version</td>
+<td class=grau >macOS</td>
+<td class=grau>Windows</td>
+<td class=grau title="FileMaker Server on Linux">Linux</td>
+<td class=grau title="Plugin on FileMaker Server">Server</td>
+<td class=grau title="An application built with the FileMaker iOS SDK">iOS SDK</td>
+</tr>
+<tr><td class=grau>
+<a href="component_FM.shtml" translate="no">FM</a> <a href="component_FMSQL.shtml" translate="no">FMSQL</a>
+</td>
+<td class=grau title="Function introduced In MBS Plugin version 5.1."><a href="newinversion51.shtml" Class=version>5.1</a></td>
+<td Class=grau title="Function works on macOS.">&#9989; Yes</td>
+<td Class=grau title="Function works on Windows.">&#9989; Yes</td>
+<td Class=grau title="Function works on Linux with FileMaker Server.">&#9989; Yes</td>
+<td Class=grau title="Function works on FileMaker Server.">&#9989; Yes</td>
+<td Class=grau title="Function works in iOS SDK applications.">&#9989; Yes</td>
+</tr>
+</table>
+
+<div id="PrototypeSmall" style="padding: 15px;margin-left: 10px;margin-top:10px; border-color: #c4c4c4;border-width: 1px;border-style: solid;background-color: #fffedd;">
+MBS( &quot;FM.SQL.Field&quot;; SQLref; Row; Column { ; Flags } ) &nbsp; <a href="#" onClick="moreDocumentation();" style="position:absolute;right:15px;">More</a></div>
+<div id="PrototypeBig" style="display: none; padding: 15px;margin-top:10px; margin-left: 10px;border-color: #c4c4c4;border-width: 1px;border-style: solid;background-color: #fffedd;">
+<b>MBS</b>( <b>&quot;FM.SQL.Field&quot;;</b> /* Queries field value for given position in result. */<br>
+<b>$SQLref</b>; /* The reference number returned by <a href="FMSQLExecute.shtml">FM.SQL.Execute</a> function. */
+<br>
+<b>$Row</b>; /* The row number from 0 to <a href="FMSQLRowCount.shtml">FM.SQL.RowCount</a>-1. */
+<br>
+<b>$Column</b>; /* The column number from 0 to <a href="FMSQLFieldCount.shtml">FM.SQL.FieldCount</a>-1.e.g.  $col */
+<br>
+<b>$Flags</b>) /* Optional; Various flags.<br>
+Pass 0 to return value as it is. (default)<br>
+Pass 1 to return file name of a container field.<br>
+Pass 2 to return container data base64 encoded.e.g.  0 */
+&nbsp; <a href="#" onClick="lessDocumentation();" style="position:absolute;right:15px;">Less</a></div>
+<h3 lang="en">Parameters</h3>
+<p style="padding-left: 10px;padding-bottom: 5px;padding-right: 0px;padding-top: 0px;margin: 0px;">
+<table rules="all" frame="box" cellspacing=0 cellpadding=2 width="100%">
+<tr align='left' bgcolor="#f9f9f9">
+<th width=100 lang="en">Parameter</th>
+<th width=300 lang="en">Description</th>
+<th width=100 lang="en">Example</th>
+<th width=50>Flags</th>
+</tr>
+<tr>
+<td width="150" valign="top">SQLref</td>
+<td width="300" valign="top" lang="en">The reference number returned by <a href="FMSQLExecute.shtml">FM.SQL.Execute</a> function.</td>
+<td width="150" valign="top">$SQLRef</td>
+<td width="150" valign="top"></td>
+</tr>
+<tr>
+<td width="150" valign="top">Row</td>
+<td width="300" valign="top" lang="en">The row number from 0 to <a href="FMSQLRowCount.shtml">FM.SQL.RowCount</a>-1.</td>
+<td width="150" valign="top">$row</td>
+<td width="150" valign="top"></td>
+</tr>
+<tr>
+<td width="150" valign="top">Column</td>
+<td width="300" valign="top" lang="en">The column number from 0 to <a href="FMSQLFieldCount.shtml">FM.SQL.FieldCount</a>-1.</td>
+<td width="150" valign="top">$col</td>
+<td width="150" valign="top"></td>
+</tr>
+<tr>
+<td width="150" valign="top">Flags</td>
+<td width="300" valign="top" lang="en">Various flags.<br>
+Pass 0 to return value as it is. (default)<br>
+Pass 1 to return file name of a container field.<br>
+Pass 2 to return container data base64 encoded.</td>
+<td width="150" align=right valign="top">0</td>
+<td width="150" valign="top">Optional<br><br>Added in version <b>12.1</b>.<br></td>
+</tr>
+</table></p>
+<h3 lang="en">Result</h3>
+<p lang="en">Returns value or error.</p>
+<h3 lang="en">Description</h3>
+Queries field value for given position in result.<BR>
+Native data type is preserved so this function can returns text, number, time, date, timestamp and container.<BR>
+<h3 lang="en">Examples</h3>
+<p lang="en">Query field values:</p>
+<div class="code-box" translate="no">
+  <div class="copy-buttons">
+    <button class="copy-btn" onclick="copyText(this)">Copy Text</button>
+    <button class="copy-btn" onclick="copyXML('example1', this)">Copy XML</button>
+  </div>
+Set Variable [<span style="Color:#660066">$sql</span>; Value:<span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="FMSQLExecute.shtml">FM.SQL.Execute</a>&quot;; &quot;&quot;; &quot;select * from Clients&quot;)]<br>
+<span translate="yes"># query first field of first row:</span><br>
+Set Variable [<span style="Color:#660066">$value</span>; <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;FM.SQL.Field&quot;; <span style="Color:#660066">$sql</span>; 0; 0 ) ]<br>
+<span translate="yes"># query other field</span><br>
+Set Variable [<span style="Color:#660066">$value</span>; <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;FM.SQL.Field&quot;; <span style="Color:#660066">$sql</span>; <span style="Color:#660066">$row</span>; <span style="Color:#660066">$col</span> ) ]<br>
+Set Variable [<span style="Color:#660066">$r</span>; <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="FMSQLRelease.shtml">FM.SQL.Release</a>&quot;; <span style="Color:#660066">$sql</span> ) ]<br>
+
+<label for="example1" class="exampleLabel">Query field values:</label>
+<textarea id="example1" hidden>
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;fmxmlsnippet type=&quot;FMObjectList&quot;&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;FM.SQL.Execute&quot;; &quot;&quot;; &quot;select * from Clients&quot;)&lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$sql&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;&gt;
+    &lt;Text&gt; query first field of first row:&lt;/Text&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;FM.SQL.Field&quot;; $sql; 0; 0 ) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$value&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;&gt;
+    &lt;Text&gt; query other field&lt;/Text&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;FM.SQL.Field&quot;; $sql; $row; $col ) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$value&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;FM.SQL.Release&quot;; $sql ) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$r&lt;/Name&gt;
+  &lt;/Step&gt;
+&lt;/fmxmlsnippet&gt;
+
+</textarea>
+</div>
+<h3 lang="en">See also</h3>
+<ul translate="no">
+<LI><a href="FMSQLCSV.shtml">FM.SQL.CSV</a></LI>
+<LI><a href="FMSQLExecute.shtml">FM.SQL.Execute</a></LI>
+<LI><a href="FMSQLFieldCount.shtml">FM.SQL.FieldCount</a></LI>
+<LI><a href="FMSQLFieldType.shtml">FM.SQL.FieldType</a></LI>
+<LI><a href="FMSQLRelease.shtml">FM.SQL.Release</a></LI>
+<LI><a href="FMSQLRowCount.shtml">FM.SQL.RowCount</a></LI>
+<LI><a href="FMSQLText.shtml">FM.SQL.Text</a></LI>
+<LI><a href="FMSQLXMLRecords.shtml">FM.SQL.XMLRecords</a></LI>
+<LI><a href="SQLExecute.shtml">SQL.Execute</a></LI>
+<LI><a href="SQLFieldCount.shtml">SQL.FieldCount</a></LI>
+</ul>
+<h3 lang="en">Release notes</H3>
+<UL lang="en">
+<LI><b>Version 13.2</b><UL>
+<LI>Fixed <a href="https://www.mbsplugins.eu/FMSQLField.shtml">FM.SQL.Field</a> function to handle flags better.</LI>
+<LI>Fixed <a href="https://www.mbsplugins.eu/FMSQLField.shtml">FM.SQL.Field</a> function to return a name if there is no FNAM stream.</LI>
+</UL></LI>
+<LI><b>Version 12.1</b><UL>
+<LI>Added flags to <a href="https://www.mbsplugins.eu/FMSQLField.shtml">FM.SQL.Field</a> function to return containers as base64 or just their file name.</LI>
+</UL></LI>
+</UL>
+<h3 lang="en">Example Databases</h3>
+<ul translate="no">
+<LI><a href="https://www.mbsplugins.eu/MBS-FileMaker-Plugin-Examples/DynaPDF/Extract%20Images.shtml#13033FieldAnchor_">DynaPDF/Extract Images</a></LI>
+<LI><a href="https://www.mbsplugins.eu/MBS-FileMaker-Plugin-Examples/SQL%20in%20FileMaker/ImageGallery.shtml#1CustomFunctionAnchor_">SQL in FileMaker/ImageGallery</a></LI>
+<LI><a href="https://www.mbsplugins.eu/MBS-FileMaker-Plugin-Examples/SQL%20in%20FileMaker/SQL%20Select%20Container.shtml#1ScriptAnchor_">SQL in FileMaker/SQL Select Container</a></LI>
+<LI><a href="https://www.mbsplugins.eu/MBS-FileMaker-Plugin-Examples/SQL%20to%20other%20databases/SQL%20Export.shtml#1ScriptAnchor_">SQL to other databases/SQL Export</a></LI>
+</ul>
+<h3 lang="en">Blog Entries</h3>
+<ul>
+<li><a href="https://www.mbsplugins.de/archive/2025-12-07/MBS_FileMaker_Advent_calendar_/monkeybreadsoftware_blog_filemaker">MBS FileMaker Advent calendar - Door 7 - Precise entries and their types</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2023-11-27/Data_structures_in_MBS_Plugin/monkeybreadsoftware_blog_filemaker">Data structures in MBS Plugin</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2023-04-25/MBS_FileMaker_Plugin_version_1/monkeybreadsoftware_blog_filemaker">MBS FileMaker Plugin, version 13.2pr4</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2021-06-26/Sending_email_with_a_huge_cust/monkeybreadsoftware_blog_filemaker">Sending email with a huge custom function</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2020-06-30/FileMaker_records_to_XML_or_JS/monkeybreadsoftware_blog_filemaker">FileMaker records to XML or JSON</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2018-05-09/Image_Gallery_in_FileMaker_usi/monkeybreadsoftware_blog_filemaker">Image Gallery in FileMaker using SQL</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2017-02-10/FileMaker_Custom_function_to_q/monkeybreadsoftware_blog_filemaker">FileMaker Custom function to query a value from other table or file</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2016-01-13/MBS_FileMaker_Plugin_version_6/monkeybreadsoftware_blog_filemaker">MBS FileMaker Plugin, version 6.0pr6</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2015-04-18/Execute_SQL_in_FileMaker_and_g/monkeybreadsoftware_blog_filemaker">Execute SQL in FileMaker and get back native field types</a></li>
+</ul>
+<div id="FMMLinks" lang="de">
+<h3 lang="en">FileMaker Magazin</h3>
+<ul>
+<li><a href="https://filemaker-magazin.de/neuigkeit/3953-Appetithappen-FMM_201803">Ausgabe 3/2018, Seite 34</a></li>
+</ul>
+</div>
+<p>This function checks for a license.</p>
+<p lang="en">Created <span class=CreationDate>18th April 2015</span>, last changed <span class=ModificationDate>5th September 2025</span></p>
+<br clear=all>
+<P>
+<a href="FMSQLExecute.shtml">FM.SQL.Execute</a>
+ - 
+<a href="FMSQLFieldCount.shtml">FM.SQL.FieldCount</a>
+</P>
+<div id=askquestion style="width: 200pt; margin: 0pt; padding: 5pt; border-color:#ccc; border-style:solid; background-color: #eee; border-width: 2pt; border-radius: 10pt; " lang="en">
+&#128172; <a href="https://www.monkeybreadsoftware.com/feedback/?what=filemaker&path=FM.SQL.Field">Ask a question or report a problem</a>
+</div>
+
+</main>
+
+<img src="/images/fmplugin19.png" width="128" height="128" alt="" border="0" align=right id="fmplugin19logo">
+
+<br>
+<div id="searchbox2"><form method="get" action="https://www.google.com/search">
+<input type="text" name="q" size="60" maxlength="255" value="" />
+<input type="hidden"  name="sitesearch" value="mbsplugins.eu" />
+<input type="submit" value="Google Site Search" />
+</form></div>
+ 
+<br clear=all>
+
+</div> <!-- content -->
+<div id="mainbottom"></div>
+</div> <!-- main -->
+
+<nav>
+<div id="nav">
+<div id="navtop"></div>
+<div id="eyecatcher"></div>
+
+<ul>
+<li><a class="menuButton"  href="https://www.monkeybreadsoftware.com/">Home</a></li>
+
+
+
+<li><a class="menuButton"  href="https://www.monkeybreadsoftware.com/filemaker/">FileMaker Plug-In</a></li>
+<li><a class="menuButton2" href="https://www.mbsplugins.de/filemaker">FileMaker Blog</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/video/">FileMaker Videos</a></li>
+<li><a class="menuButton2" href="/">Documentation</a></li>
+
+<li><a class="menuButton3" href="/MBS-FileMaker-Plugin-Examples/">Examples</a></li>
+
+<li><a class="menuButton3" href="/newinversion162.shtml">New in 16.2</a></li>
+<li><a class="menuButton3" href="/newinversion161.shtml">New in 16.1</a></li>
+<li><a class="menuButton3" href="/newinversion160.shtml">New in 16.0</a></li>
+<li><a class="menuButton3" href="/newinversion155.shtml">New in 15.5</a></li>
+<li><a class="menuButton3" href="/newinversion154.shtml">New in 15.4</a></li>
+<li><a class="menuButton3" href="/newinversion153.shtml">New in 15.3</a></li>
+
+<li><a class="menuButton3" href="https://www.monkeybreadsoftware.com/DynaPDF-Manual/">DynaPDF Manual</a></li>
+<li><a class="menuButton3" href="/random.php">Random Page</a></li>
+
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/events/">Events and Training</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/mailinglist.shtml">Mailing list</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/pricing.shtml"><img src="https://www.monkeybreadsoftware.com/images/btn_buynowCC_LG.gif" width=122 height=47 alt="Buy now" align=center></a>
+</li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/pricing.shtml">Pricing</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/guide/">User Guide</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/SyntaxColoring/">Syntax Coloring</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/faq.shtml">FAQ</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/dynapdf.shtml">DynaPDF</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/saxon.shtml">Saxon</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/libxl.shtml">LibXL</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/reviews.shtml">Reviews</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/License.shtml">License</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/trial/trial-filemaker.shtml">Trial License</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/download.shtml">Download</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/releasenotes.shtml">Release Notes</a></li>
+
+<li><a class="menuButton2" href="https://the.fmsoup.org">fmsoup Forum</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/Dash/">Dash</a></li>
+
+
+
+
+<li><a class="menuButton"  href="https://www.monkeybreadsoftware.de/xojo/">Xojo Plug-Ins</a></li>
+<li><a class="menuButton"  href="https://www.monkeybreadsoftware.de/Software/">Applications</a></li>
+<li><a class="menuButton"  href="https://www.monkeybreadsoftware.com/newsletter/newsletter.shtml">Newsletter</a></li>
+<li><a class="menuButton"  href="https://www.monkeybreadsoftware.com/team/">Team</a></li>
+</ul>
+
+
+<div id="searchbox">
+<form method="get" action="https://www.google.com/search" style="margin: 0px;">
+<input type="text" name="q" size="16" maxlength="255" value="" />
+<input type="hidden"  name="sitesearch" value="mbsplugins.eu" />
+<input type="submit" value="Site Search" /></form></div>
+
+<div id="commonbox">
+<ul>
+<li><a class="blacklink" href="/dash.shtml">Dash</a></li>
+<li><a class="blacklink" href="https://www.monkeybreadsoftware.com/sitemap.shtml">Sitemap</a></li>
+
+<li><a class="blacklink" href="https://www.monkeybreadsoftware.com/feedback/feedback.php?what=filemaker&path=Ask">Ask a question</a> &#128172;</li>
+<li><a class="blacklink" href="https://www.monkeybreadsoftware.com/links.shtml">Links</a></li>
+<li><a class="blacklink" href="https://www.monkeybreadsoftware.com/contact.shtml">Contact us</a></li>
+<li><a class="blacklink" href="https://www.monkeybreadsoftware.com/kontakt.shtml">Kontakt / Impressum</a></li>
+<li><a class="blacklink" href="https://www.monkeybreadsoftware.com/policy.shtml">Datenschutz</a></li>
+</ul>
+</div><!-- commonbox -->
+
+<div id="navbottom"></div>
+</div> <!-- nav -->
+</nav>
+
+<script src="/layout/layout.js"></script>
+<script src="/navigation.js"></script>
+
+</BODy>
+</HTML>
+
+
+

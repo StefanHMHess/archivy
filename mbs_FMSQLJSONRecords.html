@@ -1,0 +1,954 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" >
+<html>
+<head>
+<title>Monkeybread Software - MBS FileMaker Plugin: FM.SQL.JSONRecords</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+<link rel="stylesheet" type="text/css" href="copy.css">
+<meta charset="UTF-8">
+<meta http-equiv="content-type" content="text/html; charset=utf-8"> 
+<meta name="theme-color" content="#163064">
+<meta name="author" content="Christian Schmitz">
+<meta name="publisher" content="Christian Schmitz"> 
+<meta name="robots" content="index,follow"> 
+<meta name="REVISIT-AFTER" content="7 days"> 
+<meta name="keywords" content="claris, filemaker, plugin, plug-in, plugins, plug-ins"> 
+<link rel="shortcut icon" href="/FMPluginIcon.ico" TYPE="image/x-icon">
+<link rel="stylesheet" type="text/css" href="/layout/screen.css" media="screen">
+<link rel="stylesheet" type="text/css" href="/layout/print.css" media="print">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!--[if IE]>
+<link rel="stylesheet" type="text/css" href="https://www.monkeybreadsoftware.de/layout/screenIE.css">
+<![endif]-->
+
+</head>
+
+<body>
+<script type="text/javascript" src="/moreless.js"></script>
+
+<ul id="tablist">
+<li><a href="https://www.monkeybreadsoftware.de/">Home</a></li>
+<li><a href="https://www.mbsplugins.de/filemaker">Blog</a></li>
+<li><a class="current" href="https://www.monkeybreadsoftware.com/filemaker/">FileMaker Plugin</a></li>
+<li><a href="https://www.monkeybreadsoftware.de/xojo/">Xojo Plugins</a></li>
+</ul>
+
+<div id="main">
+<div id="maintop"></div>
+<div id="content">
+<main>
+
+
+
+
+<table border=0 width="100%" class="HelpNavigation" id="HelpNavigation" cellspacing=3 cellpadding=3>
+<tr>
+<td width=50>
+<a href="index.shtml">Components</a>
+</td>
+<td width=50>
+<a href="all.shtml">All</a> 
+</td>
+<td width=50>
+<a href="new.shtml">New</a>
+</td>
+<td colspan=2>
+<a href="mac.shtml" translate=no>MacOS</a> 
+</td>
+<td colspan=2>
+<a href="win.shtml" translate=no>Windows</a> 
+</td>
+<td colspan=2>
+<a href="linux.shtml" translate=no>Linux</a> 
+</td>
+<td colspan=2>
+<a href="ios.shtml" translate=no>iOS</a> 
+</td>
+</tr>
+
+<tr>
+<td width=50>
+<a href="https://www.mbsplugins.eu/MBS-FileMaker-Plugin-Examples/">Examples</a>
+</td>
+<td width=50 colspan=2>
+<a href="cross.shtml">Mac &amp; Win</a>
+</td>
+<td width=50>
+<a href="server.shtml">Server</a> 
+</td>
+<td width=50>
+<a href="client.shtml">Client</a>
+</td>
+<td width=50>
+<a href="https://www.monkeybreadsoftware.com/filemaker/guide/">Guides</a>
+</td>
+<td width=50>
+<a href="stat.shtml">Statistic</a>
+</td>
+<td width=50>
+<a href="filemaker-magazin-functions.shtml" translate=no>FMM</a>
+</td>
+<td width=50>
+<a href="blog-entries.shtml">Blog</a>
+</td>
+<td width=50>
+<a href="deprecated.shtml">Deprecated</a>
+</td>
+<td width=50>
+<a href="old.shtml">Old</a>
+</td>
+</tr>
+
+
+</table>
+
+<div id="search"></div>
+<script src="searchFileMaker.js"></script>
+
+
+<script type="text/javascript" src="copy.js"></script>
+<h2 translate="no">FM.SQL.JSONRecords</h2>
+<p lang="en">
+Returns rows as JSON array.<BR>
+</p>
+
+<table lang="en" cellpadding=3 width="100%">
+<tr>
+<td class=grau>Component</td>
+<td class=grau title="Introduced in version">Version</td>
+<td class=grau >macOS</td>
+<td class=grau>Windows</td>
+<td class=grau title="FileMaker Server on Linux">Linux</td>
+<td class=grau title="Plugin on FileMaker Server">Server</td>
+<td class=grau title="An application built with the FileMaker iOS SDK">iOS SDK</td>
+</tr>
+<tr><td class=grau>
+<a href="component_FM.shtml" translate="no">FM</a> <a href="component_FMSQL.shtml" translate="no">FMSQL</a> <a href="component_JSON.shtml" translate="no">JSON</a>
+</td>
+<td class=grau title="Function introduced In MBS Plugin version 8.1."><a href="newinversion81.shtml" Class=version>8.1</a></td>
+<td Class=grau title="Function works on macOS.">&#9989; Yes</td>
+<td Class=grau title="Function works on Windows.">&#9989; Yes</td>
+<td Class=grau title="Function works on Linux with FileMaker Server.">&#9989; Yes</td>
+<td Class=grau title="Function works on FileMaker Server.">&#9989; Yes</td>
+<td Class=grau title="Function works in iOS SDK applications.">&#9989; Yes</td>
+</tr>
+</table>
+
+<div id="PrototypeSmall" style="padding: 15px;margin-left: 10px;margin-top:10px; border-color: #c4c4c4;border-width: 1px;border-style: solid;background-color: #fffedd;">
+MBS( &quot;FM.SQL.JSONRecords&quot;; SQLref; FieldNames { ; Flags; FirstRow; LastRow } ) &nbsp; <a href="#" onClick="moreDocumentation();" style="position:absolute;right:15px;">More</a></div>
+<div id="PrototypeBig" style="display: none; padding: 15px;margin-top:10px; margin-left: 10px;border-color: #c4c4c4;border-width: 1px;border-style: solid;background-color: #fffedd;">
+<b>MBS</b>( <b>&quot;FM.SQL.JSONRecords&quot;;</b> /* Returns rows as JSON array. */<br>
+<b>$SQLref</b>; /* The reference number returned by <a href="FMSQLExecute.shtml">FM.SQL.Execute</a> function. */
+<br>
+<b>$FieldNames</b>; /* A list of field names for the JSON.<br>
+If you have duplicate entries in the field names, the resulting JSON will have duplicate keys, which can be a problem.e.g.  &quot;Model&para;Names&quot; */
+<br>
+<b>$Flags</b>; /* Optional; The flags for the json creation.<br>
+Add 1 to get all values as text (empty text instead of null).<br>
+Add 2 to get all dates, times and timestamps in SQL format (formatted by plugin) instead of GetAsText() by FileMaker.<br>
+Add 4 to get arrays instead of objects for the individual rows.<br>
+Add 8 to get containers as objects with name, size and data entries. (new in v12.1)<br>
+Add 32 to detect JSON in text values and return the JSON inline. (New in v15.4)e.g.  1+2 */
+<br>
+<b>$FirstRow</b>; /* Optional; The index of first row.<br>
+Default is 0.e.g.  0 */
+<br>
+<b>$LastRow</b>) /* Optional; The index of last row.<br>
+Default is <a href="FMSQLRowCount.shtml">FM.SQL.RowCount</a>-1.e.g.  5 */
+&nbsp; <a href="#" onClick="lessDocumentation();" style="position:absolute;right:15px;">Less</a></div>
+<h3 lang="en">Parameters</h3>
+<p style="padding-left: 10px;padding-bottom: 5px;padding-right: 0px;padding-top: 0px;margin: 0px;">
+<table rules="all" frame="box" cellspacing=0 cellpadding=2 width="100%">
+<tr align='left' bgcolor="#f9f9f9">
+<th width=100 lang="en">Parameter</th>
+<th width=300 lang="en">Description</th>
+<th width=100 lang="en">Example</th>
+<th width=50>Flags</th>
+</tr>
+<tr>
+<td width="150" valign="top">SQLref</td>
+<td width="300" valign="top" lang="en">The reference number returned by <a href="FMSQLExecute.shtml">FM.SQL.Execute</a> function.</td>
+<td width="150" valign="top">$SQLRef</td>
+<td width="150" valign="top"></td>
+</tr>
+<tr>
+<td width="150" valign="top">FieldNames</td>
+<td width="300" valign="top" lang="en">A list of field names for the JSON.<br>
+If you have duplicate entries in the field names, the resulting JSON will have duplicate keys, which can be a problem.</td>
+<td width="150" valign="top">&quot;Model&para;Names&quot;</td>
+<td width="150" valign="top"></td>
+</tr>
+<tr>
+<td width="150" valign="top">Flags</td>
+<td width="300" valign="top" lang="en">The flags for the json creation.<br>
+Add 1 to get all values as text (empty text instead of null).<br>
+Add 2 to get all dates, times and timestamps in SQL format (formatted by plugin) instead of GetAsText() by FileMaker.<br>
+Add 4 to get arrays instead of objects for the individual rows.<br>
+Add 8 to get containers as objects with name, size and data entries. (new in v12.1)<br>
+Add 32 to detect JSON in text values and return the JSON inline. (New in v15.4)</td>
+<td width="150" valign="top">1+2</td>
+<td width="150" valign="top">Optional</td>
+</tr>
+<tr>
+<td width="150" valign="top">FirstRow</td>
+<td width="300" valign="top" lang="en">The index of first row.<br>
+Default is 0.</td>
+<td width="150" align=right valign="top">0</td>
+<td width="150" valign="top">Optional<br><br>Added in version <b>14.2</b>.<br></td>
+</tr>
+<tr>
+<td width="150" valign="top">LastRow</td>
+<td width="300" valign="top" lang="en">The index of last row.<br>
+Default is <a href="FMSQLRowCount.shtml">FM.SQL.RowCount</a>-1.</td>
+<td width="150" align=right valign="top">5</td>
+<td width="150" valign="top">Optional<br><br>Added in version <b>14.2</b>.<br></td>
+</tr>
+</table></p>
+<h3 lang="en">Result</h3>
+<p lang="en">Returns JSON array or error.</p>
+<h3 lang="en">Description</h3>
+Returns rows as JSON array.<BR>
+You provide list of field names, which should be in same order as fields in SQL result.<BR>
+Optionally we can return SQL dates, times and timestamps as SQL format.<BR>
+Containers are returned as Base64 encoded data.<BR>
+<BR>
+See <a href="FMSQLXMLRecords.shtml">FM.SQL.XMLRecords</a> for the same as XML.<BR>
+<h3 lang="en">Examples</h3>
+<p lang="en">Query JSON:</p>
+<div class="code-box" translate="no">
+  <div class="copy-buttons">
+    <button class="copy-btn" onclick="copyText(this)">Copy Text</button>
+    <button class="copy-btn" onclick="copyXML('example1', this)">Copy XML</button>
+  </div>
+Set Variable [ <span style="Color:#660066">$sql</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="FMSQLExecute.shtml">FM.SQL.Execute</a>&quot;; &quot;&quot;; &quot;SELECT \&quot;First\&quot;, \&quot;Last\&quot;, Birthday, \&quot;Photo Container\&quot; FROM Contacts&quot;) ] <br>
+Set Variable [ <span style="Color:#660066">$json</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;FM.SQL.JSONRecords&quot;; <span style="Color:#660066">$sql</span>; &quot;First&para;Last&para;Birthday&para;Photo&quot;; 2) ] <br>
+Show Custom Dialog [ &quot;JSON&quot; ; <span style="Color:#660066">$json</span> ] <br>
+Set Variable [ <span style="Color:#660066">$r</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="FMSQLRelease.shtml">FM.SQL.Release</a>&quot;; <span style="Color:#660066">$sql</span> ) ]<br>
+
+<label for="example1" class="exampleLabel">Query JSON:</label>
+<textarea id="example1" hidden>
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;fmxmlsnippet type=&quot;FMObjectList&quot;&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;FM.SQL.Execute&quot;; &quot;&quot;; &quot;SELECT \&quot;First\&quot;, \&quot;Last\&quot;, Birthday, \&quot;Photo Container\&quot; FROM Contacts&quot;) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$sql&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;FM.SQL.JSONRecords&quot;; $sql; &quot;First&para;Last&para;Birthday&para;Photo&quot;; 2) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$json&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;87&quot; name=&quot;Show Custom Dialog&quot;&gt;
+    &lt;Title&gt;
+      &lt;Calculation&gt; &quot;JSON&quot; &lt;/Calculation&gt;
+    &lt;/Title&gt;
+    &lt;Message&gt;
+      &lt;Calculation&gt;$json &lt;/Calculation&gt;
+    &lt;/Message&gt;
+    &lt;Buttons&gt;
+      &lt;Button CommitState=&quot;True&quot;&gt;
+        &lt;Calculation&gt;&quot;OK&quot;&lt;/Calculation&gt;
+      &lt;/Button&gt;
+      &lt;Button CommitState=&quot;False&quot;&gt;
+        &lt;Calculation&gt;&quot;Cancel&quot;&lt;/Calculation&gt;
+      &lt;/Button&gt;
+      &lt;Button CommitState=&quot;False&quot;/&gt;
+    &lt;/Buttons&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;FM.SQL.Release&quot;; $sql ) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$r&lt;/Name&gt;
+  &lt;/Step&gt;
+&lt;/fmxmlsnippet&gt;
+
+</textarea>
+</div>
+<p lang="en">Make a JSON query in one Let statment:</p>
+<div class="code-box" translate="no">
+  <div class="copy-buttons">
+    <button class="copy-btn" onclick="copyText(this)">Copy Text</button>
+    <button class="copy-btn" onclick="copyXML('example2', this)">Copy XML</button>
+  </div>
+Let (<br>
+&nbsp; &nbsp; [<br>
+&nbsp; &nbsp; &nbsp; &nbsp; <span style="Color:#660066">$sdat</span> = &quot;10/1/2019 00:00&quot;;<br>
+&nbsp; &nbsp; &nbsp; &nbsp; <span style="Color:#660066">$edat</span> = &quot;10/10/2019 00:00&quot;;<br>
+&nbsp; &nbsp; &nbsp; &nbsp; sku = &quot;&#39;PARbh50&#39;,&#39;PARgy50&#39;&quot;;<br>
+&nbsp; &nbsp; &nbsp; &nbsp; sql1 = <span style="Color:#0000FF;font-weight: bold;">MBS</span>(&quot;<a href="FMSQLExecute.shtml">FM.SQL.Execute</a>&quot;; &quot;&quot;; &quot;Select docnum,linetotal,db from \&quot;MyTable\&quot; where ItemCode in (&quot; &amp; sku &amp; &quot;) and DocDate between ? and ?&quot;; <span style="Color:#660066">$sdat</span>; <span style="Color:#660066">$edat</span>);<br>
+&nbsp; &nbsp; &nbsp; &nbsp; json = <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;FM.SQL.JSONRecords&quot;; sql1; &quot;DocNum&para;LineTotal&para;DB&quot;; 1);<br>
+&nbsp; &nbsp; &nbsp; &nbsp; r = <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="FMSQLRelease.shtml">FM.SQL.Release</a>&quot;; sql1 )<br>
+&nbsp; &nbsp; ] ; json<br>
+)<br>
+
+<label for="example2" class="exampleLabel">Make a JSON query in one Let statment:</label>
+<textarea id="example2" hidden>
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;fmxmlsnippet type=&quot;FMObjectList&quot;&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;Let (
+	[
+		$sdat = &quot;10/1/2019 00:00&quot;;
+		$edat = &quot;10/10/2019 00:00&quot;;
+		sku = &quot;&#39;PARbh50&#39;,&#39;PARgy50&#39;&quot;;
+		sql1 = MBS(&quot;FM.SQL.Execute&quot;; &quot;&quot;; &quot;Select docnum,linetotal,db from \&quot;MyTable\&quot; where ItemCode in (&quot; &amp;amp; sku &amp;amp; &quot;) and DocDate between ? and ?&quot;; $sdat; $edat);
+		json = MBS( &quot;FM.SQL.JSONRecords&quot;; sql1; &quot;DocNum&para;LineTotal&para;DB&quot;; 1);
+		r = MBS( &quot;FM.SQL.Release&quot;; sql1 )
+	] ; json
+)&lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$r&lt;/Name&gt;
+  &lt;/Step&gt;
+&lt;/fmxmlsnippet&gt;
+
+</textarea>
+</div>
+<p lang="en">Query related records as JSON:</p>
+<div class="code-box" translate="no">
+  <div class="copy-buttons">
+    <button class="copy-btn" onclick="copyText(this)">Copy Text</button>
+    <button class="copy-btn" onclick="copyXML('example3', this)">Copy XML</button>
+  </div>
+<span translate="yes"># get related teams</span><br>
+Set Variable [ <span style="Color:#660066">$r</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="FMSQLExecute.shtml">FM.SQL.Execute</a>&quot;; Get(FileName); &quot;SELECT \&quot;UUID\&quot;, \&quot;ID\&quot;, \&quot;ID_Department\&quot;, \&quot;Team.Name\&quot;, \&quot;MemberCount\&quot; FROM \&quot;Teams\&quot; WHERE ID_Department=?&quot;; <span style="Color:#000099">Department::ID</span>) ] <br>
+If [ <span style="Color:#0000FF;font-weight: bold;">MBS</span>(&quot;IsError&quot;) ] <br>
+&nbsp; &nbsp; Show Custom Dialog [ &quot;SQL error&quot; ; <span style="Color:#660066">$r</span> ] <br>
+Else<br>
+&nbsp; &nbsp; # fill as json in field<br>
+&nbsp; &nbsp; Set Field [ <span style="Color:#000099">Department::JSON_Department</span> ; <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;FM.SQL.JSONRecords&quot;; <span style="Color:#660066">$r</span>; &quot;UUID&para;ID&para;ID_Department&para;Team.Name&para;MemberCount&quot;) ] <br>
+&nbsp; &nbsp; Set Variable [ <span style="Color:#660066">$e</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="FMSQLRelease.shtml">FM.SQL.Release</a>&quot;; <span style="Color:#660066">$r</span> ) ] <br>
+End If<br>
+
+<label for="example3" class="exampleLabel">Query related records as JSON:</label>
+<textarea id="example3" hidden>
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;fmxmlsnippet type=&quot;FMObjectList&quot;&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;&gt;
+    &lt;Text&gt; get related teams&lt;/Text&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;FM.SQL.Execute&quot;; Get(FileName); &quot;SELECT \&quot;UUID\&quot;, \&quot;ID\&quot;, \&quot;ID_Department\&quot;, \&quot;Team.Name\&quot;, \&quot;MemberCount\&quot; FROM \&quot;Teams\&quot; WHERE ID_Department=?&quot;; Department::ID) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$r&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;68&quot; name=&quot;If&quot;&gt;
+    &lt;Restore state=&quot;False&quot;/&gt;
+    &lt;Calculation&gt; MBS(&quot;IsError&quot;) &lt;/Calculation&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;87&quot; name=&quot;Show Custom Dialog&quot;&gt;
+    &lt;Title&gt;
+      &lt;Calculation&gt; &quot;SQL error&quot; &lt;/Calculation&gt;
+    &lt;/Title&gt;
+    &lt;Message&gt;
+      &lt;Calculation&gt;$r &lt;/Calculation&gt;
+    &lt;/Message&gt;
+    &lt;Buttons&gt;
+      &lt;Button CommitState=&quot;True&quot;&gt;
+        &lt;Calculation&gt;&quot;OK&quot;&lt;/Calculation&gt;
+      &lt;/Button&gt;
+      &lt;Button CommitState=&quot;False&quot;&gt;
+        &lt;Calculation&gt;&quot;Cancel&quot;&lt;/Calculation&gt;
+      &lt;/Button&gt;
+      &lt;Button CommitState=&quot;False&quot;/&gt;
+    &lt;/Buttons&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;69&quot; name=&quot;Else&quot;&gt;
+    &lt;Restore state=&quot;False&quot;/&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;&gt;
+    &lt;Text&gt; fill as json in field&lt;/Text&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;76&quot; name=&quot;Set Field&quot;&gt;
+    &lt;Calculation&gt;MBS( &quot;FM.SQL.JSONRecords&quot;; $r; &quot;UUID&para;ID&para;ID_Department&para;Team.Name&para;MemberCount&quot;) &lt;/Calculation&gt;
+    &lt;Field table=&quot;Department&quot; id=&quot;99999&quot; name=&quot;JSON_Department &quot;/&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;FM.SQL.Release&quot;; $r ) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$e&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;70&quot; name=&quot;End If&quot;/&gt;
+&lt;/fmxmlsnippet&gt;
+
+</textarea>
+</div>
+<p lang="en">Builds Assets as JSON with Assignments JSON array added:</p>
+<div class="code-box" translate="no">
+  <div class="copy-buttons">
+    <button class="copy-btn" onclick="copyText(this)">Copy Text</button>
+    <button class="copy-btn" onclick="copyXML('example4', this)">Copy XML</button>
+  </div>
+<span translate="yes"># let us get Assets via SQL as JSON</span><br>
+Set Variable [ <span style="Color:#660066">$sql1</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="FMSQLExecute.shtml">FM.SQL.Execute</a>&quot;; Get(FileName); &quot;SELECT * FROM Assets&quot; ) ]<br>
+Set Variable [ <span style="Color:#660066">$names1</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="FMExecuteFileSQL.shtml">FM.ExecuteFileSQL</a>&quot;; Get(FileName); &quot;SELECT FieldName FROM FileMaker_Fields WHERE TableName = &#39;Assets&#39; &quot;; 9; 13) ]<br>
+Set Variable [ <span style="Color:#660066">$json1</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;FM.SQL.JSONRecords&quot;; <span style="Color:#660066">$sql1</span>; <span style="Color:#660066">$names1</span> ) ]<br>
+Set Variable [ <span style="Color:#660066">$r</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="FMSQLRelease.shtml">FM.SQL.Release</a>&quot;; <span style="Color:#660066">$sql1</span> ) ]<br>
+<span translate="yes"># </span><br>
+<span translate="yes"># let us get Assignments via SQL as JSON</span><br>
+Set Variable [ <span style="Color:#660066">$sql2</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="FMSQLExecute.shtml">FM.SQL.Execute</a>&quot;; Get(FileName); &quot;SELECT * FROM Assignments&quot; ) ]<br>
+Set Variable [ <span style="Color:#660066">$names2</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="FMExecuteFileSQL.shtml">FM.ExecuteFileSQL</a>&quot;; Get(FileName); &quot;SELECT FieldName FROM FileMaker_Fields WHERE TableName = &#39;Assignments&#39; &quot;; 9; 13) ]<br>
+Set Variable [ <span style="Color:#660066">$json2</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;FM.SQL.JSONRecords&quot;; <span style="Color:#660066">$sql2</span>; <span style="Color:#660066">$names2</span> ) ]<br>
+Set Variable [ <span style="Color:#660066">$r</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="FMSQLRelease.shtml">FM.SQL.Release</a>&quot;; <span style="Color:#660066">$sql2</span> ) ]<br>
+<span translate="yes"># </span><br>
+<span translate="yes"># how many Assets did we got?</span><br>
+Set Variable [ <span style="Color:#660066">$count</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="JSONGetArraySize.shtml">JSON.GetArraySize</a>&quot;; <span style="Color:#660066">$json2</span>) ]<br>
+<span translate="yes"># </span><br>
+<span translate="yes"># not go and add an Assignments Array to each Assets entry</span><br>
+Set Variable [ <span style="Color:#660066">$index</span> ; Value: 0 ]<br>
+If [ <span style="Color:#660066">$index</span> &le; <span style="Color:#660066">$count</span> ]<br>
+&nbsp; &nbsp; Loop [ Flush: Defer ]<br>
+&nbsp; &nbsp; &nbsp; &nbsp; # your script steps here<br>
+&nbsp; &nbsp; &nbsp; &nbsp; Set Variable [ <span style="Color:#660066">$json1</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="JSONSetPathItem.shtml">JSON.SetPathItem</a>&quot;; <span style="Color:#660066">$json1</span>; <span style="Color:#660066">$Index</span> &amp; &para; &amp; &quot;Assignments&quot;; &quot;[]&quot;) ]<br>
+&nbsp; &nbsp; &nbsp; &nbsp; # next<br>
+&nbsp; &nbsp; &nbsp; &nbsp; Set Variable [ <span style="Color:#660066">$index</span> ; Value: <span style="Color:#660066">$index</span> + 1 ]<br>
+&nbsp; &nbsp; &nbsp; &nbsp; Exit Loop If [ <span style="Color:#660066">$index</span> &ge; <span style="Color:#660066">$count</span> ]<br>
+&nbsp; &nbsp; End Loop<br>
+End If<br>
+<span translate="yes"># </span><br>
+<span translate="yes"># now loop over all assignments and insert them into assets</span><br>
+Set Variable [ <span style="Color:#660066">$index</span> ; Value: 0 ]<br>
+If [ <span style="Color:#660066">$index</span> &le; <span style="Color:#660066">$count</span> ]<br>
+&nbsp; &nbsp; Loop [ Flush: Defer ]<br>
+&nbsp; &nbsp; &nbsp; &nbsp; # your script steps here<br>
+&nbsp; &nbsp; &nbsp; &nbsp; Set Variable [ <span style="Color:#660066">$json3</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="JSONGetArrayItem.shtml">JSON.GetArrayItem</a>&quot;; <span style="Color:#660066">$json2</span>; <span style="Color:#660066">$index</span>) ]<br>
+&nbsp; &nbsp; &nbsp; &nbsp; Set Field [ <span style="Color:#000099">JSON::JSON3</span> ; <span style="Color:#660066">$json3</span> ]<br>
+&nbsp; &nbsp; &nbsp; &nbsp; # find the key to match<br>
+&nbsp; &nbsp; &nbsp; &nbsp; Set Variable [ <span style="Color:#660066">$key</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="JSONGetObjectItem.shtml">JSON.GetObjectItem</a>&quot;; <span style="Color:#660066">$json3</span>; &quot;AssetForeignKey&quot;) ]<br>
+&nbsp; &nbsp; &nbsp; &nbsp; # and lookup the index in the json array for this primary key<br>
+&nbsp; &nbsp; &nbsp; &nbsp; Set Variable [ <span style="Color:#660066">$DestIndex</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="JSONFindValueInObjectArray.shtml">JSON.FindValueInObjectArray</a>&quot;; <span style="Color:#660066">$json1</span>; &quot;PrimaryKey&quot;; <span style="Color:#660066">$key</span>) ]<br>
+&nbsp; &nbsp; &nbsp; &nbsp; If [ <span style="Color:#0000FF;font-weight: bold;">MBS</span>(&quot;IsError&quot;) = 0 and <span style="Color:#660066">$DestIndex</span> &ge; 0 ]<br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; # add json to the array<br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Set Variable [ <span style="Color:#660066">$json1</span> ; Value: <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;<a href="JSONSetPathItem.shtml">JSON.SetPathItem</a>&quot;; <span style="Color:#660066">$json1</span>; <span style="Color:#660066">$DestIndex</span> &amp; &para; &amp; &quot;Assignments&para;append&quot;; <span style="Color:#660066">$json3</span>) ]<br>
+&nbsp; &nbsp; &nbsp; &nbsp; End If<br>
+&nbsp; &nbsp; &nbsp; &nbsp; # <br>
+&nbsp; &nbsp; &nbsp; &nbsp; # next<br>
+&nbsp; &nbsp; &nbsp; &nbsp; Set Variable [ <span style="Color:#660066">$index</span> ; Value: <span style="Color:#660066">$index</span> + 1 ]<br>
+&nbsp; &nbsp; &nbsp; &nbsp; Exit Loop If [ <span style="Color:#660066">$index</span> &ge; <span style="Color:#660066">$count</span> ]<br>
+&nbsp; &nbsp; End Loop<br>
+End If<br>
+<span translate="yes"># <span style="Color:#660066">$json1</span> now has Assets records with Assignments as sub records in the JSON.</span><br>
+
+<label for="example4" class="exampleLabel">Builds Assets as JSON with Assignments JSON array added:</label>
+<textarea id="example4" hidden>
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;fmxmlsnippet type=&quot;FMObjectList&quot;&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;&gt;
+    &lt;Text&gt; let us get Assets via SQL as JSON&lt;/Text&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;FM.SQL.Execute&quot;; Get(FileName); &quot;SELECT * FROM Assets&quot; ) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$sql1&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;FM.ExecuteFileSQL&quot;; Get(FileName); &quot;SELECT FieldName FROM FileMaker_Fields WHERE TableName = &#39;Assets&#39; &quot;; 9; 13) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$names1&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;FM.SQL.JSONRecords&quot;; $sql1; $names1 ) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$json1&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;FM.SQL.Release&quot;; $sql1 ) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$r&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;/&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;&gt;
+    &lt;Text&gt; let us get Assignments via SQL as JSON&lt;/Text&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;FM.SQL.Execute&quot;; Get(FileName); &quot;SELECT * FROM Assignments&quot; ) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$sql2&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;FM.ExecuteFileSQL&quot;; Get(FileName); &quot;SELECT FieldName FROM FileMaker_Fields WHERE TableName = &#39;Assignments&#39; &quot;; 9; 13) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$names2&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;FM.SQL.JSONRecords&quot;; $sql2; $names2 ) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$json2&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;FM.SQL.Release&quot;; $sql2 ) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$r&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;/&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;&gt;
+    &lt;Text&gt; how many Assets did we got?&lt;/Text&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;JSON.GetArraySize&quot;; $json2) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$count&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;/&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;&gt;
+    &lt;Text&gt; not go and add an Assignments Array to each Assets entry&lt;/Text&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;0 &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$index&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;68&quot; name=&quot;If&quot;&gt;
+    &lt;Restore state=&quot;False&quot;/&gt;
+    &lt;Calculation&gt; $index &le; $count &lt;/Calculation&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;71&quot; name=&quot;Loop&quot;&gt;
+    &lt;Restore state=&quot;False&quot;/&gt;
+    &lt;FlushType value=&quot;Defer&quot;/&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;&gt;
+    &lt;Text&gt; your script steps here&lt;/Text&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;JSON.SetPathItem&quot;; $json1; $Index &amp;amp; &para; &amp;amp; &quot;Assignments&quot;; &quot;[]&quot;) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$json1&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;&gt;
+    &lt;Text&gt; next&lt;/Text&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;$index + 1 &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$index&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;72&quot; name=&quot;Exit Loop If&quot;&gt;
+    &lt;Calculation&gt; $index &ge; $count &lt;/Calculation&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;73&quot; name=&quot;End Loop&quot;/&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;70&quot; name=&quot;End If&quot;/&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;/&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;&gt;
+    &lt;Text&gt; now loop over all assignments and insert them into assets&lt;/Text&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;0 &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$index&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;68&quot; name=&quot;If&quot;&gt;
+    &lt;Restore state=&quot;False&quot;/&gt;
+    &lt;Calculation&gt; $index &le; $count &lt;/Calculation&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;71&quot; name=&quot;Loop&quot;&gt;
+    &lt;Restore state=&quot;False&quot;/&gt;
+    &lt;FlushType value=&quot;Defer&quot;/&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;&gt;
+    &lt;Text&gt; your script steps here&lt;/Text&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;JSON.GetArrayItem&quot;; $json2; $index) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$json3&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;76&quot; name=&quot;Set Field&quot;&gt;
+    &lt;Calculation&gt;$json3 &lt;/Calculation&gt;
+    &lt;Field table=&quot;JSON&quot; id=&quot;99999&quot; name=&quot;JSON3 &quot;/&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;&gt;
+    &lt;Text&gt; find the key to match&lt;/Text&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;JSON.GetObjectItem&quot;; $json3; &quot;AssetForeignKey&quot;) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$key&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;&gt;
+    &lt;Text&gt; and lookup the index in the json array for this primary key&lt;/Text&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;JSON.FindValueInObjectArray&quot;; $json1; &quot;PrimaryKey&quot;; $key) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$DestIndex&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;68&quot; name=&quot;If&quot;&gt;
+    &lt;Restore state=&quot;False&quot;/&gt;
+    &lt;Calculation&gt; MBS(&quot;IsError&quot;) = 0 and $DestIndex &ge; 0 &lt;/Calculation&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;&gt;
+    &lt;Text&gt; add json to the array&lt;/Text&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;MBS( &quot;JSON.SetPathItem&quot;; $json1; $DestIndex &amp;amp; &para; &amp;amp; &quot;Assignments&para;append&quot;; $json3) &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$json1&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;70&quot; name=&quot;End If&quot;/&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;/&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;&gt;
+    &lt;Text&gt; next&lt;/Text&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;$index + 1 &lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$index&lt;/Name&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;72&quot; name=&quot;Exit Loop If&quot;&gt;
+    &lt;Calculation&gt; $index &ge; $count &lt;/Calculation&gt;
+  &lt;/Step&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;73&quot; name=&quot;End Loop&quot;/&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;70&quot; name=&quot;End If&quot;/&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;89&quot; name=&quot;# (comment)&quot;&gt;
+    &lt;Text&gt; $json1 now has Assets records with Assignments as sub records in the JSON.&lt;/Text&gt;
+  &lt;/Step&gt;
+&lt;/fmxmlsnippet&gt;
+
+</textarea>
+</div>
+<p lang="en">Query value lists via SQL in FileMaker 22:</p>
+<div class="code-box" translate="no">
+  <div class="copy-buttons">
+    <button class="copy-btn" onclick="copyText(this)">Copy Text</button>
+    <button class="copy-btn" onclick="copyXML('example5', this)">Copy XML</button>
+  </div>
+Let([<br>
+&nbsp; &nbsp; sql = <span style="Color:#0000FF;font-weight: bold;">MBS</span>(&quot;<a href="FMSQLExecute.shtml">FM.SQL.Execute</a>&quot;; &quot;&quot;; &quot;SELECT ValueListName, ValueListId, Source, ModCount FROM FileMaker_ValueLists&quot;);<br>
+&nbsp; &nbsp; json = <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;FM.SQL.JSONRecords&quot;; sql; &quot;ValueListName&para;ValueListId&para;Source&para;ModCount&quot; );<br>
+&nbsp; &nbsp; r = <span style="Color:#0000FF;font-weight: bold;">MBS</span>(&quot;<a href="FMSQLRelease.shtml">FM.SQL.Release</a>&quot;; sql)<br>
+]; json)<br>
+
+<label for="example5" class="exampleLabel">Query value lists via SQL in FileMaker 22:</label>
+<textarea id="example5" hidden>
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;fmxmlsnippet type=&quot;FMObjectList&quot;&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;Let([
+	sql = MBS(&quot;FM.SQL.Execute&quot;; &quot;&quot;; &quot;SELECT ValueListName, ValueListId, Source, ModCount FROM FileMaker_ValueLists&quot;);
+	json = MBS( &quot;FM.SQL.JSONRecords&quot;; sql; &quot;ValueListName&para;ValueListId&para;Source&para;ModCount&quot; );
+	r = MBS(&quot;FM.SQL.Release&quot;; sql)
+]; json)&lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$r&lt;/Name&gt;
+  &lt;/Step&gt;
+&lt;/fmxmlsnippet&gt;
+
+</textarea>
+</div>
+<p lang="en">Query values of a value list via SQL:</p>
+<div class="code-box" translate="no">
+  <div class="copy-buttons">
+    <button class="copy-btn" onclick="copyText(this)">Copy Text</button>
+    <button class="copy-btn" onclick="copyXML('example6', this)">Copy XML</button>
+  </div>
+Let([<br>
+&nbsp; &nbsp; sql = <span style="Color:#0000FF;font-weight: bold;">MBS</span>(&quot;<a href="FMSQLExecute.shtml">FM.SQL.Execute</a>&quot;; &quot;&quot;; &quot;SELECT * FROM FileMaker_ValueList_Test&quot;);<br>
+&nbsp; &nbsp; json = <span style="Color:#0000FF;font-weight: bold;">MBS</span>( &quot;FM.SQL.JSONRecords&quot;; sql; &quot;Value&para;SecondValue&quot; );<br>
+&nbsp; &nbsp; r = <span style="Color:#0000FF;font-weight: bold;">MBS</span>(&quot;<a href="FMSQLRelease.shtml">FM.SQL.Release</a>&quot;; sql)<br>
+]; json)<br>
+
+<label for="example6" class="exampleLabel">Query values of a value list via SQL:</label>
+<textarea id="example6" hidden>
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;fmxmlsnippet type=&quot;FMObjectList&quot;&gt;
+  &lt;Step enable=&quot;True&quot; id=&quot;141&quot; name=&quot;Set Variable&quot;&gt;
+    &lt;Value&gt;
+      &lt;Calculation&gt;Let([
+	sql = MBS(&quot;FM.SQL.Execute&quot;; &quot;&quot;; &quot;SELECT * FROM FileMaker_ValueList_Test&quot;);
+	json = MBS( &quot;FM.SQL.JSONRecords&quot;; sql; &quot;Value&para;SecondValue&quot; );
+	r = MBS(&quot;FM.SQL.Release&quot;; sql)
+]; json)&lt;/Calculation&gt;
+    &lt;/Value&gt;
+    &lt;Repetition&gt;
+      &lt;Calculation&gt;1&lt;/Calculation&gt;
+    &lt;/Repetition&gt;
+    &lt;Name&gt;$r&lt;/Name&gt;
+  &lt;/Step&gt;
+&lt;/fmxmlsnippet&gt;
+
+</textarea>
+<small><br><span lang="en">Example result:</span> <br><span style="color: #000000; white-space:pre; margin-bottom:.5em ">[
+	{
+		<span style="Color: RGB(60,75,235)">"Value"</span>:	<span style="color: rgb(172,44,106)">"a"</span>,
+		<span style="Color: RGB(60,75,235)">"SecondValue"</span>:	<span style="color: rgb(172,44,106)">"Hello"</span>
+	}, 
+	{
+		<span style="Color: RGB(60,75,235)">"Value"</span>:	<span style="color: rgb(172,44,106)">"b"</span>,
+		<span style="Color: RGB(60,75,235)">"SecondValue"</span>:	<span style="color: rgb(172,44,106)">"World"</span>
+	}
+]</span></small>
+</div>
+<h3 lang="en">See also</h3>
+<ul translate="no">
+<LI><a href="FMSQLJSONRecord.shtml">FM.SQL.JSONRecord</a></LI>
+<LI><a href="FMSQLRowCount.shtml">FM.SQL.RowCount</a></LI>
+<LI><a href="FMSQLXMLRecords.shtml">FM.SQL.XMLRecords</a></LI>
+<LI><a href="IsError.shtml">IsError</a></LI>
+<LI><a href="JSONFindValueInObjectArray.shtml">JSON.FindValueInObjectArray</a></LI>
+<LI><a href="JSONGetArrayItem.shtml">JSON.GetArrayItem</a></LI>
+<LI><a href="JSONGetArraySize.shtml">JSON.GetArraySize</a></LI>
+<LI><a href="JSONInsertOrUpdateRecord.shtml">JSON.InsertOrUpdateRecord</a></LI>
+<LI><a href="JSONSetPathItem.shtml">JSON.SetPathItem</a></LI>
+<LI><a href="SQLExecute.shtml">SQL.Execute</a></LI>
+</ul>
+<h3 lang="en">Release notes</H3>
+<UL lang="en">
+<LI><b>Version 15.4</b><UL>
+<LI>Added DetectJSON flag to <a href="https://www.mbsplugins.eu/FMSQLJSONColumn.shtml">FM.SQL.JSONColumn</a>, <a href="https://www.mbsplugins.eu/FMSQLJSONRecord.shtml">FM.SQL.JSONRecord</a> and <a href="https://www.mbsplugins.eu/FMSQLJSONRecords.shtml">FM.SQL.JSONRecords</a>.</LI>
+</UL></LI>
+<LI><b>Version 14.2</b><UL>
+<LI>Added firstRow and lastRow parameter to <a href="https://www.mbsplugins.eu/FMSQLJSONRecords.shtml">FM.SQL.JSONRecords</a> and <a href="https://www.mbsplugins.eu/FMSQLXMLRecords.shtml">FM.SQL.XMLRecords</a> functions.</LI>
+<LI>Improved <a href="https://www.mbsplugins.eu/FMSQLJSONRecords.shtml">FM.SQL.JSONRecords</a> function to return empty array for empty result.</LI>
+</UL></LI>
+<LI><b>Version 12.1</b><UL>
+<LI>Added flag value 8 for <a href="https://www.mbsplugins.eu/FMSQLJSONColumn.shtml">FM.SQL.JSONColumn</a>, <a href="https://www.mbsplugins.eu/MatrixJSONRecord.shtml">Matrix.JSONRecord</a>, <a href="https://www.mbsplugins.eu/MatrixJSONRecords.shtml">Matrix.JSONRecords</a>, <a href="https://www.mbsplugins.eu/FMSQLJSONRecord.shtml">FM.SQL.JSONRecord</a> and <a href="https://www.mbsplugins.eu/FMSQLJSONRecords.shtml">FM.SQL.JSONRecords</a> to return containers as JSON objects with data, size and name.</LI>
+</UL></LI>
+<LI><b>Version 12.0</b><UL>
+<LI>Fixed <a href="https://www.mbsplugins.eu/component_JSON.shtml">JSON</a> functions to return NULL for numbers with no content, e.g. empty text. This affects <a href="https://www.mbsplugins.eu/JSONCreateNumber.shtml">JSON.CreateNumber</a>, <a href="https://www.mbsplugins.eu/DictionaryToJSON.shtml">Dictionary.ToJSON</a>, <a href="https://www.mbsplugins.eu/FMSQLJSONColumn.shtml">FM.SQL.JSONColumn</a>, <a href="https://www.mbsplugins.eu/FMSQLJSONRecord.shtml">FM.SQL.JSONRecord</a> and <a href="https://www.mbsplugins.eu/FMSQLJSONRecords.shtml">FM.SQL.JSONRecords</a> functions.</LI>
+</UL></LI>
+<LI><b>Version 11.2</b><UL>
+<LI>Added flag 4 for <a href="https://www.mbsplugins.eu/FMSQLJSONRecords.shtml">FM.SQL.JSONRecords</a> and <a href="https://www.mbsplugins.eu/FMSQLJSONRecord.shtml">FM.SQL.JSONRecord</a> to return result as array of arrays instead of array of objects.</LI>
+</UL></LI>
+<LI><b>Version 11.0</b><UL>
+<LI>Fixed issue with <a href="https://www.mbsplugins.eu/FMSQLJSONRecord.shtml">FM.SQL.JSONRecord</a>, <a href="https://www.mbsplugins.eu/FMSQLJSONRecords.shtml">FM.SQL.JSONRecords</a> and <a href="https://www.mbsplugins.eu/DictionaryToJSON.shtml">Dictionary.ToJSON</a> where long numbers where truncated to double precision.</LI>
+</UL></LI>
+<LI><b>Version 8.1</b><UL>
+<LI>Added <a href="http://www.mbsplugins.eu/FMSQLJSONRecord.shtml">FM.SQL.JSONRecord</A> and <a href="http://www.mbsplugins.eu/FMSQLJSONRecords.shtml">FM.SQL.JSONRecords</A> functions.</LI>
+</UL></LI>
+</UL>
+<h3 lang="en">Blog Entries</h3>
+<ul>
+<li><a href="https://www.mbsplugins.de/archive/2025-12-14/MBS_FileMaker_Advent_calendar_/monkeybreadsoftware_blog_filemaker">MBS FileMaker Advent calendar - Door 14 - SQL and JSON</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2025-08-01/MBS_FileMaker_Plugin_version_1/monkeybreadsoftware_blog_filemaker">MBS FileMaker Plugin, version 15.4pr1</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2024-05-08/MBS_FileMaker_Plugin_version_1/monkeybreadsoftware_blog_filemaker">MBS FileMaker Plugin, version 14.2pr5</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2024-05-06/JSON_Replace_with_evaluate/monkeybreadsoftware_blog_filemaker">JSON Replace with evaluate</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2024-05-02/MBS_FileMaker_Plugin_version_1/monkeybreadsoftware_blog_filemaker">MBS FileMaker Plugin, version 14.2pr4</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2021-12-14/MBS_FileMaker_Plugin_version_1/monkeybreadsoftware_blog_filemaker">MBS FileMaker Plugin, version 11.6pr3</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2020-06-30/FileMaker_records_to_XML_or_JS/monkeybreadsoftware_blog_filemaker">FileMaker records to XML or JSON</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2020-05-12/MBS_FileMaker_Plugin_102_-_Mor/monkeybreadsoftware_blog_filemaker">MBS FileMaker Plugin 10.2 - More than 6200 Functions In One Plugin</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2020-04-03/Query_FileMaker_records_as_JSO/monkeybreadsoftware_blog_filemaker">Query FileMaker records as JSON</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2019-11-16/With_JSON_in_excellent_form/monkeybreadsoftware_blog_filemaker">With JSON in excellent form</a></li>
+</ul>
+<div id="FMMLinks" lang="de">
+<h3 lang="en">FileMaker Magazin</h3>
+<ul>
+<li><a href="https://filemaker-magazin.de/neuigkeit/3953-Appetithappen-FMM_201803">Ausgabe 3/2018, Seite 34</a></li>
+</ul>
+</div>
+<p>This function checks for a license.</p>
+<p lang="en">Created <span class=CreationDate>4th March 2018</span>, last changed <span class=ModificationDate>5th September 2025</span></p>
+<br clear=all>
+<P>
+<a href="FMSQLJSONRecord.shtml">FM.SQL.JSONRecord</a>
+ - 
+<a href="FMSQLList.shtml">FM.SQL.List</a>
+</P>
+<div id=askquestion style="width: 200pt; margin: 0pt; padding: 5pt; border-color:#ccc; border-style:solid; background-color: #eee; border-width: 2pt; border-radius: 10pt; " lang="en">
+&#128172; <a href="https://www.monkeybreadsoftware.com/feedback/?what=filemaker&path=FM.SQL.JSONRecords">Ask a question or report a problem</a>
+</div>
+
+</main>
+
+<img src="/images/fmplugin19.png" width="128" height="128" alt="" border="0" align=right id="fmplugin19logo">
+
+<br>
+<div id="searchbox2"><form method="get" action="https://www.google.com/search">
+<input type="text" name="q" size="60" maxlength="255" value="" />
+<input type="hidden"  name="sitesearch" value="mbsplugins.eu" />
+<input type="submit" value="Google Site Search" />
+</form></div>
+ 
+<br clear=all>
+
+</div> <!-- content -->
+<div id="mainbottom"></div>
+</div> <!-- main -->
+
+<nav>
+<div id="nav">
+<div id="navtop"></div>
+<div id="eyecatcher"></div>
+
+<ul>
+<li><a class="menuButton"  href="https://www.monkeybreadsoftware.com/">Home</a></li>
+
+
+
+<li><a class="menuButton"  href="https://www.monkeybreadsoftware.com/filemaker/">FileMaker Plug-In</a></li>
+<li><a class="menuButton2" href="https://www.mbsplugins.de/filemaker">FileMaker Blog</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/video/">FileMaker Videos</a></li>
+<li><a class="menuButton2" href="/">Documentation</a></li>
+
+<li><a class="menuButton3" href="/MBS-FileMaker-Plugin-Examples/">Examples</a></li>
+
+<li><a class="menuButton3" href="/newinversion162.shtml">New in 16.2</a></li>
+<li><a class="menuButton3" href="/newinversion161.shtml">New in 16.1</a></li>
+<li><a class="menuButton3" href="/newinversion160.shtml">New in 16.0</a></li>
+<li><a class="menuButton3" href="/newinversion155.shtml">New in 15.5</a></li>
+<li><a class="menuButton3" href="/newinversion154.shtml">New in 15.4</a></li>
+<li><a class="menuButton3" href="/newinversion153.shtml">New in 15.3</a></li>
+
+<li><a class="menuButton3" href="https://www.monkeybreadsoftware.com/DynaPDF-Manual/">DynaPDF Manual</a></li>
+<li><a class="menuButton3" href="/random.php">Random Page</a></li>
+
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/events/">Events and Training</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/mailinglist.shtml">Mailing list</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/pricing.shtml"><img src="https://www.monkeybreadsoftware.com/images/btn_buynowCC_LG.gif" width=122 height=47 alt="Buy now" align=center></a>
+</li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/pricing.shtml">Pricing</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/guide/">User Guide</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/SyntaxColoring/">Syntax Coloring</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/faq.shtml">FAQ</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/dynapdf.shtml">DynaPDF</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/saxon.shtml">Saxon</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/libxl.shtml">LibXL</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/reviews.shtml">Reviews</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/License.shtml">License</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/trial/trial-filemaker.shtml">Trial License</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/download.shtml">Download</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/releasenotes.shtml">Release Notes</a></li>
+
+<li><a class="menuButton2" href="https://the.fmsoup.org">fmsoup Forum</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/Dash/">Dash</a></li>
+
+
+
+
+<li><a class="menuButton"  href="https://www.monkeybreadsoftware.de/xojo/">Xojo Plug-Ins</a></li>
+<li><a class="menuButton"  href="https://www.monkeybreadsoftware.de/Software/">Applications</a></li>
+<li><a class="menuButton"  href="https://www.monkeybreadsoftware.com/newsletter/newsletter.shtml">Newsletter</a></li>
+<li><a class="menuButton"  href="https://www.monkeybreadsoftware.com/team/">Team</a></li>
+</ul>
+
+
+<div id="searchbox">
+<form method="get" action="https://www.google.com/search" style="margin: 0px;">
+<input type="text" name="q" size="16" maxlength="255" value="" />
+<input type="hidden"  name="sitesearch" value="mbsplugins.eu" />
+<input type="submit" value="Site Search" /></form></div>
+
+<div id="commonbox">
+<ul>
+<li><a class="blacklink" href="/dash.shtml">Dash</a></li>
+<li><a class="blacklink" href="https://www.monkeybreadsoftware.com/sitemap.shtml">Sitemap</a></li>
+
+<li><a class="blacklink" href="https://www.monkeybreadsoftware.com/feedback/feedback.php?what=filemaker&path=Ask">Ask a question</a> &#128172;</li>
+<li><a class="blacklink" href="https://www.monkeybreadsoftware.com/links.shtml">Links</a></li>
+<li><a class="blacklink" href="https://www.monkeybreadsoftware.com/contact.shtml">Contact us</a></li>
+<li><a class="blacklink" href="https://www.monkeybreadsoftware.com/kontakt.shtml">Kontakt / Impressum</a></li>
+<li><a class="blacklink" href="https://www.monkeybreadsoftware.com/policy.shtml">Datenschutz</a></li>
+</ul>
+</div><!-- commonbox -->
+
+<div id="navbottom"></div>
+</div> <!-- nav -->
+</nav>
+
+<script src="/layout/layout.js"></script>
+<script src="/navigation.js"></script>
+
+</BODy>
+</HTML>
+
+
+

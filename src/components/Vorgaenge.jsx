@@ -8,6 +8,7 @@ export default function Vorgaenge({ owner, onSelectVorgang }) {
   const [zeilen, setZeilen] = useState([])
   const [suche, setSuche] = useState('')
   const [laden, setLaden] = useState(true)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     if (!owner) return
@@ -16,7 +17,7 @@ export default function Vorgaenge({ owner, onSelectVorgang }) {
       setLaden(true)
       let query = supabase
         .from('vorgaenge')
-        .select('vorgang_id, vorgang_art, kurzbeschreibung, bvh, frist, erledigt, verantwortlicher, datei_pfad')
+        .select('vorgang_id, vorgang_art, beschreibung, kurzbeschreibung, bvh, frist, erledigt, verantwortlicher, datei_pfad')
         .order('erstellt', { ascending: false })
         .limit(PAGE)
 
@@ -30,7 +31,7 @@ export default function Vorgaenge({ owner, onSelectVorgang }) {
 
       const { data } = await query
       if (aktiv) {
-        setZeilen((data ?? []).filter(v => !enthaeltParserFehler(v.vorgang_id) && !enthaeltParserFehler(v.vorgang_art) && !enthaeltParserFehler(v.kurzbeschreibung)))
+        setZeilen((data ?? []).filter(v => !enthaeltParserFehler(v.vorgang_id) && !enthaeltParserFehler(v.vorgang_art) && !enthaeltParserFehler(v.beschreibung) && !enthaeltParserFehler(v.kurzbeschreibung)))
         setLaden(false)
       }
     }
@@ -40,6 +41,40 @@ export default function Vorgaenge({ owner, onSelectVorgang }) {
 
   if (!owner) {
     return <p style={{ color: T.textMuted }}>Bitte wähle zuerst einen Inhaber aus.</p>
+  }
+
+  async function neuVorgang() {
+    if (!owner || owner.id === '__all__') {
+      alert('Bitte einen konkreten Inhaber wählen, um einen Vorgang anzulegen.')
+      return
+    }
+
+    setBusy(true)
+    const nowIso = new Date().toISOString()
+    const vorgang_id = `archivy-vorgang-${Date.now()}`
+    const today = nowIso.slice(0, 10)
+
+    const { data, error } = await supabase
+      .from('vorgaenge')
+      .insert({
+        vorgang_id,
+        vertragsbesitzer_id: owner.id,
+        beschreibung: 'Neuer Vorgang',
+        kurzbeschreibung: '',
+        datum: today,
+        sync_state: 'geaendert',
+        app_modified_at: nowIso,
+      })
+      .select('vorgang_id')
+      .single()
+
+    setBusy(false)
+    if (error) {
+      alert(`Vorgang konnte nicht angelegt werden: ${error.message}`)
+      return
+    }
+
+    onSelectVorgang?.(data?.vorgang_id || vorgang_id)
   }
 
   return (
@@ -56,6 +91,14 @@ export default function Vorgaenge({ owner, onSelectVorgang }) {
             padding: `${T.sp2} ${T.sp3}`, outline: 'none',
           }}
         />
+        <button
+          type="button"
+          onClick={neuVorgang}
+          disabled={busy}
+          style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: busy ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+        >
+          {busy ? 'Anlegen…' : '+ Neuer Vorgang'}
+        </button>
       </div>
 
       {laden ? (
@@ -67,7 +110,7 @@ export default function Vorgaenge({ owner, onSelectVorgang }) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr style={{ background: T.bg, textAlign: 'left' }}>
-                {['Art', 'Beschreibung', 'BVH', 'Frist', 'Verantwortlich'].map(h => (
+                {['Beschreibung', 'Notiz', 'BVH', 'Frist', 'Verantwortlich'].map(h => (
                   <th key={h} style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -80,11 +123,11 @@ export default function Vorgaenge({ owner, onSelectVorgang }) {
                   }}
                   onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
                   onMouseLeave={e => e.currentTarget.style.background = ''}>
-                  <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap' }}>
-                    <span>{v.vorgang_art ?? '—'}</span>
+                  <td style={{ padding: `${T.sp2} ${T.sp3}` }}>
+                    <span>{cleanText(v.beschreibung) || '—'}</span>
                     {v.datei_pfad && <span style={{ marginLeft: T.sp2, color: T.primary }}>📄</span>}
                   </td>
-                  <td style={{ padding: `${T.sp2} ${T.sp3}` }}>{v.kurzbeschreibung ?? '—'}</td>
+                  <td style={{ padding: `${T.sp2} ${T.sp3}` }}>{v.kurzbeschreibung || v.vorgang_art || '—'}</td>
                   <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap' }}>{v.bvh ?? '—'}</td>
                   <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap', color: fristFarbe(v.frist, v.erledigt) }}>{v.frist ?? '—'}</td>
                   <td style={{ padding: `${T.sp2} ${T.sp3}` }}>{v.verantwortlicher ?? '—'}</td>

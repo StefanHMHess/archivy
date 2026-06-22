@@ -1,0 +1,690 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" >
+<html>
+<head>
+<title>Monkeybread Software - MBS FileMaker Plugin: Component: FMSQL</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+<link rel="stylesheet" type="text/css" href="copy.css">
+<meta charset="UTF-8">
+<meta http-equiv="content-type" content="text/html; charset=utf-8"> 
+<meta name="theme-color" content="#163064">
+<meta name="author" content="Christian Schmitz">
+<meta name="publisher" content="Christian Schmitz"> 
+<meta name="robots" content="index,follow"> 
+<meta name="REVISIT-AFTER" content="7 days"> 
+<meta name="keywords" content="claris, filemaker, plugin, plug-in, plugins, plug-ins"> 
+<link rel="shortcut icon" href="/FMPluginIcon.ico" TYPE="image/x-icon">
+<link rel="stylesheet" type="text/css" href="/layout/screen.css" media="screen">
+<link rel="stylesheet" type="text/css" href="/layout/print.css" media="print">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!--[if IE]>
+<link rel="stylesheet" type="text/css" href="https://www.monkeybreadsoftware.de/layout/screenIE.css">
+<![endif]-->
+
+</head>
+
+<body>
+<script type="text/javascript" src="/moreless.js"></script>
+
+<ul id="tablist">
+<li><a href="https://www.monkeybreadsoftware.de/">Home</a></li>
+<li><a href="https://www.mbsplugins.de/filemaker">Blog</a></li>
+<li><a class="current" href="https://www.monkeybreadsoftware.com/filemaker/">FileMaker Plugin</a></li>
+<li><a href="https://www.monkeybreadsoftware.de/xojo/">Xojo Plugins</a></li>
+</ul>
+
+<div id="main">
+<div id="maintop"></div>
+<div id="content">
+<main>
+
+
+
+
+<table border=0 width="100%" class="HelpNavigation" id="HelpNavigation" cellspacing=3 cellpadding=3>
+<tr>
+<td width=50>
+<a href="index.shtml">Components</a>
+</td>
+<td width=50>
+<a href="all.shtml">All</a> 
+</td>
+<td width=50>
+<a href="new.shtml">New</a>
+</td>
+<td colspan=2>
+<a href="mac.shtml" translate=no>MacOS</a> 
+</td>
+<td colspan=2>
+<a href="win.shtml" translate=no>Windows</a> 
+</td>
+<td colspan=2>
+<a href="linux.shtml" translate=no>Linux</a> 
+</td>
+<td colspan=2>
+<a href="ios.shtml" translate=no>iOS</a> 
+</td>
+</tr>
+
+<tr>
+<td width=50>
+<a href="https://www.mbsplugins.eu/MBS-FileMaker-Plugin-Examples/">Examples</a>
+</td>
+<td width=50 colspan=2>
+<a href="cross.shtml">Mac &amp; Win</a>
+</td>
+<td width=50>
+<a href="server.shtml">Server</a> 
+</td>
+<td width=50>
+<a href="client.shtml">Client</a>
+</td>
+<td width=50>
+<a href="https://www.monkeybreadsoftware.com/filemaker/guide/">Guides</a>
+</td>
+<td width=50>
+<a href="stat.shtml">Statistic</a>
+</td>
+<td width=50>
+<a href="filemaker-magazin-functions.shtml" translate=no>FMM</a>
+</td>
+<td width=50>
+<a href="blog-entries.shtml">Blog</a>
+</td>
+<td width=50>
+<a href="deprecated.shtml">Deprecated</a>
+</td>
+<td width=50>
+<a href="old.shtml">Old</a>
+</td>
+</tr>
+
+
+</table>
+
+<div id="search"></div>
+<script src="searchFileMaker.js"></script>
+
+
+<script type="text/javascript" src="copy.js"></script>
+<h2 lang="en">Component: <span translate="no">FMSQL</span></h2>
+<P lang="en">SQL inside Claris FileMaker databases</P>
+<P lang="en">
+This functions help you execute SQL within the Claris FileMaker database on client and server.<br>
+<br>
+If you look for <a href="component_SQL.shtml" translate="no">SQL</a> functions to other databases (like MySQL), please check our <a href="component_SQL.shtml" translate="no">SQL</a> functions and for Mongo databases the <a href="component_MongoDB.shtml" translate="no">MongoDB</a> functions.
+</P>
+
+<table lang="en" cellpadding=3 width="100%">
+<tr>
+<td class=grau>Version</td>
+<td class=grau>macOS</td>
+<td class=grau>Windows</td>
+<td class=grau title="FileMaker Server on Linux">Linux</td>
+<td class=grau title="Plugin on FileMaker Server">Server</td>
+<td class=grau title="An application built with the FileMaker iOS SDK">iOS SDK</td>
+</tr>
+<tr>
+<td class=grau>
+<a href="newinversion12.shtml" class=version title="First functions introduced with version 1.2.">1.2</a>
+ / <a href="newinversion162.shtml" class=version title="Newest functions in version 16.2.">16.2</a>
+</td><td Class=grau>
+&#9989; Yes
+</td><td class=grau>
+&#9989; Yes
+</td><td class=grau>
+&#9989; 97%
+</td><td class=grau>
+&#9989; 99%
+</td><td class=grau>
+&#9989; 97%
+</td>
+</tr>
+</table>
+<br>
+<table cellpadding=2 border=0 width="100%">
+<tr>
+<th align=left>Item</th>
+<th align=left>Details</th>
+<th align=left>Server</th>
+</tr>
+<tr id="Dictionary.AddSQLRecord">
+<td><a href="DictionaryAddSQLRecord.shtml" translate="no">Dictionary.AddSQLRecord</a><br>
+Adds values from a record to dictionary via SQL.
+<td>All<br>7.4</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="Dictionary.AddSQLRecords">
+<td><a href="DictionaryAddSQLRecords.shtml" translate="no">Dictionary.AddSQLRecords</a><br>
+Adds values from a record to dictionary via SQL.
+<td>All<br>7.4</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.CompareTables">
+<td><a href="FMCompareTables.shtml" translate="no">FM.CompareTables</a><br>
+Compare two tables.
+<td>All<br>9.3</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.DeleteRecord">
+<td><a href="FMDeleteRecord.shtml" translate="no">FM.DeleteRecord</a><br>
+Deletes an existing record in a table in one line.
+<td>All<br>6.0</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.DeleteRecords">
+<td><a href="FMDeleteRecords.shtml" translate="no">FM.DeleteRecords</a><br>
+Deletes existing records in a table in one line.
+<td>All<br>6.0</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.ExecuteFileSQL">
+<td><a href="FMExecuteFileSQL.shtml" translate="no">FM.ExecuteFileSQL</a><br>
+Execute the SQL Statement against a FileMaker database. 
+<td>All<br>3.5</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.ExecuteFileSQLOnIdle">
+<td><a href="FMExecuteFileSQLOnIdle.shtml" translate="no">FM.ExecuteFileSQLOnIdle</a><br>
+Executes a SQL command at idle time.
+<td>All<br>6.5</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.ExecuteFileSQLValue">
+<td><a href="FMExecuteFileSQLValue.shtml" translate="no">FM.ExecuteFileSQLValue</a><br>
+Execute the SQL Statement against a FileMaker database. 
+<td>All<br>12.0</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.ExecuteSQL">
+<td><a href="FMExecuteSQL.shtml" translate="no">FM.ExecuteSQL</a> &nbsp; <b style="color: #8B0000"> Deprecated </b><br>
+Execute the SQL Statement against the current FileMaker File. 
+<td>All<br>1.2</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.ExecuteSQL.LastError">
+<td><a href="FMExecuteSQLLastError.shtml" translate="no">FM.ExecuteSQL.LastError</a><br>
+Queries the last error code from an SQL call
+<td>All<br>1.2</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.ExecuteSQL.LastErrorMessage">
+<td><a href="FMExecuteSQLLastErrorMessage.shtml" translate="no">FM.ExecuteSQL.LastErrorMessage</a><br>
+Queries the last error message from an SQL call
+<td>All<br>3.0</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.ExecuteSQL.LastParameters">
+<td><a href="FMExecuteSQLLastParameters.shtml" translate="no">FM.ExecuteSQL.LastParameters</a> &nbsp; <b style="color: #00008B"> New in 16.2 </b><br>
+Queries parameters from last failed SQL command.
+<td>All<br>16.2</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.ExecuteSQL.LastSQL">
+<td><a href="FMExecuteSQLLastSQL.shtml" translate="no">FM.ExecuteSQL.LastSQL</a><br>
+Queries last SQL command.
+<td>All<br>7.4</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.ExecuteSQLOnIdle">
+<td><a href="FMExecuteSQLOnIdle.shtml" translate="no">FM.ExecuteSQLOnIdle</a> &nbsp; <b style="color: #8B0000"> Deprecated </b><br>
+This is similar to FM.ExecuteSQL, except that it waits until idle to execute. 
+<td>Mac/Win<br>1.2</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.GetSQLBatchMode">
+<td><a href="FMGetSQLBatchMode.shtml" translate="no">FM.GetSQLBatchMode</a> &nbsp; <b style="color: #8B0000"> Deprecated </b><br>
+Queries turbo level for sending SQL in chunks.
+<td>All<br>6.4</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.InsertOrUpdateRecord">
+<td><a href="FMInsertOrUpdateRecord.shtml" translate="no">FM.InsertOrUpdateRecord</a><br>
+Inserts or updates a record in a table in one line.
+<td>All<br>6.0</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.InsertOrUpdateRecord2">
+<td><a href="FMInsertOrUpdateRecord2.shtml" translate="no">FM.InsertOrUpdateRecord2</a><br>
+Inserts or updates a record in a table in one line.
+<td>All<br>6.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.InsertOrUpdateRecord3">
+<td><a href="FMInsertOrUpdateRecord3.shtml" translate="no">FM.InsertOrUpdateRecord3</a><br>
+Inserts or updates a record in a table in one line.
+<td>All<br>6.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.InsertOrUpdateRecord4">
+<td><a href="FMInsertOrUpdateRecord4.shtml" translate="no">FM.InsertOrUpdateRecord4</a><br>
+Inserts or updates a record in a table in one line.
+<td>All<br>11.2</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.InsertOrUpdateRecord5">
+<td><a href="FMInsertOrUpdateRecord5.shtml" translate="no">FM.InsertOrUpdateRecord5</a><br>
+Inserts or updates a record in a table in one line.
+<td>All<br>11.2</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.InsertOrUpdateRecordQuery">
+<td><a href="FMInsertOrUpdateRecordQuery.shtml" translate="no">FM.InsertOrUpdateRecordQuery</a><br>
+Insert or updates a lot of records queried from a database.
+<td>All<br>8.4</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.InsertRecord">
+<td><a href="FMInsertRecord.shtml" translate="no">FM.InsertRecord</a><br>
+Inserts a new record in a table in one line.
+<td>All<br>5.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.InsertRecordCSV">
+<td><a href="FMInsertRecordCSV.shtml" translate="no">FM.InsertRecordCSV</a><br>
+Inserts records based on CSV text.
+<td>All<br>7.4</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.InsertRecordQuery">
+<td><a href="FMInsertRecordQuery.shtml" translate="no">FM.InsertRecordQuery</a><br>
+Inserts a lot of records queried from a database.
+<td>All<br>5.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.InsertRecordQueryIgnoreDuplicates">
+<td><a href="FMInsertRecordQueryIgnoreDuplicates.shtml" translate="no">FM.InsertRecordQueryIgnoreDuplicates</a><br>
+Inserts a lot of records queried from a database.
+<td>All<br>6.0</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.InsertRecordTSV">
+<td><a href="FMInsertRecordTSV.shtml" translate="no">FM.InsertRecordTSV</a><br>
+Inserts records based on tab/return separated text.
+<td>All<br>5.3</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.InsertSetUpdateProgressDialog">
+<td><a href="FMInsertSetUpdateProgressDialog.shtml" translate="no">FM.InsertSetUpdateProgressDialog</a><br>
+Enable updating progress bar.
+<td>Mac/Win<br>6.2</td>
+<td> &nbsp; &#10060; Server</td>
+</tr>
+<tr id="FM.NULL">
+<td><a href="FMNULL.shtml" translate="no">FM.NULL</a><br>
+Returns a null value.
+<td>All<br>5.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.QueryBaseTableNames">
+<td><a href="FMQueryBaseTableNames.shtml" translate="no">FM.QueryBaseTableNames</a><br>
+Queries the base table names of all files currently open.
+<td>All<br>3.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.QueryFieldsForBaseTableName">
+<td><a href="FMQueryFieldsForBaseTableName.shtml" translate="no">FM.QueryFieldsForBaseTableName</a><br>
+Queries the field names of all fields in the given table.
+<td>All<br>3.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.QueryFieldsForTableName">
+<td><a href="FMQueryFieldsForTableName.shtml" translate="no">FM.QueryFieldsForTableName</a><br>
+Queries the field names of all fields in the given table.
+<td>All<br>3.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.QueryTableNames">
+<td><a href="FMQueryTableNames.shtml" translate="no">FM.QueryTableNames</a><br>
+Queries the table names of all files currently open.
+<td>All<br>3.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.Avg">
+<td><a href="FMSQLAvg.shtml" translate="no">FM.SQL.Avg</a><br>
+Calculates average value in a record set.
+<td>All<br>9.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.CSV">
+<td><a href="FMSQLCSV.shtml" translate="no">FM.SQL.CSV</a><br>
+Queries text of SQL result for CSV export.
+<td>All<br>7.0</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.Execute">
+<td><a href="FMSQLExecute.shtml" translate="no">FM.SQL.Execute</a><br>
+Execute the SQL Statement against a FileMaker database. 
+<td>All<br>5.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.Field">
+<td><a href="FMSQLField.shtml" translate="no">FM.SQL.Field</a><br>
+Queries field value for given position in result.
+<td>All<br>5.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.FieldCount">
+<td><a href="FMSQLFieldCount.shtml" translate="no">FM.SQL.FieldCount</a><br>
+Queries number of fields.
+<td>All<br>5.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.FieldType">
+<td><a href="FMSQLFieldType.shtml" translate="no">FM.SQL.FieldType</a><br>
+Queries field type for given position in result.
+<td>All<br>5.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.InsertOrUpdateRecords">
+<td><a href="FMSQLInsertOrUpdateRecords.shtml" translate="no">FM.SQL.InsertOrUpdateRecords</a><br>
+Insert or updates a lot of records queried from a database.
+<td>All<br>16.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.InsertRecords">
+<td><a href="FMSQLInsertRecords.shtml" translate="no">FM.SQL.InsertRecords</a><br>
+Inserts records in FileMaker database from records in memory.
+<td>All<br>6.4</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.InsertRecordsToSQL">
+<td><a href="FMSQLInsertRecordsToSQL.shtml" translate="no">FM.SQL.InsertRecordsToSQL</a><br>
+Inserts records in SQL database from records in memory.
+<td>All<br>6.4</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.JSONColumn">
+<td><a href="FMSQLJSONColumn.shtml" translate="no">FM.SQL.JSONColumn</a><br>
+Returns a column as JSON array.
+<td>All<br>10.5</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.JSONRecord">
+<td><a href="FMSQLJSONRecord.shtml" translate="no">FM.SQL.JSONRecord</a><br>
+Returns a row as JSON object.
+<td>All<br>8.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.JSONRecords">
+<td><a href="FMSQLJSONRecords.shtml" translate="no">FM.SQL.JSONRecords</a><br>
+Returns rows as JSON array.
+<td>All<br>8.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.List">
+<td><a href="FMSQLList.shtml" translate="no">FM.SQL.List</a><br>
+Lists all IDs of current FM.SQL objects.
+<td>All<br>12.5</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.Max">
+<td><a href="FMSQLMax.shtml" translate="no">FM.SQL.Max</a><br>
+Queries max value in a record set.
+<td>All<br>9.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.Min">
+<td><a href="FMSQLMin.shtml" translate="no">FM.SQL.Min</a><br>
+Queries min value in a record set.
+<td>All<br>9.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.Release">
+<td><a href="FMSQLRelease.shtml" translate="no">FM.SQL.Release</a><br>
+Releases memory used for the SQL result.
+<td>All<br>5.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.ReleaseAll">
+<td><a href="FMSQLReleaseAll.shtml" translate="no">FM.SQL.ReleaseAll</a><br>
+Release all FMSQL objects.
+<td>All<br>10.5</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.RowCount">
+<td><a href="FMSQLRowCount.shtml" translate="no">FM.SQL.RowCount</a><br>
+Queries number of rows in the result.
+<td>All<br>5.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.Sum">
+<td><a href="FMSQLSum.shtml" translate="no">FM.SQL.Sum</a><br>
+Calculates sum value in a record set.
+<td>All<br>9.1</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.Text">
+<td><a href="FMSQLText.shtml" translate="no">FM.SQL.Text</a><br>
+Queries text of SQL result.
+<td>All<br>7.0</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.ToMatrix">
+<td><a href="FMSQLToMatrix.shtml" translate="no">FM.SQL.ToMatrix</a><br>
+Copies from result set to a Matrix.
+<td>All<br>14.0</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.XMLRecord">
+<td><a href="FMSQLXMLRecord.shtml" translate="no">FM.SQL.XMLRecord</a><br>
+Returns a row as XML object.
+<td>All<br>10.3</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SQL.XMLRecords">
+<td><a href="FMSQLXMLRecords.shtml" translate="no">FM.SQL.XMLRecords</a><br>
+Returns rows as XML.
+<td>All<br>10.3</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.SetSQLBatchMode">
+<td><a href="FMSetSQLBatchMode.shtml" translate="no">FM.SetSQLBatchMode</a> &nbsp; <b style="color: #8B0000"> Deprecated </b><br>
+Sets turbo level for sending SQL in chunks.
+<td>All<br>6.4</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.TableStatistics">
+<td><a href="FMTableStatistics.shtml" translate="no">FM.TableStatistics</a><br>
+Queries statistics on a table.
+<td>All<br>8.2</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.UpdateRecord">
+<td><a href="FMUpdateRecord.shtml" translate="no">FM.UpdateRecord</a><br>
+Update an existing record in a table in one line.
+<td>All<br>6.0</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.UpdateRecord2">
+<td><a href="FMUpdateRecord2.shtml" translate="no">FM.UpdateRecord2</a><br>
+Updates existing records in a table in one line.
+<td>All<br>8.0</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.UpdateRecord3">
+<td><a href="FMUpdateRecord3.shtml" translate="no">FM.UpdateRecord3</a><br>
+Updates existing records in a table in one line.
+<td>All<br>8.0</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.UpdateRecord4">
+<td><a href="FMUpdateRecord4.shtml" translate="no">FM.UpdateRecord4</a><br>
+Updates existing records in a table in one line.
+<td>All<br>14.5</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.UpdateRecord5">
+<td><a href="FMUpdateRecord5.shtml" translate="no">FM.UpdateRecord5</a><br>
+Updates existing records in a table in one line.
+<td>All<br>14.5</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.UpdateRecords">
+<td><a href="FMUpdateRecords.shtml" translate="no">FM.UpdateRecords</a><br>
+Updates existing records in a table in one line.
+<td>All<br>6.0</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.UpdateRecords2">
+<td><a href="FMUpdateRecords2.shtml" translate="no">FM.UpdateRecords2</a><br>
+Updates existing records in a table in one line.
+<td>All<br>8.0</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.UpdateRecords3">
+<td><a href="FMUpdateRecords3.shtml" translate="no">FM.UpdateRecords3</a><br>
+Updates existing records in a table in one line.
+<td>All<br>8.0</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.UpdateRecords4">
+<td><a href="FMUpdateRecords4.shtml" translate="no">FM.UpdateRecords4</a><br>
+Updates existing records in a table in one line.
+<td>All<br>14.5</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+<tr id="FM.UpdateRecords5">
+<td><a href="FMUpdateRecords5.shtml" translate="no">FM.UpdateRecords5</a><br>
+Updates existing records in a table in one line.
+<td>All<br>14.5</td>
+<td> &nbsp; &#9989; Server</td>
+</tr>
+</table>
+<p lang="en">67 functions shown.</p>
+<p lang="en">These functions require a license (72%).</p>
+<h3 lang="en">Blog Entries</h3>
+<ul>
+<li><a href="https://www.mbsplugins.de/archive/2026-04-30/SQL_error_checking_improved/monkeybreadsoftware_blog_filemaker">SQL error checking improved</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2025-01-08/New_in_MBS_FileMaker_Plugin_in/monkeybreadsoftware_blog_filemaker">New in MBS FileMaker Plugin in Version 14.5</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2022-08-29/MBS_@_FMTrainingTV/monkeybreadsoftware_blog_filemaker">MBS @ FMTraining.TV</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2021-06-14/Custom_Functions_in_JavaScript/monkeybreadsoftware_blog_filemaker">Custom Functions in JavaScript</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2021-06-01/MBS_FileMaker_Plugin_June_2021/monkeybreadsoftware_blog_filemaker">MBS FileMaker Plugin, June 2021 News</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2021-03-29/Combined_Components_with_MBS_F/monkeybreadsoftware_blog_filemaker">Combined Components with MBS FileMaker Plugin</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2019-01-30/FileMaker_SQL_with_Sum_Min_Max/monkeybreadsoftware_blog_filemaker">FileMaker SQL with Sum, Min, Max and Avg on results</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2017-12-10/FileMaker_Cloud_Tipps__Tricks/monkeybreadsoftware_blog_filemaker">FileMaker Cloud Tipps &amp; Tricks</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2016-03-08/MBS_FileMaker_Plug-in_61_for_O/monkeybreadsoftware_blog_filemaker">MBS FileMaker Plug-in 6.1 for OS X/Windows</a></li>
+<li><a href="https://www.mbsplugins.de/archive/2016-01-28/MBS_FileMaker_Plugin_60_for_OS/monkeybreadsoftware_blog_filemaker">MBS FileMaker Plugin 6.0 for OS X/Windows</a></li>
+</ul>
+<h3 lang="de">FileMaker Magazin</h3>
+<ul>
+<li><a href="https://filemaker-magazin.de/neuigkeit/4286-Appetithappen-FMM_202502">Ausgabe 2/2025, Seite 23 bis 24</a></li>
+<li><a href="https://filemaker-magazin.de/neuigkeit/4174-Appetithappen-FMM_202202">Ausgabe 2/2022, Seite 29</a></li>
+<li><a href="https://filemaker-magazin.de/neuigkeit/4124-Appetithappen-FMM_202101">Ausgabe 1/2021, Seite 29 bis 31</a></li>
+<li><a href="https://filemaker-magazin.de/neuigkeit/4118-Appetithappen-FMM_202006">Ausgabe 6/2020, Seite 25 bis 26</a></li>
+<li><a href="https://filemaker-magazin.de/neuigkeit/4110-Appetithappen-FMM_202005">Ausgabe 5/2020, Seite 20</a></li>
+<li><a href="https://filemaker-magazin.de/neuigkeit/4096-Appetithappen-FMM_202003">Ausgabe 3/2020, Seite 40</a></li>
+<li><a href="https://filemaker-magazin.de/neuigkeit/4064-Appetithappen-FMM_201906">Ausgabe 6/2019, Seite 33</a></li>
+<li><a href="https://filemaker-magazin.de/neuigkeit/4053-Appetithappen-FMM_201904">Ausgabe 4/2019, Seite 32 bis 35</a></li>
+<li><a href="https://filemaker-magazin.de/neuigkeit/4053-Appetithappen-FMM_201904">Ausgabe 4/2019, Seite 27</a></li>
+<li><a href="https://filemaker-magazin.de/neuigkeit/4046-Appetithappen-FMM_201903">Ausgabe 3/2019, Seite 30</a></li>
+</ul>
+<div id=askquestion style="width: 200pt; margin: 0pt; padding: 5pt; border-color:#ccc; border-style:solid; background-color: #eee; border-width: 2pt; border-radius: 10pt; " lang="en">
+&#128172; <a href="https://www.monkeybreadsoftware.com/feedback/?what=filemaker&path=FMSQL">Ask a question or report a problem</a>
+</div>
+
+</main>
+
+<img src="/images/fmplugin19.png" width="128" height="128" alt="" border="0" align=right id="fmplugin19logo">
+
+<br>
+<div id="searchbox2"><form method="get" action="https://www.google.com/search">
+<input type="text" name="q" size="60" maxlength="255" value="" />
+<input type="hidden"  name="sitesearch" value="mbsplugins.eu" />
+<input type="submit" value="Google Site Search" />
+</form></div>
+ 
+<br clear=all>
+
+</div> <!-- content -->
+<div id="mainbottom"></div>
+</div> <!-- main -->
+
+<nav>
+<div id="nav">
+<div id="navtop"></div>
+<div id="eyecatcher"></div>
+
+<ul>
+<li><a class="menuButton"  href="https://www.monkeybreadsoftware.com/">Home</a></li>
+
+
+
+<li><a class="menuButton"  href="https://www.monkeybreadsoftware.com/filemaker/">FileMaker Plug-In</a></li>
+<li><a class="menuButton2" href="https://www.mbsplugins.de/filemaker">FileMaker Blog</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/video/">FileMaker Videos</a></li>
+<li><a class="menuButton2" href="/">Documentation</a></li>
+
+<li><a class="menuButton3" href="/MBS-FileMaker-Plugin-Examples/">Examples</a></li>
+
+<li><a class="menuButton3" href="/newinversion162.shtml">New in 16.2</a></li>
+<li><a class="menuButton3" href="/newinversion161.shtml">New in 16.1</a></li>
+<li><a class="menuButton3" href="/newinversion160.shtml">New in 16.0</a></li>
+<li><a class="menuButton3" href="/newinversion155.shtml">New in 15.5</a></li>
+<li><a class="menuButton3" href="/newinversion154.shtml">New in 15.4</a></li>
+<li><a class="menuButton3" href="/newinversion153.shtml">New in 15.3</a></li>
+
+<li><a class="menuButton3" href="https://www.monkeybreadsoftware.com/DynaPDF-Manual/">DynaPDF Manual</a></li>
+<li><a class="menuButton3" href="/random.php">Random Page</a></li>
+
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/events/">Events and Training</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/mailinglist.shtml">Mailing list</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/pricing.shtml"><img src="https://www.monkeybreadsoftware.com/images/btn_buynowCC_LG.gif" width=122 height=47 alt="Buy now" align=center></a>
+</li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/pricing.shtml">Pricing</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/guide/">User Guide</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/SyntaxColoring/">Syntax Coloring</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/faq.shtml">FAQ</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/dynapdf.shtml">DynaPDF</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/saxon.shtml">Saxon</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/libxl.shtml">LibXL</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/reviews.shtml">Reviews</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/License.shtml">License</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/trial/trial-filemaker.shtml">Trial License</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/download.shtml">Download</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/releasenotes.shtml">Release Notes</a></li>
+
+<li><a class="menuButton2" href="https://the.fmsoup.org">fmsoup Forum</a></li>
+<li><a class="menuButton2" href="https://www.monkeybreadsoftware.com/filemaker/Dash/">Dash</a></li>
+
+
+
+
+<li><a class="menuButton"  href="https://www.monkeybreadsoftware.de/xojo/">Xojo Plug-Ins</a></li>
+<li><a class="menuButton"  href="https://www.monkeybreadsoftware.de/Software/">Applications</a></li>
+<li><a class="menuButton"  href="https://www.monkeybreadsoftware.com/newsletter/newsletter.shtml">Newsletter</a></li>
+<li><a class="menuButton"  href="https://www.monkeybreadsoftware.com/team/">Team</a></li>
+</ul>
+
+
+<div id="searchbox">
+<form method="get" action="https://www.google.com/search" style="margin: 0px;">
+<input type="text" name="q" size="16" maxlength="255" value="" />
+<input type="hidden"  name="sitesearch" value="mbsplugins.eu" />
+<input type="submit" value="Site Search" /></form></div>
+
+<div id="commonbox">
+<ul>
+<li><a class="blacklink" href="/dash.shtml">Dash</a></li>
+<li><a class="blacklink" href="https://www.monkeybreadsoftware.com/sitemap.shtml">Sitemap</a></li>
+
+<li><a class="blacklink" href="https://www.monkeybreadsoftware.com/feedback/feedback.php?what=filemaker&path=Ask">Ask a question</a> &#128172;</li>
+<li><a class="blacklink" href="https://www.monkeybreadsoftware.com/links.shtml">Links</a></li>
+<li><a class="blacklink" href="https://www.monkeybreadsoftware.com/contact.shtml">Contact us</a></li>
+<li><a class="blacklink" href="https://www.monkeybreadsoftware.com/kontakt.shtml">Kontakt / Impressum</a></li>
+<li><a class="blacklink" href="https://www.monkeybreadsoftware.com/policy.shtml">Datenschutz</a></li>
+</ul>
+</div><!-- commonbox -->
+
+<div id="navbottom"></div>
+</div> <!-- nav -->
+</nav>
+
+<script src="/layout/layout.js"></script>
+<script src="/navigation.js"></script>
+
+</BODy>
+</HTML>
+
+
+

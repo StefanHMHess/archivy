@@ -204,11 +204,15 @@ If ( IsEmpty ( $sql_vo_err ) ; "" ; "SQL Fehler Vorgaenge: " & Left ( $sql_vo_er
 <Step enable="True" id="1" name="Perform Script">
 <Script id="" name="FM_ARCHIVY_SYNC_VORGAENGE_PUSH_EXAKT"/>
 </Step>
+<Step enable="True" id="89" name="# (comment)"><Text>=== PUSH VORGAENGE PDF ===</Text></Step>
+<Step enable="True" id="1" name="Perform Script">
+<Script id="" name="FM_ARCHIVY_SYNC_VORGAENGE_PDF_PUSH_CONTAINER"/>
+</Step>
 <Step enable="True" id="89" name="# (comment)"><Text>=== PUSH VERTRAEGE ===</Text></Step>
 <Step enable="True" id="1" name="Perform Script">
 <Script id="" name="FM_ARCHIVY_SYNC_VERTRAEGE_PUSH_EXAKT"/>
 </Step>
-<Step enable="True" id="89" name="# (comment)"><Text>=== PULL ===</Text></Step>
+<Step enable="True" id="89" name="# (comment)"><Text>=== PULL (optional) ===</Text></Step>
 <Step enable="True" id="1" name="Perform Script">
 <Script id="" name="FM_ARCHIVY_SYNC_VERTRAEGE_PULL_EXAKT"/>
 </Step>

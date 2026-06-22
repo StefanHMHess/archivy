@@ -84,10 +84,36 @@ export default function OwnerSelector({ user, onSelectOwner }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: T.sp6 }}>
-      <div style={{ width: 520, background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: T.sp6, boxShadow: T.shadowMd }}>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Inhaber wählen</h1>
-        <p style={{ marginTop: T.sp2, color: T.textMuted }}>Wähle den Bereich, den du sehen möchtest.</p>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: T.sp6,
+        background: 'radial-gradient(1200px 480px at 20% 0%, #ccfbf1 0%, #f8fafc 55%, #f1f5f9 100%)',
+      }}
+    >
+      <div
+        style={{
+          width: 'min(760px, 100%)',
+          background: T.bgCard,
+          border: `1px solid ${T.border}`,
+          borderRadius: 16,
+          padding: T.sp6,
+          boxShadow: T.shadowMd,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: T.sp4, marginBottom: T.sp3, flexWrap: 'wrap' }}>
+          <img src="/archivy_icon_512 (1).svg" alt="Archivy" style={{ width: 52, height: 52 }} />
+          <div>
+            <div style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#0f766e' }}>ARCHIVY</div>
+            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, lineHeight: 1.15 }}>Willkommen, {user.email}</h1>
+          </div>
+        </div>
+        <p style={{ marginTop: 0, marginBottom: T.sp4, color: T.textMuted, fontSize: 15 }}>
+          Schön, dass du da bist. Wähle deinen Inhaber-Bereich und starte direkt in deine Vertragsübersicht.
+        </p>
 
         {tableMissing && (
           <div style={{ marginTop: T.sp4, padding: T.sp3, borderRadius: T.r2, background: '#fff7ed', color: '#9a3412', fontSize: 13 }}>
@@ -115,11 +141,22 @@ export default function OwnerSelector({ user, onSelectOwner }) {
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     padding: T.sp4,
-                    borderRadius: T.r2,
+                    borderRadius: 12,
                     border: `1px solid ${T.border}`,
-                    background: erlaubnis ? T.bgCard : '#f8fafc',
+                    background: erlaubnis ? '#f8fffd' : '#f8fafc',
                     color: erlaubnis ? T.textMain : T.textMuted,
                     cursor: erlaubnis ? 'pointer' : 'not-allowed',
+                    transition: 'transform 0.12s ease, box-shadow 0.12s ease',
+                    boxShadow: erlaubnis ? '0 1px 0 rgba(15,118,110,0.06)' : 'none',
+                  }}
+                  onMouseEnter={e => {
+                    if (!erlaubnis) return
+                    e.currentTarget.style.transform = 'translateY(-1px)'
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(15,118,110,0.12)'
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = erlaubnis ? '0 1px 0 rgba(15,118,110,0.06)' : 'none'
                   }}
                 >
                   <div>

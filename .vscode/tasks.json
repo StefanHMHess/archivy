@@ -1,0 +1,128 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Verify contracts with service key",
+			"type": "shell",
+			"command": "node verify_vertraege_contacts.mjs",
+			"group": "test"
+		},
+		{
+			"label": "Check specific IDs",
+			"type": "shell",
+			"command": "node tmp_check_ids.mjs",
+			"group": "test"
+		},
+		{
+			"label": "Check contract 3 costs",
+			"type": "shell",
+			"command": "node tmp_check_ids.mjs",
+			"group": "test"
+		},
+		{
+			"label": "Check Allianz Logo",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"check_allianz_logo.mjs"
+			]
+		},
+		{
+			"label": "Check Allianz Logo 2",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"check_allianz_logo.mjs"
+			]
+		},
+		{
+			"label": "Check Allianz Logo 3",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"check_allianz_logo.mjs"
+			]
+		},
+		{
+			"label": "Check Contract 1 Fields",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"tmp_check_contract1_fields.mjs"
+			]
+		},
+		{
+			"label": "Check Contract 1 Fields Again",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"tmp_check_contract1_fields.mjs"
+			]
+		},
+		{
+			"label": "Check Vertraege Columns",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"tmp_check_vertraege_columns.mjs"
+			]
+		},
+		{
+			"label": "Check Supabase Vorgaenge Beschreibung",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"tmp_check_vorgaenge_beschreibung.mjs"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Check Supabase Vorgaenge Beschreibung",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"tmp_check_vorgaenge_beschreibung.mjs"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Check Supabase Env Keys",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"check_env_keys.mjs"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Check Supabase Vorgaenge Service",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqd2Zyc2hyaGlrY3Vic3N5dGZ3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTY5OTUyMywiZXhwIjoyMDk3Mjc1NTIzfQ.gu5ysZphH1QGidRmvQcnqsLd_CumrpPkmZZKcH_3rOg&& node tmp_check_vorgaenge_service.mjs"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Check Supabase ID 16454",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqd2Zyc2hyaGlrY3Vic3N5dGZ3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTY5OTUyMywiZXhwIjoyMDk3Mjc1NTIzfQ.gu5ysZphH1QGidRmvQcnqsLd_CumrpPkmZZKcH_3rOg&& node --input-type=module -e \"import fs from 'node:fs'; import { createClient } from '@supabase/supabase-js'; if (fs.existsSync('.env')) { for (const line of fs.readFileSync('.env','utf8').split(/\\r?\\n/)) { const t=line.trim(); if(!t||t.startsWith('#')) continue; const i=t.indexOf('='); if(i<0) continue; const k=t.slice(0,i).trim(); const v=t.slice(i+1).trim().replace(/^['\\\"]|['\\\"]$/g,''); if(!(k in process.env)) process.env[k]=v; } } const sb=createClient(process.env.VITE_SUPABASE_URL||process.env.SUPABASE_URL||'https://pjwfrshrhikcubssytfw.supabase.co', process.env.SUPABASE_SERVICE_ROLE_KEY); const {data,error}=await sb.from('vorgaenge').select('vorgang_id,vertrag,beschreibung,kurzbeschreibung,vorgang_art,app_modified_at').eq('vorgang_id','16454').maybeSingle(); if(error){console.error(error.message); process.exit(1);} console.log(JSON.stringify(data,null,2));\""
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Check Supabase Vorgaenge Service",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqd2Zyc2hyaGlrY3Vic3N5dGZ3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTY5OTUyMywiZXhwIjoyMDk3Mjc1NTIzfQ.gu5ysZphH1QGidRmvQcnqsLd_CumrpPkmZZKcH_3rOg&& node tmp_check_vorgaenge_service.mjs"
+			],
+			"isBackground": false
+		}
+	]
+}

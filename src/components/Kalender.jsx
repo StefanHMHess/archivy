@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 
 const WOCHENTAGE = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 
-export default function Kalender({ owner }) {
+export default function Kalender({ owner, onSelectVorgang }) {
   const [eintraege, setEintraege] = useState([])
   const [laden, setLaden] = useState(true)
   const [monat, setMonat] = useState(startDesMonats(new Date()))
@@ -66,25 +66,42 @@ export default function Kalender({ owner }) {
             {buildKalenderTage(monat).map((tag, idx) => {
               const eintraegeTag = eintraege.filter(e => isGleichesDatum(e.frist, tag.datum))
               const inMonat = tag.datum.getMonth() === monat.getMonth()
+              const heute = isHeute(tag.datum)
               return (
                 <div
                   key={`${tag.datum.toISOString()}_${idx}`}
+                  onClick={() => {
+                    if (eintraegeTag.length === 0) return
+                    const ids = eintraegeTag.map(e => e.vorgang_id)
+                    onSelectVorgang?.(ids[0], ids)
+                  }}
                   style={{
                     minHeight: 110,
-                    background: T.bgCard,
-                    border: `1px solid ${T.border}`,
+                    background: heute ? '#ecfeff' : T.bgCard,
+                    border: `1px solid ${heute ? '#0891b2' : T.border}`,
                     borderRadius: T.r2,
                     padding: T.sp2,
                     opacity: inMonat ? 1 : 0.45,
+                    boxShadow: heute ? 'inset 0 0 0 1px rgba(8,145,178,0.25)' : 'none',
+                    cursor: eintraegeTag.length > 0 ? 'pointer' : 'default',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: T.sp2 }}>
                     <span style={{ fontWeight: 700 }}>{tag.datum.getDate()}</span>
+                    {heute && <span style={{ fontSize: 10, fontWeight: 700, color: '#0e7490' }}>Heute</span>}
                     {eintraegeTag.length > 0 && <span style={{ fontSize: 12, color: T.warning, fontWeight: 700 }}>{eintraegeTag.length}</span>}
                   </div>
                   <div style={{ display: 'grid', gap: 4 }}>
                     {eintraegeTag.slice(0, 2).map(e => (
-                      <div key={e.vorgang_id} style={{ background: badgeFarbe(e.frist), color: '#0f172a', borderRadius: 6, padding: '2px 6px', fontSize: 11, lineHeight: 1.3 }} title={`${e.kurzbeschreibung || 'Ohne Bezeichnung'} · ${e.vertrag || '—'}`}>
+                      <div
+                        key={e.vorgang_id}
+                        onClick={ev => {
+                          ev.stopPropagation()
+                          onSelectVorgang?.(e.vorgang_id, eintraegeTag.map(x => x.vorgang_id))
+                        }}
+                        style={{ background: badgeFarbe(e.frist), color: '#0f172a', borderRadius: 6, padding: '2px 6px', fontSize: 11, lineHeight: 1.3, cursor: 'pointer' }}
+                        title={`${e.kurzbeschreibung || 'Ohne Bezeichnung'} · ${e.vertrag || '—'}`}
+                      >
                         {truncate(e.kurzbeschreibung || 'Ohne Bezeichnung', 28)}
                       </div>
                     ))}
@@ -98,13 +115,19 @@ export default function Kalender({ owner }) {
           <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.r2, overflow: 'hidden' }}>
             <div style={{ padding: T.sp3, borderBottom: `1px solid ${T.border}`, fontWeight: 700 }}>Nächste Fälligkeiten</div>
             {eintraege.map(e => (
-              <div key={e.vorgang_id} style={{ padding: T.sp3, borderBottom: `1px solid ${T.border}` }}>
+              <div
+                key={e.vorgang_id}
+                style={{ padding: T.sp3, borderBottom: `1px solid ${T.border}`, cursor: 'pointer' }}
+                onClick={() => onSelectVorgang?.(e.vorgang_id, eintraege.map(x => x.vorgang_id))}
+                onMouseEnter={ev => ev.currentTarget.style.background = '#f8fafc'}
+                onMouseLeave={ev => ev.currentTarget.style.background = ''}
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: T.sp3, alignItems: 'center' }}>
                   <div>
                     <div style={{ fontWeight: 600 }}>{e.kurzbeschreibung || 'Ohne Bezeichnung'}</div>
                     <div style={{ color: T.textMuted, fontSize: 13 }}>Vertrag: {e.vertrag || '—'} · Verantwortlich: {e.verantwortlicher || '—'}</div>
                   </div>
-                  <div style={{ color: fristFarbe(e.frist), whiteSpace: 'nowrap', fontWeight: 600 }}>{e.frist}</div>
+                  <div style={{ color: fristFarbe(e.frist), whiteSpace: 'nowrap', fontWeight: 600 }}>{formatDateDisplay(e.frist)}</div>
                 </div>
               </div>
             ))}
@@ -157,8 +180,31 @@ function buildKalenderTage(monat) {
 
 function isGleichesDatum(dateStr, dateObj) {
   if (!dateStr) return false
-  const d = new Date(dateStr)
+  const d = parseDateValue(dateStr)
+  if (!d) return false
   return d.getFullYear() === dateObj.getFullYear() && d.getMonth() === dateObj.getMonth() && d.getDate() === dateObj.getDate()
+}
+
+function formatDateDisplay(value) {
+  if (!value) return '—'
+  const text = String(value).trim()
+  const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/)
+  if (iso) return `${iso[3]}.${iso[2]}.${iso[1]}`
+  const d = parseDateValue(text)
+  if (!d) return text
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  return `${day}.${month}.${d.getFullYear()}`
+}
+
+function parseDateValue(value) {
+  if (!value) return null
+  const text = String(value).trim()
+  const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/)
+  if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]))
+  const d = new Date(text)
+  if (Number.isNaN(d.getTime())) return null
+  return d
 }
 
 function truncate(text, maxLen) {
@@ -175,4 +221,13 @@ function navBtnStyle() {
     cursor: 'pointer',
     fontWeight: 700,
   }
+}
+
+function isHeute(dateObj) {
+  const now = new Date()
+  return (
+    dateObj.getFullYear() === now.getFullYear() &&
+    dateObj.getMonth() === now.getMonth() &&
+    dateObj.getDate() === now.getDate()
+  )
 }
