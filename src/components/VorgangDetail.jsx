@@ -10,9 +10,23 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.vers
 
 const BUCKET = 'archivy-dokumente'
 
+// Hook für responsive Design
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640)
+  
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+  
+  return isMobile
+}
+
 export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate, onClose }) {
   const containerRef = useRef(null)
   const touchStartX = useRef(0)
+  const isMobile = useIsMobile()
   const [vorgang, setVorgang] = useState(null)
   const [entwurf, setEntwurf] = useState(null)
   const [vertragMeta, setVertragMeta] = useState(null)
@@ -344,7 +358,7 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
         </div>
       )}
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: T.sp2, position: 'sticky', top: 0, zIndex: 10, background: T.bg, paddingTop: 6, paddingBottom: 6, gap: T.sp1, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', marginBottom: T.sp2, position: 'sticky', top: 0, zIndex: 10, background: T.bg, paddingTop: 6, paddingBottom: 6, gap: isMobile ? T.sp2 : T.sp1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: T.sp2, flex: 1, minWidth: 0 }}>
           {logoSrc ? (
             <img
@@ -367,7 +381,7 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
           </div>
         </div>
         {/* Right: Navigation Buttons */}
-        <div style={{ display: 'flex', gap: T.sp1, alignItems: 'center', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: T.sp1, alignItems: 'center', flexShrink: 0, flexWrap: isMobile ? 'wrap' : 'nowrap', justifyContent: isMobile ? 'flex-start' : 'flex-end' }}>
             <button
               type="button"
               onClick={handleNeuVorgang}

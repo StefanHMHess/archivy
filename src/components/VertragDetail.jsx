@@ -6,9 +6,23 @@ import PdfThumbnail from './PdfThumbnail'
 const FIXED_SECRET_MASK = '••••••••••'
 const DEFAULT_ZAHLUNGSWEISEN = ['Abbuchung', 'Amex', 'Dauerauftrag', 'Mastercard', 'Eingang', 'Überweisungen']
 
+// Hook für responsive Design
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640)
+  
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+  
+  return isMobile
+}
+
 export default function VertragDetail({ vertragId, vertragIds = [], owner, onNavigate, onSelectVorgang, onClose }) {
   const containerRef = useRef(null)
   const touchStartX = useRef(0)
+  const isMobile = useIsMobile()
   const [vertrag, setVertrag] = useState(null)
   const [entwurf, setEntwurf] = useState(null)
   const [vorgaenge, setVorgaenge] = useState([])
@@ -334,7 +348,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
 
   return (
     <div ref={containerRef} style={{ width: '100%' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: T.sp2, position: 'sticky', top: 0, zIndex: 10, background: T.bg, paddingTop: 6, paddingBottom: 6, gap: T.sp1, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', marginBottom: T.sp2, position: 'sticky', top: 0, zIndex: 10, background: T.bg, paddingTop: 6, paddingBottom: 6, gap: isMobile ? T.sp2 : T.sp1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: T.sp2, flex: 1, minWidth: 0 }}>
           <LogoPreview vertrag={daten} logoFehler={logoFehler} setLogoFehler={setLogoFehler} />
           {/* Title Column */}
@@ -347,7 +361,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
             </p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: T.sp1, flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: T.sp1, flexWrap: 'wrap', justifyContent: isMobile ? 'flex-start' : 'flex-end', alignItems: 'center', flexShrink: 0 }}>
             <button
               type="button"
               onClick={() => setDatumSortAsc(v => !v)}
