@@ -17,7 +17,7 @@ export default function Kalender({ owner, onSelectVorgang }) {
       setLaden(true)
       let query = supabase
         .from('vorgaenge')
-        .select('vorgang_id, kurzbeschreibung, vertrag, frist, erledigt, verantwortlicher')
+        .select('vorgang_id, kurzbeschreibung, vertrag, frist, erledigt, erledigung, verantwortlicher')
         .eq('erledigt', false)
         .not('frist', 'is', null)
         .order('frist', { ascending: true })
@@ -128,6 +128,7 @@ export default function Kalender({ owner, onSelectVorgang }) {
                     <div style={{ color: T.textMuted, fontSize: 13 }}>Vertrag: {e.vertrag || '—'} · Verantwortlich: {e.verantwortlicher || '—'}</div>
                   </div>
                   <div style={{ color: fristFarbe(e.frist), whiteSpace: 'nowrap', fontWeight: 600 }}>{formatDateDisplay(e.frist)}</div>
+                  {e.erledigung && <div style={{ color: T.textMuted, fontSize: 13 }}>Erledigt am: {formatDateDisplay(e.erledigung)}</div>}
                 </div>
               </div>
             ))}

@@ -38,7 +38,7 @@ export default function Dashboard({ onNavigate, owner, onSelectVorgang }) {
         .select('vertrag_id,firma,beschreibung,vertragsnummer,datei_pfad_2')
       let faelligQuery = supabase
         .from('vorgaenge')
-        .select('vorgang_id, kurzbeschreibung, vertrag, frist, verantwortlicher')
+        .select('vorgang_id, kurzbeschreibung, vertrag, frist, erledigung, verantwortlicher')
         .eq('erledigt', false)
         .not('frist', 'is', null)
         .order('frist', { ascending: true })
@@ -124,9 +124,10 @@ export default function Dashboard({ onNavigate, owner, onSelectVorgang }) {
                       Vertrag: {firma}
                     </span>
                     <span>· Verantwortlich: {v.verantwortlicher || '—'}</span>
+                    {v.erledigung && <span>· Erledigt am: {formatDateDisplay(v.erledigung)}</span>}
                   </div>
                 </div>
-                <div style={{ color: fristFarbe(v.frist), whiteSpace: 'nowrap', fontWeight: 600 }}>{formatDateDisplay(v.frist) || '—'}</div>
+                <div style={{ color: fristFarbe(v.frist), whiteSpace: 'nowrap', fontWeight: 600 }}>Frist: {formatDateDisplay(v.frist) || '—'}</div>
               </div>
                 )
               })()}
