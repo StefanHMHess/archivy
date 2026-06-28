@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { T } from '../tokens'
 import { supabase } from '../lib/supabase'
 
 const PAGE = 50
 
 export default function Vorgaenge({ owner, onSelectVorgang }) {
+  const ownerIds = useMemo(() => ownerVarianten(owner?.id), [owner?.id])
   const [zeilen, setZeilen] = useState([])
   const [suche, setSuche] = useState('')
   const [laden, setLaden] = useState(true)
@@ -22,7 +23,7 @@ export default function Vorgaenge({ owner, onSelectVorgang }) {
         .limit(PAGE)
 
       if (owner.id !== '__all__') {
-        query = query.eq('vertragsbesitzer_id', owner.id)
+        query = query.in('vertragsbesitzer_id', ownerIds)
       }
 
       if (suche.trim()) {
@@ -139,6 +140,17 @@ export default function Vorgaenge({ owner, onSelectVorgang }) {
       )}
     </div>
   )
+}
+
+function ownerVarianten(ownerId) {
+  const raw = String(ownerId ?? '').trim()
+  if (!raw || raw === '__all__') return []
+
+  // Keep combined owners together: nicole-stefan <-> nicole+stefan
+  const plus = raw.replace(/-/g, '+')
+  const dash = raw.replace(/\+/g, '-')
+
+  return [...new Set([raw, plus, dash])]
 }
 
 function fristFarbe(frist, erledigt) {

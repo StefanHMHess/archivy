@@ -11,7 +11,7 @@
 <Name>$base_url</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA[Lower ( $$INHABER_ID )]]></Calculation></Value>
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $$INHABER_ID ) ; "unbekannt" ; Lower ( TrimAll ( GetAsText ( $$INHABER_ID ) ; 1 ; 1 ) ) )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$owner_id</Name>
 </Step>
@@ -24,6 +24,11 @@
 <Value><Calculation><![CDATA[$base_url & "/rest/v1/vorgaenge?on_conflict=vorgang_id"]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$upsert_url</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["05-2026-06-27.23-sbvertragsnummer"]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$script_version</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[""]]></Calculation></Value>
@@ -46,7 +51,7 @@
 <Name>$auth_blocked</Name>
 </Step>
 <Step enable="True" id="68" name="If">
-<Calculation><![CDATA[IsEmpty ( $key ) or IsEmpty ( $base_url ) or IsEmpty ( $owner_id ) or IsEmpty ( $$FM_VORGAENGE_TABELLE ) or IsEmpty ( $$FM_VERTRAEGE_TABELLE )]]></Calculation>
+<Calculation><![CDATA[IsEmpty ( $key ) or IsEmpty ( $base_url ) or IsEmpty ( $$FM_VORGAENGE_TABELLE ) or IsEmpty ( $$FM_VERTRAEGE_TABELLE )]]></Calculation>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[MBS("Msgbox"; "Archivy Sync abgebrochen" & Char(182) & "Bitte zuerst FM_ARCHIVY_SYNC_INIT ausfuehren und $$FM_VORGAENGE_TABELLE / $$FM_VERTRAEGE_TABELLE setzen.")]]></Calculation></Value>
@@ -71,14 +76,22 @@ Right ( "0" & Hour ( t ) ; 2 ) & ":" & Right ( "0" & Minute ( t ) ; 2 ) & ":" & 
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[
 MBS("FM.SQL.Execute"; "";
-"SELECT \"Vertrag_ID\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Archivy_sync\" IN ('x','X')")
+"SELECT \"Vertrag_ID\", \"Vertrag\", \"Vertragseigentümer\" as \"owner\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Archivy_sync\" IN ('x','X')")
 ]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$sql_marked</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[
-If ( Left ( $sql_marked ; 5 ) = "[MBS]" ; "[]" ; MBS("FM.SQL.JSONRecords"; $sql_marked; "vertrag_id") )
+MBS("FM.SQL.Execute"; "";
+"SELECT \"Vertrag_ID\" as \"vertrag_id\", \"Vertragseigentümer\" as \"owner\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Archivy_sync\" = 'x' OR \"Archivy_sync\" = 'X'")
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_marked_owner</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+If ( Left ( $sql_marked ; 5 ) = "[MBS]" ; "[]" ; MBS("FM.SQL.JSONRecords"; $sql_marked; "vertrag_id" & ¶ & "vertrag" & ¶ & "owner") )
 ]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$json_marked</Name>
@@ -89,9 +102,117 @@ If ( Left ( $sql_marked ; 5 ) = "[MBS]" ; "[]" ; MBS("FM.SQL.JSONRecords"; $sql_
 <Name>$marked_count</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+MBS("FM.SQL.Execute"; "";
+"SELECT \"Vertrag_ID\", \"Vertrag\", \"Vertragseigentümer\" as \"owner\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\"")
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_contracts</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+"[]"
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$json_contracts</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql_contracts ; 5 ) = "[MBS]" ; "[]" ; MBS("FM.SQL.JSONRecords"; $sql_contracts; "vertrag_id" & ¶ & "vertrag" & ¶ & "owner") )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$json_contracts</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql_contracts ; 5 ) = "[MBS]" ; 0 ; MBS("FM.SQL.RowCount"; $sql_contracts) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$contract_count</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_map</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$cm</Name>
+</Step>
+<Step enable="True" id="71" name="Loop"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$cm + 1]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$cm</Name>
+</Step>
+<Step enable="True" id="72" name="Exit Loop If">
+<Calculation><![CDATA[$cm > $contract_count]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$cm - 1]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$cidx</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Lower ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_contracts; $cidx; 0 ) ) ; 1 ; 1 ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$cid</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Lower ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_contracts; $cidx; 1 ) ) ; 1 ; 1 ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$cname</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$co_sql</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Lower ( Substitute ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_contracts; $cidx; 2 ) ) ; 1 ; 1 ) ; "+" ; "-" ; " " ; "-" ; "&" ; "-" ; "/" ; "-" ; "_" ; "-" ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$co_owner</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$co_rel</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $co_owner ) or IsEmpty ( $cid ) ; $owner_map ; List ( $owner_map ; $cid & "|" & $co_owner ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_map</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $co_owner ) or IsEmpty ( $cname ) ; $owner_map ; List ( $owner_map ; $cname & "|" & $co_owner ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_map</Name>
+</Step>
+<Step enable="True" id="73" name="End Loop"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+Case (
+	Left ( $sql_contracts ; 5 ) = "[MBS]" ;
+	"sql_err=" & Left ( $sql_contracts ; 80 ) ;
+	"contract_count=" & $contract_count &
+	Case ( $contract_count > 0 ;
+		"|c0id=" & TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_contracts; 0; 0 ) ) ; 1 ; 1 ) &
+		"|c0name=" & TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_contracts; 0; 1 ) ) ; 1 ; 1 ) &
+		"|c0own=" & Lower ( Substitute ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_contracts; 0; 2 ) ) ; 1 ; 1 ) ; "+" ; "-" ; " " ; "-" ; "&" ; "-" ; "/" ; "-" ; "_" ; "-" ) ) ;
+		"|c0=none"
+	) &
+	"|map=" & Left ( Substitute ( $owner_map ; ¶ ; " / " ) ; 120 )
+)
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$contract_dbg</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[""]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$marked_list</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$marked_sql_list</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[0]]></Calculation></Value>
@@ -113,20 +234,76 @@ If ( Left ( $sql_marked ; 5 ) = "[MBS]" ; "[]" ; MBS("FM.SQL.JSONRecords"; $sql_
 <Name>$midx</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA[Lower ( TrimAll ( GetAsText ( JSONGetElement ( $json_marked ; "[" & $midx & "].vertrag_id" ) ) ; 1 ; 1 ) )]]></Calculation></Value>
+<Value><Calculation><![CDATA[Lower ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_marked_owner; $midx; 0 ) ) ; 1 ; 1 ) )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$mk</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_marked_owner; $midx; 0 ) ) ; 1 ; 1 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$mk_raw</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Lower ( TrimAll ( GetAsText ( JSONGetElement ( $json_marked ; "[" & $midx & "].vertrag" ) ) ; 1 ; 1 ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$mk_name</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[Case ( IsEmpty ( $mk ) ; $marked_list ; List ( $marked_list ; $mk ) )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$marked_list</Name>
 </Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $mk_name ) ; $marked_list ; List ( $marked_list ; $mk_name ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$marked_list</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $mk_raw ) ; $marked_sql_list ; List ( $marked_sql_list ; "'" & Substitute ( $mk_raw ; "'" ; "''" ) & "'" ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$marked_sql_list</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $mk_name ) ; $marked_sql_list ; List ( $marked_sql_list ; "'" & Substitute ( $mk_name ; "'" ; "''" ) & "'" ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$marked_sql_list</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+Case (
+	not IsEmpty ( TrimAll ( GetAsText ( JSONGetElement ( $json_marked ; "[" & $midx & "].owner" ) ) ; 1 ; 1 ) ) ;
+	Lower ( Substitute ( TrimAll ( GetAsText ( JSONGetElement ( $json_marked ; "[" & $midx & "].owner" ) ) ; 1 ; 1 ) ; "+" ; "-" ; " " ; "-" ; "&" ; "-" ; "/" ; "-" ; "_" ; "-" ) ) ;
+	Lower ( Substitute ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_marked; $midx; 2 ) ) ; 1 ; 1 ) ; "+" ; "-" ; " " ; "-" ; "&" ; "-" ; "/" ; "-" ; "_" ; "-" ) )
+)
+)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$mk_owner</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( $m <= 3 ; List ( $marked_diag ; $mk_raw & "=>" & Case ( IsEmpty ( $mk_owner ) ; "(leer)" ; $mk_owner ) ) ; $marked_diag )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$marked_diag</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( not IsEmpty ( $mk ) and not IsEmpty ( $mk_owner ) ; List ( $owner_map ; $mk & "|" & $mk_owner ) ; $owner_map )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_map</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( not IsEmpty ( $mk_name ) and not IsEmpty ( $mk_owner ) ; List ( $owner_map ; $mk_name & "|" & $mk_owner ) ; $owner_map )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_map</Name>
+</Step>
 <Step enable="True" id="73" name="End Loop"></Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[If ( Left ( $sql_marked ; 5 ) = "[MBS]" ; "" ; MBS("FM.SQL.Release"; $sql_marked) )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$rel_marked</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql_marked_owner ; 5 ) = "[MBS]" ; "" ; MBS("FM.SQL.Release"; $sql_marked_owner) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$rel_marked_owner</Name>
 </Step>
 <Step enable="True" id="68" name="If">
 <Calculation><![CDATA[$marked_count = 0]]></Calculation>
@@ -140,7 +317,11 @@ If ( Left ( $sql_marked ; 5 ) = "[MBS]" ; "[]" ; MBS("FM.SQL.JSONRecords"; $sql_
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[
 MBS("FM.SQL.Execute"; "";
-"SELECT \"Vorgang_ID\", \"Vertrag\", \"Art der Erledigung\", \"Datum\", \"Frist\", \"Datei\" FROM \"" & $$FM_VORGAENGE_TABELLE & "\" WHERE \"Datei\" IS NOT NULL")
+Case (
+	$marked_count = 0 ;
+	"SELECT \"Vorgang_ID\", \"Vertrag\", \"Art der Erledigung\", \"Datum\", \"Frist\", \"Datei\" FROM \"" & $$FM_VORGAENGE_TABELLE & "\" WHERE 1 = 0" ;
+	"SELECT \"Vorgang_ID\", \"Vertrag\", \"Art der Erledigung\", \"Datum\", \"Frist\", \"Datei\" FROM \"" & $$FM_VORGAENGE_TABELLE & "\" WHERE \"Datei\" IS NOT NULL AND lower(trim(\"Vertrag\" || '')) IN (" & Substitute ( $marked_sql_list ; "¶" ; "," ) & ")"
+))
 ]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$sql</Name>
@@ -185,9 +366,305 @@ MBS("FM.SQL.Execute"; "";
 <Name>$vertrag_raw</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$base_url & "/rest/v1/vorgaenge?select=vorgang_id,vertragsbesitzer_id&vorgang_id=eq." & $vorgang_id]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_check_url</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.New")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$c_owner</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionURL"; $c_owner; $owner_check_url)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionHTTPHeader"; $c_owner; "apikey: " & $key; "Authorization: Bearer " & $key; "Accept: application/json")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.Perform"; $c_owner)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.GetResponseCode"; $c_owner)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_http</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.GetResultAsText"; $c_owner; "UTF-8")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_resp</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.Cleanup"; $c_owner)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( $owner_http = 200 ; Lower ( TrimAll ( GetAsText ( JSONGetElement ( $owner_resp ; "[0].vertragsbesitzer_id" ) ) ; 1 ; 1 ) ) ; "" )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_from_db</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[Lower ( $vertrag_raw )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$vertrag_key</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Substitute ( TrimAll ( GetAsText ( $vertrag_raw ) ; 1 ; 1 ) ; " " ; "%20" ; "/" ; "%2F" ; "#" ; "%23" ; "&" ; "%26" ; "+" ; "%2B" ; "?" ; "%3F" ; "=" ; "%3D" )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrag_owner_key</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_from_vertrag_api</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$base_url & "/rest/v1/vertraege?select=vertragsbesitzer_id&vertrag_id=eq." & $vertrag_owner_key]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrag_owner_url</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.New")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$c_vertrag</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionURL"; $c_vertrag; $vertrag_owner_url)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionHTTPHeader"; $c_vertrag; "apikey: " & $key; "Authorization: Bearer " & $key; "Accept: application/json")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.Perform"; $c_vertrag)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.GetResponseCode"; $c_vertrag)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrag_owner_http</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.GetResultAsText"; $c_vertrag; "UTF-8")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrag_owner_resp</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( $vertrag_owner_http = 200 and Left ( TrimAll ( GetAsText ( $vertrag_owner_resp ) ; 1 ; 1 ) ; 1 ) = "[" ; Let([ _r = Lower ( TrimAll ( GetAsText ( JSONGetElement ( $vertrag_owner_resp ; "[0].vertragsbesitzer_id" ) ) ; 1 ; 1 ) ) ] ; Case ( Left ( _r ; 1 ) = "*" or Left ( _r ; 1 ) = "?" or _r = "null" ; "" ; _r ) ) ; "" )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_from_vertrag_api</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.Cleanup"; $c_vertrag)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[IsEmpty ( $owner_from_vertrag_api )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$base_url & "/rest/v1/vertraege?select=vertragsbesitzer_id&vertragsnummer=eq." & $vertrag_owner_key]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrag_owner_url</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.New")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$c_vertrag</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionURL"; $c_vertrag; $vertrag_owner_url)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionHTTPHeader"; $c_vertrag; "apikey: " & $key; "Authorization: Bearer " & $key; "Accept: application/json")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.Perform"; $c_vertrag)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.GetResponseCode"; $c_vertrag)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrag_owner_http</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.GetResultAsText"; $c_vertrag; "UTF-8")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrag_owner_resp</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( $vertrag_owner_http = 200 and Left ( TrimAll ( GetAsText ( $vertrag_owner_resp ) ; 1 ; 1 ) ; 1 ) = "[" ; Let([ _r = Lower ( TrimAll ( GetAsText ( JSONGetElement ( $vertrag_owner_resp ; "[0].vertragsbesitzer_id" ) ) ; 1 ; 1 ) ) ] ; Case ( Left ( _r ; 1 ) = "*" or Left ( _r ; 1 ) = "?" or _r = "null" ; "" ; _r ) ) ; "" )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_from_vertrag_api</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.Cleanup"; $c_vertrag)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="70" name="End If"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_from_contracts_all</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$ca</Name>
+</Step>
+<Step enable="True" id="71" name="Loop"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$ca + 1]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$ca</Name>
+</Step>
+<Step enable="True" id="72" name="Exit Loop If">
+<Calculation><![CDATA[$ca > $contract_count or not IsEmpty ( $owner_from_contracts_all )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$ca - 1]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$caidx</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Lower ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_contracts; $caidx; 0 ) ) ; 1 ; 1 ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$caid</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Lower ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_contracts; $caidx; 1 ) ) ; 1 ; 1 ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$caname</Name>
+</Step>
+<Step enable="True" id="68" name="If">
+<Calculation><![CDATA[$vertrag_key = $caid or ( not IsEmpty ( $caname ) and $vertrag_key = $caname ) or ( Filter ( $vertrag_key ; "0123456789" ) = $vertrag_key and Filter ( $caid ; "0123456789" ) = $caid and GetAsNumber ( $vertrag_key ) = GetAsNumber ( $caid ) ) or ( Filter ( TrimAll ( GetAsText ( $vertrag_raw ) ; 1 ; 1 ) ; "0123456789" ) = TrimAll ( GetAsText ( $vertrag_raw ) ; 1 ; 1 ) and Filter ( $caid ; "0123456789" ) = $caid and GetAsNumber ( TrimAll ( GetAsText ( $vertrag_raw ) ; 1 ; 1 ) ) = GetAsNumber ( $caid ) )]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( not IsEmpty ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_contracts; $caidx; 2 ) ) ; 1 ; 1 ) ) ; Lower ( Substitute ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_contracts; $caidx; 2 ) ) ; 1 ; 1 ) ; "+" ; "-" ; " " ; "-" ; "&" ; "-" ; "/" ; "-" ; "_" ; "-" ) ) ; Lower ( Substitute ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_contracts; $caidx; 2 ) ) ; 1 ; 1 ) ; "+" ; "-" ; " " ; "-" ; "&" ; "-" ; "/" ; "-" ; "_" ; "-" ) ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_from_contracts_all</Name>
+</Step>
+<Step enable="True" id="70" name="End If"></Step>
+<Step enable="True" id="73" name="End Loop"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+Let([ 
+  _vid = Case ( Filter ( TrimAll ( GetAsText ( $vertrag_raw ) ; 1 ; 1 ) ; "0123456789" ) = TrimAll ( GetAsText ( $vertrag_raw ) ; 1 ; 1 ) ; GetAsNumber ( $vertrag_raw ) ; "" )
+] ;
+  Case ( IsEmpty ( _vid ) ; "" ; $base_url & "/rest/v1/vertraege?select=vertragsbesitzer_id&vertrag_id=eq." & _vid )
+)
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrag_rest_url</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.New")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$c_vertrag_rest</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $vertrag_rest_url ) ; "" ; MBS("CURL.SetOptionURL"; $c_vertrag_rest; $vertrag_rest_url) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $vertrag_rest_url ) ; "" ; MBS("CURL.SetOptionHTTPHeader"; $c_vertrag_rest; "apikey: " & $key; "Authorization: Bearer " & $key; "Accept: application/json") )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $vertrag_rest_url ) ; "" ; MBS("CURL.Perform"; $c_vertrag_rest) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $vertrag_rest_url ) ; 0 ; MBS("CURL.GetResponseCode"; $c_vertrag_rest) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrag_rest_http</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $vertrag_rest_url ) ; "" ; MBS("CURL.GetResultAsText"; $c_vertrag_rest; "UTF-8") )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrag_rest_resp</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $vertrag_rest_url ) ; "" ; MBS("CURL.Cleanup"; $c_vertrag_rest) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( $vertrag_rest_http = 200 and Left ( TrimAll ( GetAsText ( $vertrag_rest_resp ) ; 1 ; 1 ) ; 1 ) = "[" ; Lower ( TrimAll ( GetAsText ( JSONGetElement ( $vertrag_rest_resp ; "[0].vertragsbesitzer_id" ) ) ; 1 ; 1 ) ) ; $vertrag_rest_http = 200 and Left ( TrimAll ( GetAsText ( $vertrag_rest_resp ) ; 1 ; 1 ) ; 1 ) = "{" ; Lower ( TrimAll ( GetAsText ( JSONGetElement ( $vertrag_rest_resp ; "vertragsbesitzer_id" ) ) ; 1 ; 1 ) ) ; "" )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_from_contract</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( Left ( $owner_from_contract ; 1 ) = "*" or Left ( $owner_from_contract ; 1 ) = "?" or $owner_from_contract = "null" ; "" ; $owner_from_contract )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_from_contract</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_lookup_dbg</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( Left ( $owner_from_contract ; 1 ) = "*" or Left ( $owner_from_contract ; 1 ) = "?" or $owner_from_contract = "null" ; "" ; $owner_from_contract )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_from_contract</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( Left ( $own_sql ; 5 ) = "[MBS]" or IsEmpty ( $own_sql ) ; "" ; MBS("FM.SQL.Release"; $own_sql) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_rel</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let([ v = $vertrag_key ; map = "¶" & $owner_map ; p = Position ( map ; "¶" & v & "|" ; 1 ; 1 ) ] ; Case ( p > 0 ; Let([ s = p + 1 + Length ( v ) + 1 ; e = Position ( map & "¶" ; "¶" ; s ; 1 ) ] ; Middle ( map ; s ; e - s ) ) ; "" ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_from_marked</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+""
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_sql</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_from_sql</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_rel</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$owner_from_contract]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_for_row</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( $idx = 0 ; "map=" & Left ( Substitute ( $owner_map ; ¶ ; " / " ) ; 120 ) & " | fm=" & $owner_from_contract & " | rest_http=" & $vertrag_rest_http & " | rest_url=" & Left($vertrag_rest_url; 100) & " | rest_resp=" & Left($vertrag_rest_resp; 80) & " | sbv=" & $owner_from_vertrag_api & " | sbk=" & $vertrag_owner_key & " | all=" & $owner_from_contracts_all & " | db=" & $owner_from_db & " | marked=" & $owner_from_marked & " | row=" & $owner_for_row & " | vertrag=" & $vertrag_raw ; $owner_diag )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_diag</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[PatternCount ( "¶" & $marked_list & "¶" ; "¶" & $vertrag_key & "¶" ) > 0]]></Calculation></Value>
@@ -200,12 +677,17 @@ MBS("FM.SQL.Execute"; "";
 <Name>$art</Name>
 </Step>
 <Step enable="True" id="68" name="If">
-<Calculation><![CDATA[not $is_marked]]></Calculation>
+<Calculation><![CDATA[not $is_marked or IsEmpty ( $owner_for_row )]]></Calculation>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[$skip + 1]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$skip</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $owner_for_row ) ; $fehler & "Vorgang " & $vorgang_id & ": OWNER_MISSING fuer Vertrag " & $vertrag_raw & Char(182) ; $fehler )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$fehler</Name>
 </Step>
 <Step enable="True" id="69" name="Else"></Step>
 <Step enable="True" id="141" name="Set Variable">
@@ -264,7 +746,7 @@ Substitute ( "vorgang_" & $vorgang_id & ".pdf" ;
 <Name>$datei_name</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA["owners/" & $owner_id & "/vorgaenge/" & $vorgang_id & "/" & $datei_name]]></Calculation></Value>
+<Value><Calculation><![CDATA["owners/" & $owner_for_row & "/vorgaenge/" & $vorgang_id & "/" & $datei_name]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$storage_path</Name>
 </Step>
@@ -378,8 +860,8 @@ PatternCount(d; "/") = 2; Let([
 <Value><Calculation><![CDATA[
 JSONSetElement ( "{}" ;
 [ "vorgang_id" ; $vorgang_id ; JSONString ] ;
-[ "vertragsbesitzer_id" ; $owner_id ; JSONString ] ;
-[ "vertrag" ; $vertrag_raw ; JSONString ] ;
+[ "vertragsbesitzer_id" ; $owner_for_row ; JSONString ] ;
+[ "vertrag" ; Case ( PatternCount ( "¶" & $marked_list & "¶" ; "¶" & $vertrag_key & "¶" ) > 0 ; $vertrag_raw ; "" ) ; JSONString ] ;
 [ "vorgang_art" ; $art ; JSONString ] ;
 [ "kurzbeschreibung" ; $art ; JSONString ] ;
 [ "datum" ; $datum_iso ; If ( IsEmpty ( $datum_iso ) ; JSONNull ; JSONString ) ] ;
@@ -397,7 +879,7 @@ JSONSetElement ( "{}" ;
 <Name>$body</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA[$base_url & "/rest/v1/vorgaenge?select=vorgang_id&vorgang_id=eq." & $vorgang_id & "&vertragsbesitzer_id=eq." & $owner_id]]></Calculation></Value>
+<Value><Calculation><![CDATA[$base_url & "/rest/v1/vorgaenge?select=vorgang_id&vorgang_id=eq." & $vorgang_id]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$check_url</Name>
 </Step>
@@ -548,18 +1030,121 @@ JSONSetElement ( "{}" ;
 <Step enable="True" id="70" name="End If"></Step>
 <Step enable="True" id="73" name="End Loop"></Step>
 <Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql_contracts ; 5 ) = "[MBS]" ; "" ; MBS("FM.SQL.Release"; $sql_contracts) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$rel_contracts</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[If ( Left ( $sql ; 5 ) = "[MBS]" ; "" ; MBS("FM.SQL.Release"; $sql) )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$rel</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[
-MBS("Msgbox";
 "Archivy Sync: Vorgaenge PDF Push" & Char(182) &
 "Verarbeitet: " & If ( IsEmpty ( $anzahl ) ; 0 ; $anzahl ) & Char(182) &
 "PDF hochgeladen: " & $ok & Char(182) &
 "Uebersprungen: " & $skip & Char(182) &
-If ( IsEmpty ( $fehler ) ; "Keine Fehler." ; "Fehler:" & Char(182) & Left ( $fehler ; 1000 ) )
+If ( IsEmpty ( $fehler ) ; "Keine Fehler." ; "Fehler:" & Char(182) & Left ( $fehler ; 1000 ) ) &
+Char(182) & "BUILD: 05-2026-06-27.37-supabase-rest" &
+Case ( not IsEmpty ( $owner_diag ) ; Char(182) & "DEBUG: " & $owner_diag ; "" ) &
+Case ( not IsEmpty ( $marked_diag ) ; Char(182) & "MARKED: " & $marked_diag ; "" ) &
+Case ( not IsEmpty ( $contract_dbg ) ; Char(182) & "CONTRACTS: " & $contract_dbg ; "" )
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$$SYNC_RESULT_PDF</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$base_url & "/rest/v1/sync_protokoll"]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$log_url</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+JSONSetElement ( "{}" ;
+	[ "script_name" ; "05_FM_ARCHIVY_SYNC_VORGAENGE_PDF_PUSH_CONTAINER" ; JSONString ] ;
+	[ "script_version" ; $script_version ; JSONString ] ;
+	[ "owner_id" ; $owner_id ; JSONString ] ;
+	[ "status" ; Case ( IsEmpty ( $fehler ) ; "ok" ; "error" ) ; JSONString ] ;
+	[ "ok_count" ; $ok ; JSONNumber ] ;
+	[ "skip_count" ; $skip ; JSONNumber ] ;
+	[ "error_count" ; Case ( IsEmpty ( $fehler ) ; 0 ; ValueCount ( $fehler ) ) ; JSONNumber ] ;
+	[ "result_text" ; Left ( $$SYNC_RESULT_PDF ; 9000 ) ; JSONString ] ;
+	[ "error_text" ; Left ( $fehler ; 9000 ) ; JSONString ] ;
+	[ "needs_review" ; True ; JSONBoolean ] ;
+	[ "detail_json" ; JSONSetElement ( "{}" ;
+		[ "processed_count" ; If ( IsEmpty ( $anzahl ) ; 0 ; $anzahl ) ; JSONNumber ] ;
+		[ "auth_blocked" ; $auth_blocked ; JSONNumber ]
+	) ; JSONObject ]
+)
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$log_obj</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["[" & $log_obj & "]"]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$log_body</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.New")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$c_log</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionURL"; $c_log; $log_url)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionPost"; $c_log; 1)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionConnectTimeout"; $c_log; 3)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionTimeout"; $c_log; 5)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionHTTPHeader"; $c_log; "apikey: " & $key; "Authorization: Bearer " & $key; "Content-Type: application/json"; "Prefer: return=minimal")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionPostFields"; $c_log; $log_body)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.Perform"; $c_log)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.GetResponseCode"; $c_log)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$log_http</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.GetResultAsText"; $c_log; "UTF-8")]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$log_resp</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("CURL.Cleanup"; $c_log)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$r</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+MBS("Msgbox";
+$$SYNC_RESULT_PDF
 )
 ]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>

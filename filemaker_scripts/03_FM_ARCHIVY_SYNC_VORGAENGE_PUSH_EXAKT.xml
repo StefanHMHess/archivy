@@ -15,7 +15,7 @@ Let([
 <Name>$ts_iso</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA[$$SUPABASE_SERVICE_KEY]]></Calculation></Value>
+<Value><Calculation><![CDATA[Case ( not IsEmpty ( $$SUPABASE_SERVICE_KEY ) ; $$SUPABASE_SERVICE_KEY ; $$SUPABASE_KEY )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$key</Name>
 </Step>
@@ -25,20 +25,28 @@ Let([
 <Name>$url</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA["03-2026-06-22.17"]]></Calculation></Value>
+<Value><Calculation><![CDATA["03-2026-06-26.19"]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$script_version</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[
 MBS("FM.SQL.Execute"; "";
-"SELECT \"Vertrag_ID\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Archivy_sync\" = 'x' OR \"Archivy_sync\" = 'X'")
+"SELECT \"Vertrag_ID\" as \"vertrag_id\", \"Vertragseigentümer\" as \"owner\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Archivy_sync\" = 'x' OR \"Archivy_sync\" = 'X'")
 ]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$sql_marked</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA[If ( Left ( $sql_marked ; 5 ) = "[MBS]" ; "[]" ; MBS("FM.SQL.JSONRecords"; $sql_marked; "Vertrag_ID" & ¶) )]]></Calculation></Value>
+<Value><Calculation><![CDATA[
+MBS("FM.SQL.Execute"; "";
+"SELECT \"Vertrag_ID\" as \"vertrag_id\", \"Vertragseigentümer\" as \"owner\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Archivy_sync\" = 'x' OR \"Archivy_sync\" = 'X'")
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_marked_owner</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["[]"]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$json_marked</Name>
 </Step>
@@ -51,6 +59,11 @@ MBS("FM.SQL.Execute"; "";
 <Value><Calculation><![CDATA[""]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$marked_diag</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_map</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[
@@ -94,12 +107,12 @@ Case (
 <Name>$midx</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA[Lower ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_marked; $midx; 0 ) ) ; 1 ; 1 ) )]]></Calculation></Value>
+<Value><Calculation><![CDATA[Lower ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_marked_owner; $midx; 0 ) ) ; 1 ; 1 ) )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$mk</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA[TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_marked; $midx; 0 ) ) ; 1 ; 1 )]]></Calculation></Value>
+<Value><Calculation><![CDATA[TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_marked_owner; $midx; 0 ) ) ; 1 ; 1 )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$mk_raw</Name>
 </Step>
@@ -113,11 +126,56 @@ Case (
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$marked_sql_list</Name>
 </Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+Let([
+	own_sql = Case (
+		IsEmpty ( $mk_raw ) ; "" ;
+		Filter ( $mk_raw ; "0123456789" ) = $mk_raw ;
+		MBS("FM.SQL.Execute"; "";
+		"SELECT \"Vertragseigentümer\" as \"owner\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Vertrag_ID\" = " & GetAsNumber ( $mk_raw )
+		) ;
+		MBS("FM.SQL.Execute"; "";
+		"SELECT \"Vertragseigentümer\" as \"owner\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Vertrag_ID\" = '" & Substitute ( $mk_raw ; "'" ; "''" ) & "'"
+		)
+	) ;
+	own_val = Case (
+		Left ( own_sql ; 5 ) = "[MBS]" or IsEmpty ( own_sql ) ; "" ;
+		Lower ( Substitute ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; own_sql; 0; 0 ) ) ; 1 ; 1 ) ; "+" ; "-" ; " " ; "-" ; "&" ; "-" ; "/" ; "-" ; "_" ; "-" ) )
+	) ;
+	own_rel = Case ( Left ( own_sql ; 5 ) = "[MBS]" or IsEmpty ( own_sql ) ; "" ; MBS("FM.SQL.Release"; own_sql) )
+] ;
+	own_val
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$mk_owner</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( not IsEmpty ( $mk ) and not IsEmpty ( $mk_owner ) ; List ( $owner_map ; $mk & "|" & $mk_owner ) ; $owner_map )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_map</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+Case (
+	$m <= 3 ;
+	List ( $marked_diag ; $mk_raw & "=>" & Case ( IsEmpty ( $mk_owner ) ; "(leer)" ; $mk_owner ) ) ;
+	$marked_diag
+)
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$marked_diag</Name>
+</Step>
 <Step enable="True" id="73" name="End Loop"></Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[If ( Left ( $sql_marked ; 5 ) = "[MBS]" ; "" ; MBS("FM.SQL.Release"; $sql_marked) )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$rel_marked</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql_marked_owner ; 5 ) = "[MBS]" ; "" ; MBS("FM.SQL.Release"; $sql_marked_owner) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$rel_marked_owner</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[
@@ -217,9 +275,56 @@ Let([
 <Name>$fehler</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA[Let([ t = TrimAll ( $json ; 1 ; 1 ) ] ; Case ( IsEmpty ( $key ) ; "CONFIG_ERROR: $$SUPABASE_SERVICE_KEY fehlt" ; not IsEmpty ( $sql_err ) ; "SQL_ERROR: " & $sql_err ; IsEmpty ( t ) or Left ( t ; 2 ) = "[]" or Left ( t ; 2 ) = "[{" ; "" ; Left ( "JSON_PARSE_ERROR: " & t ; 200 ) ) )]]></Calculation></Value>
+<Value><Calculation><![CDATA[Let([ t = TrimAll ( $json ; 1 ; 1 ) ] ; Case ( IsEmpty ( $key ) ; "CONFIG_ERROR: $$SUPABASE_KEY / $$SUPABASE_SERVICE_KEY fehlt" ; not IsEmpty ( $sql_err ) ; "SQL_ERROR: " & $sql_err ; IsEmpty ( t ) or Left ( t ; 2 ) = "[]" or Left ( t ; 2 ) = "[{" ; "" ; Left ( "JSON_PARSE_ERROR: " & t ; 200 ) ) )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$fehler</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+Let([
+	v0_raw = TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql; 0; 1 ) ) ; 1 ; 1 ) ;
+	v0_low = Lower ( v0_raw ) ;
+	test_sql = Case (
+		IsEmpty ( v0_raw ) ; "" ;
+		Filter ( v0_raw ; "0123456789" ) = v0_raw ;
+		MBS("FM.SQL.Execute"; "";
+		"SELECT \"Vertragseigentümer\" as \"owner\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Vertrag_ID\" = " & GetAsNumber ( v0_raw )
+		) ;
+		MBS("FM.SQL.Execute"; "";
+		"SELECT \"Vertragseigentümer\" as \"owner\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Vertrag_ID\" = '" & Substitute ( v0_raw ; "'" ; "''" ) & "'"
+		)
+	) ;
+	test_owner = Case ( Left ( test_sql ; 5 ) = "[MBS]" ; "SQL_ERR: " & Left ( test_sql ; 80 ) ; IsEmpty ( test_sql ) ; "(leer)" ; Lower ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; test_sql; 0; 0 ) ) ; 1 ; 1 ) ) ) ;
+	test_sql2 = Case (
+		IsEmpty ( v0_raw ) ; "" ;
+		MBS("FM.SQL.Execute"; "";
+		"SELECT \"Vertrag_ID\" as \"vertrag_id\", \"Vertragseigentümer\" as \"owner\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Archivy_sync\" IN ('x','X')"
+		)
+	) ;
+	row0_id = Case ( Left ( test_sql2 ; 5 ) = "[MBS]" ; "ERR" ; TrimAll ( GetAsText ( MBS("FM.SQL.Field"; test_sql2; 0; 0 ) ) ; 1 ; 1 ) ) ;
+	row0_own = Case ( Left ( test_sql2 ; 5 ) = "[MBS]" ; "ERR" ; TrimAll ( GetAsText ( MBS("FM.SQL.Field"; test_sql2; 0; 1 ) ) ; 1 ; 1 ) ) ;
+	ignore1 = Case ( Left ( test_sql ; 5 ) <> "[MBS]" and not IsEmpty ( test_sql ) ; MBS("FM.SQL.Release"; test_sql) ; "" ) ;
+	ignore2 = Case ( Left ( test_sql2 ; 5 ) <> "[MBS]" and not IsEmpty ( test_sql2 ) ; MBS("FM.SQL.Release"; test_sql2) ; "" )
+] ;
+"PRECHECK:" &
+" marked_count=" & $marked_count &
+" | marked_sql_list=" & Left ( Substitute ( $marked_sql_list ; ¶ ; "," ) ; 100 ) &
+" | marked_diag=" & Left ( Substitute ( $marked_diag ; ¶ ; " / " ) ; 120 ) &
+" | owner_map=" & Left ( Substitute ( $owner_map ; ¶ ; " / " ) ; 200 ) &
+" | anzahl_vorgaenge=" & $anzahl &
+" | vo0_vertrag_raw=[" & v0_raw & "]" &
+" | vo0_vertrag_lower=[" & v0_low & "]" &
+" | owner_lookup_test=[" & test_owner & "]" &
+" | vt0_id=[" & row0_id & "] vt0_owner=[" & row0_own & "]"
+)
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$precheck</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("Msgbox"; $precheck)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$msg_pre</Name>
 </Step>
 <Step enable="True" id="71" name="Loop"></Step>
 <Step enable="True" id="141" name="Set Variable">
@@ -262,9 +367,68 @@ JSONSetElement ( "{}" ;
 <Name>$row_json</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA[Lower ( TrimAll ( GetAsText ( JSONGetElement ( $row_json ; "vertrag" ) ) ; 1 ; 1 ) )]]></Calculation></Value>
+<Value><Calculation><![CDATA[TrimAll ( GetAsText ( JSONGetElement ( $row_json ; "vertrag" ) ) ; 1 ; 1 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrag_raw</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Lower ( $vertrag_raw )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$vertrag_key</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let([ v = $vertrag_key ; map = "¶" & $owner_map ; p = Position ( map ; "¶" & v & "|" ; 1 ; 1 ) ] ; Case ( p > 0 ; Let([ s = p + 1 + Length ( v ) + 1 ; e = Position ( map & "¶" ; "¶" ; s ; 1 ) ] ; Middle ( map ; s ; e - s ) ) ; "" ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_from_map</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+Case (
+	IsEmpty ( $vertrag_raw ) ; "" ;
+	Filter ( $vertrag_raw ; "0123456789" ) = $vertrag_raw ;
+	MBS("FM.SQL.Execute"; "";
+	"SELECT \"Vertragseigentümer\" as \"owner\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Vertrag_ID\" = " & GetAsNumber ( $vertrag_raw )
+	) ;
+	MBS("FM.SQL.Execute"; "";
+	"SELECT \"Vertragseigentümer\" as \"owner\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Vertrag_ID\" = '" & Substitute ( $vertrag_raw ; "'" ; "''" ) & "'"
+	)
+)
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_owner</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( Left ( $sql_owner ; 5 ) = "[MBS]" or IsEmpty ( $sql_owner ) ; "" ; Lower ( Substitute ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql_owner; 0; 0 ) ) ; 1 ; 1 ) ; "+" ; "-" ; " " ; "-" ; "&" ; "-" ; "/" ; "-" ; "_" ; "-" ) ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_from_sql</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql_owner ; 5 ) = "[MBS]" or IsEmpty ( $sql_owner ) ; "" ; MBS("FM.SQL.Release"; $sql_owner) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$rel_owner</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+Let([
+	v_raw = $vertrag_raw ;
+	v_sql = Case (
+		IsEmpty ( v_raw ) ; "" ;
+		Filter ( v_raw ; "0123456789" ) = v_raw ;
+		MBS("FM.SQL.Execute"; "";
+		"SELECT \"Vertragseigentümer\" as \"owner\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Vertrag_ID\" = " & GetAsNumber ( v_raw )
+		) ;
+		MBS("FM.SQL.Execute"; "";
+		"SELECT \"Vertragseigentümer\" as \"owner\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Vertrag_ID\" = '" & Substitute ( v_raw ; "'" ; "''" ) & "'"
+		)
+	) ;
+	v_owner = Case ( Left ( v_sql ; 5 ) = "[MBS]" or IsEmpty ( v_sql ) ; "" ; Lower ( Substitute ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; v_sql; 0; 0 ) ) ; 1 ; 1 ) ; "+" ; "-" ; " " ; "-" ; "&" ; "-" ; "/" ; "-" ; "_" ; "-" ) ) ) ;
+	v_rel = Case ( Left ( v_sql ; 5 ) = "[MBS]" or IsEmpty ( v_sql ) ; "" ; MBS("FM.SQL.Release"; v_sql) )
+] ;
+	Case ( not IsEmpty ( v_owner ) ; v_owner ; $owner_from_map )
+)
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_for_row</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[$leer_besch + Case ( IsEmpty ( TrimAll ( GetAsText ( JSONGetElement ( $row_json ; "beschreibung" ) ) ; 1 ; 1 ) ) ; 1 ; 0 )]]></Calculation></Value>
@@ -275,6 +439,16 @@ JSONSetElement ( "{}" ;
 <Value><Calculation><![CDATA[$leer_besch_raw + Case ( IsEmpty ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql; $idx; 4 ) ) ; 1 ; 1 ) ) ; 1 ; 0 )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$leer_besch_raw</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( $idx = 0 ; $owner_for_row & "|" & $vertrag_raw ; $row_owner_dbg )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$row_owner_dbg</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( $idx = 0 ; $vertrag_raw & "|" & Left ( $sql_owner ; 40 ) & "|" & $owner_from_sql ; $owner_calc_dbg )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_calc_dbg</Name>
 </Step>
 <Step enable="True" id="68" name="If">
 <Calculation><![CDATA[1]]></Calculation>
@@ -292,8 +466,20 @@ Let([
 ];
 JSONSetElement ( "{}" ;
 [ "vorgang_id" ; JSONGetElement ( $row_json ; "vorgang_id" ) ; JSONString ] ;
-[ "vertragsbesitzer_id" ; Lower ( $$INHABER_ID ) ; JSONString ] ;
-[ "vertrag" ; JSONGetElement ( $row_json ; "vertrag" ) ; JSONString ] ;
+[ "vertragsbesitzer_id" ; Let([
+		v_raw = $vertrag_raw ;
+		v_sql = Case (
+			IsEmpty ( v_raw ) ; "" ;
+			Filter ( v_raw ; "0123456789" ) = v_raw ;
+			MBS("FM.SQL.Execute"; "";
+			"SELECT \"Vertragseigentümer\" as \"owner\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Vertrag_ID\" = " & GetAsNumber ( v_raw )
+			) ;
+			MBS("FM.SQL.Execute"; "";
+			"SELECT \"Vertragseigentümer\" as \"owner\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Vertrag_ID\" = '" & Substitute ( v_raw ; "'" ; "''" ) & "'"
+			)
+		) ;
+		v_owner = Case ( Left ( v_sql ; 5 ) = "[MBS]" or IsEmpty ( v_sql ) ; "" ; Lower ( Substitute ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; v_sql; 0; 0 ) ) ; 1 ; 1 ) ; "+" ; "-" ; " " ; "-" ; "&" ; "-" ; "/" ; "-" ; "_" ; "-" ) ) )
+	] ; v_owner ) ; JSONString ] ;
 [ "vorgang_art" ; JSONGetElement ( $row_json ; "vorgang_art" ) ; JSONString ] ;
 [ "kurzbeschreibung" ; kurz_trim ; JSONString ] ;
 [ "beschreibung" ; besch_trim ; JSONString ] ;
@@ -317,8 +503,20 @@ JSONSetElement ( "{}" ;
 <Value><Calculation><![CDATA[
 JSONSetElement ( "{}" ;
 [ "vorgang_id" ; TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql; $idx; 0 ) ) ; 1 ; 1 ) ; JSONString ] ;
-[ "vertragsbesitzer_id" ; Lower ( $$INHABER_ID ) ; JSONString ] ;
-[ "vertrag" ; TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql; $idx; 1 ) ) ; 1 ; 1 ) ; JSONString ] ;
+[ "vertragsbesitzer_id" ; Let([
+		v_raw = $vertrag_raw ;
+		v_sql = Case (
+			IsEmpty ( v_raw ) ; "" ;
+			Filter ( v_raw ; "0123456789" ) = v_raw ;
+			MBS("FM.SQL.Execute"; "";
+			"SELECT \"Vertragseigentümer\" as \"owner\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Vertrag_ID\" = " & GetAsNumber ( v_raw )
+			) ;
+			MBS("FM.SQL.Execute"; "";
+			"SELECT \"Vertragseigentümer\" as \"owner\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Vertrag_ID\" = '" & Substitute ( v_raw ; "'" ; "''" ) & "'"
+			)
+		) ;
+		v_owner = Case ( Left ( v_sql ; 5 ) = "[MBS]" or IsEmpty ( v_sql ) ; "" ; Lower ( Substitute ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; v_sql; 0; 0 ) ) ; 1 ; 1 ) ; "+" ; "-" ; " " ; "-" ; "&" ; "-" ; "/" ; "-" ; "_" ; "-" ) ) )
+	] ; v_owner ) ; JSONString ] ;
 [ "beschreibung" ; TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql; $idx; 4 ) ) ; 1 ; 1 ) ; JSONString ] ;
 [ "app_modified_at" ; $ts_iso ; JSONString ] ;
 [ "sync_state" ; "geaendert" ; JSONString ]
@@ -414,6 +612,11 @@ JSONSetElement ( "{}" ;
 <Step enable="True" id="70" name="End If"></Step>
 <Step enable="True" id="69" name="Else"></Step>
 <Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$fehler & "Vorgang_ID " & JSONGetElement ( $row_json ; "vorgang_id" ) & ": OWNER_MISSING fuer Vertrag " & $vertrag_raw & ¶]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$fehler</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[$skip + 1]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$skip</Name>
@@ -433,6 +636,8 @@ JSONSetElement ( "{}" ;
 " | leer_besch=" & $leer_besch &
 " | leer_besch_raw=" & $leer_besch_raw &
 " | push_all=" & $push_all &
+Case ( not IsEmpty ( $row_owner_dbg ) ; " | row_owner_dbg=" & $row_owner_dbg ; "" ) &
+Case ( not IsEmpty ( $owner_calc_dbg ) ; " | owner_calc_dbg=" & $owner_calc_dbg ; "" ) &
 " | url=" & $$SUPABASE_URL &
 " | inhaber=" & $$INHABER_ID &
 " | tabelle=" & $$FM_VORGAENGE_TABELLE

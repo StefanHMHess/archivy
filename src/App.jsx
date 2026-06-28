@@ -6,6 +6,7 @@ import Vertraege from './components/Vertraege'
 import VertragDetail from './components/VertragDetail'
 import VertragsbesitzerAdmin from './components/VertragsbesitzerAdmin'
 import Kalender from './components/Kalender'
+import Impressum from './components/Impressum'
 import OwnerSelector from './components/OwnerSelector'
 import Login from './components/Login'
 import { supabase } from './lib/supabase'
@@ -15,6 +16,7 @@ const NAV = [
   { id: 'dashboard',  label: 'Dashboard' },
   { id: 'vertraege',  label: 'Verträge' },
   { id: 'kalender',   label: 'Kalender' },
+  { id: 'impressum',  label: 'Impressum' },
   { id: 'admin',      label: 'Admin' },
 ]
 
@@ -26,6 +28,7 @@ export default function App() {
   const [vertragIds, setVertragIds] = useState([])
   const [user, setUser] = useState(null)
   const [selectedOwner, setSelectedOwner] = useState(null)
+  const [ownerOptions, setOwnerOptions] = useState([])
   const [loadingAuth, setLoadingAuth] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [loadingAdmin, setLoadingAdmin] = useState(true)
@@ -90,6 +93,36 @@ export default function App() {
     checkAdmin()
   }, [user])
 
+  useEffect(() => {
+    async function loadOwnerOptions() {
+      if (!user?.email) {
+        setOwnerOptions([])
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('vertragsbesitzer')
+        .select('id,name,display_name,allowed_users')
+        .order('name', { ascending: true })
+
+      if (error) {
+        if (selectedOwner) setOwnerOptions([selectedOwner])
+        return
+      }
+
+      const allowed = (data ?? []).filter(owner => Array.isArray(owner.allowed_users) && owner.allowed_users.includes(user.email))
+      if (allowed.length > 0) {
+        setOwnerOptions(allowed)
+      } else if (selectedOwner) {
+        setOwnerOptions([selectedOwner])
+      } else {
+        setOwnerOptions([])
+      }
+    }
+
+    loadOwnerOptions()
+  }, [user?.email, selectedOwner?.id])
+
   if (loadingAuth) {
     return <p style={{ padding: T.sp6 }}>Lade Anmeldung…</p>
   }
@@ -116,16 +149,34 @@ export default function App() {
         boxShadow: T.shadowMd,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: T.sp4 }}>
-          <img src={appIcon} alt="Archivy" style={{ height: 32 }} />
+          <img src={appIcon} alt="Archivy" style={{ width: 40, height: 40, flex: '0 0 auto' }} />
           <div>
             <div style={{ fontWeight: 700, fontSize: 20, letterSpacing: '-0.3px' }}>Archivy</div>
             <div style={{ fontSize: 13, color: T.textOnTeal, opacity: 0.85 }}>
-              Angemeldet als {user.email} · Inhaber: {selectedOwner.display_name}
+              Angemeldet als {user.email}
             </div>
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: T.sp3, alignItems: 'center' }}>
+          <button
+            onClick={() => {
+              setSelectedOwner(null)
+              setSelectedContractId(null)
+              setSelectedVorgangId(null)
+            }}
+            style={{
+              background: 'rgba(255,255,255,0.14)',
+              color: T.textOnTeal,
+              border: '1px solid rgba(255,255,255,0.35)',
+              borderRadius: T.r2,
+              padding: `${T.sp2} ${T.sp4}`,
+              cursor: 'pointer',
+            }}
+            title="Zum Willkommensbildschirm"
+          >
+            Startbildschirm
+          </button>
           <button
             onClick={() => {
               supabase.auth.signOut()
@@ -142,22 +193,36 @@ export default function App() {
           >
             Abmelden
           </button>
-          <button
-            onClick={() => {
-              setSelectedOwner(null)
-              setSelectedContractId(null)
-            }}
-            style={{
-              background: T.accent,
-              color: T.textOnTeal,
-              border: 'none',
-              borderRadius: T.r2,
-              padding: `${T.sp2} ${T.sp4}`,
-              cursor: 'pointer',
-            }}
-          >
-            Anderen Inhaber wählen
-          </button>
+          <label style={{ display: 'flex', alignItems: 'center', gap: T.sp2, color: T.textOnTeal }}>
+            <span style={{ fontSize: 12, whiteSpace: 'nowrap' }}>Inhaber:</span>
+            <select
+              value={selectedOwner?.id || ''}
+              onChange={(e) => {
+                const next = ownerOptions.find(o => o.id === e.target.value)
+                if (!next) return
+                setSelectedOwner(next)
+                setSelectedContractId(null)
+                setSelectedVorgangId(null)
+              }}
+              title="Inhaber wechseln"
+              style={{
+                background: 'rgba(255,255,255,0.14)',
+                color: T.textOnTeal,
+                border: '1px solid rgba(255,255,255,0.35)',
+                borderRadius: T.r2,
+                padding: `${T.sp2} ${T.sp3}`,
+                minWidth: 170,
+                cursor: 'pointer',
+                fontSize: 13,
+              }}
+            >
+              {(ownerOptions.length > 0 ? ownerOptions : [selectedOwner].filter(Boolean)).map(owner => (
+                <option key={owner.id} value={owner.id} style={{ color: T.textMain, background: T.bgCard }}>
+                  {owner.display_name || owner.name || owner.id}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </header>
 
@@ -222,6 +287,7 @@ export default function App() {
               />
             )}
             {aktiv === 'kalender'  && <Kalender owner={selectedOwner} onSelectVorgang={openVorgang} />}
+            {aktiv === 'impressum' && <Impressum />}
             {aktiv === 'admin'     && isAdmin && <VertragsbesitzerAdmin />}
           </>
         )}

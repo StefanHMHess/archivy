@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { T } from '../tokens'
 import { supabase } from '../lib/supabase'
+import { optimizeImageUrl } from '../lib/storage'
 
 function Kachel({ label, wert, farbe, onClick }) {
   return (
@@ -29,6 +30,7 @@ export default function Dashboard({ onNavigate, owner, onSelectVorgang }) {
   const [zahlen, setZahlen] = useState({})
   const [faellige, setFaellige] = useState([])
   const [vertragMap, setVertragMap] = useState({})
+  const ownerIds = useMemo(() => ownerVarianten(owner?.id), [owner?.id])
 
   useEffect(() => {
     async function laden() {
@@ -45,10 +47,9 @@ export default function Dashboard({ onNavigate, owner, onSelectVorgang }) {
         .limit(8)
 
       if (owner && owner.id !== '__all__') {
-        const ownerId = String(owner.id).trim()
-        vorgaengeQuery = vorgaengeQuery.eq('vertragsbesitzer_id', ownerId)
-        vertraegeQuery = vertraegeQuery.eq('vertragsbesitzer_id', ownerId)
-        faelligQuery = faelligQuery.eq('vertragsbesitzer_id', ownerId)
+        vorgaengeQuery = vorgaengeQuery.in('vertragsbesitzer_id', ownerIds)
+        vertraegeQuery = vertraegeQuery.in('vertragsbesitzer_id', ownerIds)
+        faelligQuery = faelligQuery.in('vertragsbesitzer_id', ownerIds)
       }
 
       const [{ count: v }, { data: vtRows }, { data: due }] = await Promise.all([
@@ -73,7 +74,7 @@ export default function Dashboard({ onNavigate, owner, onSelectVorgang }) {
       setVertragMap(map)
     }
     laden()
-  }, [owner])
+  }, [owner, owner?.id])
 
   return (
     <div>
@@ -183,6 +184,17 @@ function normalisiereVertragId(value) {
   return String(value ?? '').trim().toLowerCase()
 }
 
+function ownerVarianten(ownerId) {
+  const raw = String(ownerId ?? '').trim()
+  if (!raw || raw === '__all__') return []
+
+  // Keep combined owners together: nicole-stefan <-> nicole+stefan
+  const plus = raw.replace(/-/g, '+')
+  const dash = raw.replace(/\+/g, '-')
+
+  return [...new Set([raw, plus, dash])]
+}
+
 function logoText(name) {
   if (!name) return '—'
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -194,10 +206,10 @@ function normalisiereLogoQuelle(value) {
   if (!value || typeof value !== 'string') return null
   const v = value.trim()
   if (!v) return null
-  if (v.startsWith('http://') || v.startsWith('https://')) return v
+  if (v.startsWith('http://') || v.startsWith('https://')) return optimizeImageUrl(v, { width: 180, quality: 60 })
   if (v.startsWith('data:')) return v
   if (/^<svg[\s>]/i.test(v)) return `data:image/svg+xml;utf8,${encodeURIComponent(v)}`
   if (/^[A-Za-z0-9+/=\r\n]+$/.test(v) && v.length >= 40) return `data:image/png;base64,${v.replace(/\s+/g, '')}`
-  if (/^[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(v)) return `https://${v}`
+  if (/^[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(v)) return optimizeImageUrl(`https://${v}`, { width: 180, quality: 60 })
   return null
 }

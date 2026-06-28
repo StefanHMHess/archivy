@@ -4,7 +4,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
 import { T } from '../tokens'
 import { supabase } from '../lib/supabase'
-import { uploadFile, getSignedUrl, deleteFile } from '../lib/storage'
+import { uploadFile, getSignedUrl, deleteFile, optimizeImageUrl } from '../lib/storage'
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
 
@@ -657,7 +657,8 @@ function normalisiereLogoQuelle(value) {
   if (!value || typeof value !== 'string') return null
   const v = value.trim()
   if (!v) return null
-  if (v.startsWith('http://') || v.startsWith('https://') || v.startsWith('data:image/')) return v
+  if (v.startsWith('http://') || v.startsWith('https://')) return optimizeImageUrl(v, { width: 220, quality: 60 })
+  if (v.startsWith('data:image/')) return v
   if (/^[A-Za-z0-9+/=\r\n]+$/.test(v) && v.length > 120) return `data:image/png;base64,${v.replace(/\s+/g, '')}`
   return null
 }

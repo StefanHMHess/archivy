@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { T } from '../tokens'
 import { supabase } from '../lib/supabase'
+import { optimizeImageUrl } from '../lib/storage'
 
 const PAGE = 50
 const SORTIERUNGEN = {
@@ -12,6 +13,7 @@ const SORTIERUNGEN = {
 }
 
 export default function Vertraege({ owner, onSelectContract }) {
+  const ownerIds = useMemo(() => ownerVarianten(owner?.id), [owner?.id])
   const [zeilen, setZeilen] = useState([])
   const [suche, setSuche] = useState('')
   const [gruppen, setGruppen] = useState([])
@@ -33,7 +35,7 @@ export default function Vertraege({ owner, onSelectContract }) {
         .limit(500)
 
       if (owner.id !== '__all__') {
-        gruppenQuery = gruppenQuery.eq('vertragsbesitzer_id', owner.id)
+        gruppenQuery = gruppenQuery.in('vertragsbesitzer_id', ownerIds)
       }
 
       const { data } = await gruppenQuery
@@ -52,7 +54,7 @@ export default function Vertraege({ owner, onSelectContract }) {
         .limit(PAGE)
 
       if (owner.id !== '__all__') {
-        query = query.eq('vertragsbesitzer_id', owner.id)
+        query = query.in('vertragsbesitzer_id', ownerIds)
       }
 
       if (gruppeFilter !== '__all__') {
@@ -143,7 +145,7 @@ export default function Vertraege({ owner, onSelectContract }) {
       del = del.eq('vertrag_id', v.vertrag_id)
     }
     if (owner?.id && owner.id !== '__all__') {
-      del = del.eq('vertragsbesitzer_id', owner.id)
+      del = del.in('vertragsbesitzer_id', ownerIds)
     }
 
     const { data: deletedRows, error } = await del.select('vertrag_id')
@@ -230,7 +232,19 @@ export default function Vertraege({ owner, onSelectContract }) {
                     <LogoCell logo={v.logo} firma={v.firma} />
                   </td>
                   <td style={{ padding: `${T.sp2} ${T.sp3}` }}>{v.firma ?? '—'}</td>
-                  <td style={{ padding: `${T.sp2} ${T.sp3}` }}>{v.beschreibung ?? '—'}</td>
+                  <td style={{ padding: `${T.sp2} ${T.sp3}`, maxWidth: 340 }}>
+                    <div style={{
+                      overflow: 'hidden',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 4,
+                      WebkitBoxOrient: 'vertical',
+                      lineHeight: '1.35em',
+                      maxHeight: '5.4em',
+                      whiteSpace: 'normal',
+                    }} title={v.beschreibung ?? ''}>
+                      {v.beschreibung ?? '—'}
+                    </div>
+                  </td>
                   <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap' }}>{v.vertragsnummer ?? '—'}</td>
                   <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap', textAlign: 'right' }}>
                     {formatKostenJaehrlich(v.kosten_jaehrlich)}
@@ -257,6 +271,17 @@ export default function Vertraege({ owner, onSelectContract }) {
       )}
     </div>
   )
+}
+
+function ownerVarianten(ownerId) {
+  const raw = String(ownerId ?? '').trim()
+  if (!raw || raw === '__all__') return []
+
+  // Keep combined owners together: nicole-stefan <-> nicole+stefan
+  const plus = raw.replace(/-/g, '+')
+  const dash = raw.replace(/\+/g, '-')
+
+  return [...new Set([raw, plus, dash])]
 }
 
 function ablaufFarbe(ablauf) {
@@ -338,20 +363,30 @@ function parseKostenJaehrlich(raw) {
 function LogoCell({ logo, firma }) {
   const [error, setError] = useState(false)
   const src = normalisiereLogoQuelle(logo)
+  const boxStyle = {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    border: 'none',
+    background: 'transparent',
+    overflow: 'hidden',
+  }
 
   if (src && !error) {
     return (
-      <img
-        src={src}
-        alt={firma || 'Logo'}
-        onError={() => setError(true)}
-        style={{ width: 28, height: 28, borderRadius: 8, objectFit: 'cover', border: `1px solid ${T.border}` }}
-      />
+      <div style={boxStyle}>
+        <img
+          src={src}
+          alt={firma || 'Logo'}
+          onError={() => setError(true)}
+          style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', transform: 'scale(1.06)' }}
+        />
+      </div>
     )
   }
 
   return (
-    <div style={{ width: 28, height: 28, borderRadius: 8, background: '#dbeafe', color: '#1d4ed8', display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 700 }}>
+    <div style={{ ...boxStyle, background: '#dbeafe', color: '#1d4ed8', display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 700 }}>
       {logoText(firma)}
     </div>
   )
@@ -361,10 +396,10 @@ function normalisiereLogoQuelle(value) {
   if (!value || typeof value !== 'string') return null
   const v = value.trim()
   if (!v) return null
-  if (v.startsWith('http://') || v.startsWith('https://')) return v
+  if (v.startsWith('http://') || v.startsWith('https://')) return optimizeImageUrl(v, { width: 96, quality: 55 })
   if (v.startsWith('data:')) return v
   if (/^<svg[\s>]/i.test(v)) return `data:image/svg+xml;utf8,${encodeURIComponent(v)}`
   if (/^[A-Za-z0-9+/=\r\n]+$/.test(v) && v.length >= 40) return `data:image/png;base64,${v.replace(/\s+/g, '')}`
-  if (/^[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(v)) return `https://${v}`
+  if (/^[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(v)) return optimizeImageUrl(`https://${v}`, { width: 96, quality: 55 })
   return null
 }

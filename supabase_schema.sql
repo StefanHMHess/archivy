@@ -297,6 +297,32 @@ CREATE TABLE IF NOT EXISTS vertraege_log (
 
 CREATE INDEX IF NOT EXISTS idx_vertraege_log_vertrag ON vertraege_log (vertrag_id);
 
+CREATE TABLE IF NOT EXISTS sync_protokoll (
+    id              BIGSERIAL PRIMARY KEY,
+    script_name     TEXT NOT NULL,
+    script_version  TEXT,
+    owner_id        TEXT,
+    status          TEXT,
+    ok_count        INTEGER,
+    skip_count      INTEGER,
+    error_count     INTEGER,
+    result_text     TEXT,
+    error_text      TEXT,
+    detail_json     JSONB,
+    needs_review    BOOLEAN DEFAULT true NOT NULL,
+    reviewed_at     TIMESTAMPTZ,
+    reviewed_by     TEXT,
+    created_at      TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+ALTER TABLE sync_protokoll ADD COLUMN IF NOT EXISTS needs_review BOOLEAN DEFAULT true NOT NULL;
+ALTER TABLE sync_protokoll ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;
+ALTER TABLE sync_protokoll ADD COLUMN IF NOT EXISTS reviewed_by TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_sync_protokoll_created_at ON sync_protokoll (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sync_protokoll_script ON sync_protokoll (script_name);
+CREATE INDEX IF NOT EXISTS idx_sync_protokoll_needs_review ON sync_protokoll (needs_review, created_at DESC);
+
 
 -- ============================================================
 -- ROW LEVEL SECURITY (RLS)
@@ -309,6 +335,7 @@ ALTER TABLE vertragsbesitzer ENABLE ROW LEVEL SECURITY;
 ALTER TABLE zahlungsweisen ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vorgaenge_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vertraege_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sync_protokoll ENABLE ROW LEVEL SECURITY;
 
 -- Authentifizierte Nutzer dürfen alles lesen und schreiben
 DROP POLICY IF EXISTS "auth_lesen" ON app_admin;
@@ -515,6 +542,15 @@ DROP POLICY IF EXISTS "auth_lesen" ON vertraege_log;
 DROP POLICY IF EXISTS "auth_insert" ON vertraege_log;
 CREATE POLICY "auth_lesen"  ON vertraege_log FOR SELECT TO authenticated USING (true);
 CREATE POLICY "auth_insert" ON vertraege_log FOR INSERT TO authenticated WITH CHECK (true);
+
+DROP POLICY IF EXISTS "auth_lesen" ON sync_protokoll;
+DROP POLICY IF EXISTS "auth_insert" ON sync_protokoll;
+DROP POLICY IF EXISTS "auth_update" ON sync_protokoll;
+DROP POLICY IF EXISTS "fm_sync_insert" ON sync_protokoll;
+CREATE POLICY "auth_lesen"  ON sync_protokoll FOR SELECT TO authenticated USING (true);
+CREATE POLICY "auth_insert" ON sync_protokoll FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "auth_update" ON sync_protokoll FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "fm_sync_insert" ON sync_protokoll FOR INSERT TO anon WITH CHECK (true);
 
 
 -- ============================================================

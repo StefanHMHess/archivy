@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { T } from '../tokens'
 import { supabase } from '../lib/supabase'
 
 const WOCHENTAGE = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 
 export default function Kalender({ owner, onSelectVorgang }) {
+  const ownerIds = useMemo(() => ownerVarianten(owner?.id), [owner?.id])
   const [eintraege, setEintraege] = useState([])
   const [laden, setLaden] = useState(true)
   const [monat, setMonat] = useState(startDesMonats(new Date()))
@@ -24,7 +25,7 @@ export default function Kalender({ owner, onSelectVorgang }) {
         .limit(200)
 
       if (owner.id !== '__all__') {
-        query = query.eq('vertragsbesitzer_id', owner.id)
+        query = query.in('vertragsbesitzer_id', ownerIds)
       }
 
       const { data } = await query
@@ -137,6 +138,17 @@ export default function Kalender({ owner, onSelectVorgang }) {
       )}
     </div>
   )
+}
+
+function ownerVarianten(ownerId) {
+  const raw = String(ownerId ?? '').trim()
+  if (!raw || raw === '__all__') return []
+
+  // Keep combined owners together: nicole-stefan <-> nicole+stefan
+  const plus = raw.replace(/-/g, '+')
+  const dash = raw.replace(/\+/g, '-')
+
+  return [...new Set([raw, plus, dash])]
 }
 
 function fristFarbe(frist) {

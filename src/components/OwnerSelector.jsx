@@ -111,8 +111,12 @@ export default function OwnerSelector({ user, onSelectOwner }) {
             <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, lineHeight: 1.15 }}>Willkommen, {user.email}</h1>
           </div>
         </div>
-        <p style={{ marginTop: 0, marginBottom: T.sp4, color: T.textMuted, fontSize: 15 }}>
-          Schön, dass du da bist. Wähle deinen Inhaber-Bereich und starte direkt in deine Vertragsübersicht.
+        <p style={{ marginTop: 0, marginBottom: T.sp4, color: T.textMuted, fontSize: 15, lineHeight: 1.35 }}>
+          Schön, dass du da bist (und nicht hier).<br />
+          Wähle deinen Bereich und starte direkt in deine Vertragsübersicht.
+        </p>
+        <p style={{ marginTop: 0, marginBottom: T.sp4, color: T.textMuted, fontSize: 13, lineHeight: 1.45 }}>
+          Archivy ist ein Produkt entwickelt von Wohnbau Hess.
         </p>
 
         {tableMissing && (
@@ -138,8 +142,9 @@ export default function OwnerSelector({ user, onSelectOwner }) {
                   disabled={!erlaubnis}
                   style={{
                     display: 'flex',
-                    justifyContent: 'space-between',
+                    justifyContent: 'center',
                     alignItems: 'center',
+                    textAlign: 'center',
                     padding: T.sp4,
                     borderRadius: 12,
                     border: `1px solid ${T.border}`,
@@ -159,11 +164,17 @@ export default function OwnerSelector({ user, onSelectOwner }) {
                     e.currentTarget.style.boxShadow = erlaubnis ? '0 1px 0 rgba(15,118,110,0.06)' : 'none'
                   }}
                 >
-                  <div>
-                    <div style={{ fontWeight: 700 }}>{owner.display_name || owner.name}</div>
-                    <div style={{ fontSize: 13, color: T.textMuted }}>Zugriff für {user.email}</div>
+                  <div
+                    style={{
+                      width: '100%',
+                      fontWeight: 700,
+                      fontSize: 22,
+                      lineHeight: 1.15,
+                      letterSpacing: '-0.3px',
+                    }}
+                  >
+                    {owner.display_name || owner.name}
                   </div>
-                  {!erlaubnis && <span style={{ color: T.warning }}>Kein Zugriff</span>}
                 </button>
               )
             })}

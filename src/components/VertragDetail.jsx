@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { T } from '../tokens'
 import { supabase } from '../lib/supabase'
+import { optimizeImageUrl } from '../lib/storage'
 import PdfThumbnail from './PdfThumbnail'
 
 const FIXED_SECRET_MASK = '••••••••••'
@@ -23,6 +24,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
   const containerRef = useRef(null)
   const touchStartX = useRef(0)
   const isMobile = useIsMobile()
+  const ownerIds = useMemo(() => ownerVarianten(owner?.id), [owner?.id])
   const [vertrag, setVertrag] = useState(null)
   const [entwurf, setEntwurf] = useState(null)
   const [vorgaenge, setVorgaenge] = useState([])
@@ -33,6 +35,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
   const [logoFehler, setLogoFehler] = useState(false)
   const [erstelltVorgang, setErstelltVorgang] = useState(false)
   const [kopiert, setKopiert] = useState(false)
+  const [erstelltVertrag, setErstelltVertrag] = useState(false)
   const [zahlungsweisen, setZahlungsweisen] = useState(DEFAULT_ZAHLUNGSWEISEN)
   const [datumSortAsc, setDatumSortAsc] = useState(true)
 
@@ -110,7 +113,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
           .limit(200)
 
         if (owner && owner.id !== '__all__') {
-          q = q.eq('vertragsbesitzer_id', owner.id)
+          q = q.in('vertragsbesitzer_id', ownerIds)
         }
 
         const { data: vorgangRows } = await q
@@ -119,26 +122,51 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
         if (direkt.length > 0) {
           setVorgaenge(direkt)
         } else {
-          // Fallback: tolerate casing/whitespace differences between source systems.
+          // Fallback: tolerate casing/whitespace differences, owner-ID drift,
+          // and legacy rows where `vorgaenge.vertrag` stores the contract name.
           let fq = supabase
             .from('vorgaenge')
             .select('vorgang_id, vertrag, vorgang_art, kurzbeschreibung, beschreibung, datum, frist, erledigt, datei_pfad')
             .order('datum', { ascending: true })
             .limit(5000)
 
-          if (owner && owner.id !== '__all__') {
-            fq = fq.eq('vertragsbesitzer_id', owner.id)
-          }
-
           const { data: fallbackRows } = await fq
-          const nid = normalisiereVertragId(vertragId)
-          setVorgaenge((fallbackRows ?? []).filter(v => normalisiereVertragId(v.vertrag) === nid))
+          const rows = fallbackRows ?? []
+          const needles = [
+            vertragId,
+            data?.vertrag_id,
+            data?.vertragsnummer,
+            data?.firma,
+          ].map(normalisiereVertragId).filter(Boolean)
+
+          const compactNeedles = needles.map(normalisiereVertragKompakt).filter(Boolean)
+
+          const exact = rows.filter(v => needles.includes(normalisiereVertragId(v.vertrag)))
+          if (exact.length > 0) {
+            setVorgaenge(exact)
+          } else {
+            const compactExact = rows.filter(v => {
+              const key = normalisiereVertragKompakt(v.vertrag)
+              return key && compactNeedles.includes(key)
+            })
+
+            if (compactExact.length > 0) {
+              setVorgaenge(compactExact)
+            } else {
+              const fuzzy = rows.filter(v => {
+                const key = normalisiereVertragKompakt(v.vertrag)
+                if (!key) return false
+                return compactNeedles.some(n => n.length >= 6 && (key.includes(n) || n.includes(key)))
+              })
+              setVorgaenge(fuzzy)
+            }
+          }
         }
       }
       setLaden(false)
     }
     ladenVertrag()
-  }, [vertragId, owner])
+  }, [vertragId, owner, owner?.id])
 
   if (laden) return <p style={{ color: T.textMuted }}>Lädt Vertrag…</p>
   if (!vertrag) return <p style={{ color: T.danger }}>Vertrag nicht gefunden</p>
@@ -256,6 +284,45 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
     onNavigate?.(data?.vertrag_id || neuerVertragId)
   }
 
+  async function neuVertrag() {
+    const ownerId = cleanText(daten?.vertragsbesitzer_id) || (owner && owner.id !== '__all__' ? owner.id : null)
+    if (!ownerId) {
+      setSpeicherStatus({ ok: false, text: 'Neuen Vertrag bitte mit konkretem Inhaber anlegen.' })
+      return
+    }
+
+    setErstelltVertrag(true)
+    setSpeicherStatus(null)
+
+    const now = new Date().toISOString()
+    const neuerVertragId = `archivy-${Date.now()}`
+    const payload = {
+      vertrag_id: neuerVertragId,
+      vertragsbesitzer_id: ownerId,
+      firma: 'Neuer Vertrag',
+      aktiv: true,
+      modified_by: 'archivy',
+      sync_state: 'geaendert',
+      app_modified_at: now,
+    }
+
+    const { data, error } = await supabase
+      .from('vertraege')
+      .insert(payload)
+      .select('*')
+      .single()
+
+    setErstelltVertrag(false)
+
+    if (error) {
+      setSpeicherStatus({ ok: false, text: error.message })
+      return
+    }
+
+    setSpeicherStatus({ ok: true, text: 'Neuer Vertrag angelegt' })
+    onNavigate?.(data?.vertrag_id || neuerVertragId)
+  }
+
   async function neuVorgang() {
     if (!owner || owner.id === '__all__') {
       setFehler('Bitte zuerst einen konkreten Inhaber wählen, um einen Vorgang anzulegen.')
@@ -353,7 +420,9 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
           <LogoPreview vertrag={daten} logoFehler={logoFehler} setLogoFehler={setLogoFehler} />
           {/* Title Column */}
           <div style={{ minWidth: 0 }}>
-            <span style={{ display: 'block', marginBottom: 1, background: 'transparent', color: T.text, padding: 0, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>Vertrag</span>
+            <span style={{ display: 'block', marginBottom: 1, background: 'transparent', color: T.text, padding: 0, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
+              Vertrag · ID {daten?.vertrag_id || vertragId}
+            </span>
             <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{daten.firma || 'Vertrag'}</h1>
             <p style={{ margin: 0, marginTop: 2, color: T.textMuted, fontSize: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
               <span>{daten.gruppe || 'Keine Gruppe'}</span>
@@ -364,13 +433,15 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
         <div style={{ display: 'flex', gap: T.sp1, flexWrap: 'wrap', justifyContent: isMobile ? 'flex-start' : 'flex-end', alignItems: 'center', flexShrink: 0 }}>
             <button
               type="button"
-              onClick={() => setDatumSortAsc(v => !v)}
+              onClick={neuVertrag}
+              disabled={erstelltVertrag}
               style={{
                 background: T.bgCard,
                 border: `1px solid ${T.border}`,
                 borderRadius: T.r2,
                 padding: `6px 10px`,
-                cursor: 'pointer',
+                cursor: erstelltVertrag ? 'not-allowed' : 'pointer',
+                opacity: erstelltVertrag ? 0.7 : 1,
                 fontWeight: 700,
                 fontSize: 13,
                 whiteSpace: 'nowrap',
@@ -378,9 +449,9 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
                 display: 'flex',
                 alignItems: 'center',
               }}
-              title="Zugehörige Vorgänge nach Datum sortieren"
+              title="Neuen Vertrag anlegen"
             >
-              {datumSortAsc ? '↑' : '↓'}
+              {erstelltVertrag ? 'Anlegen…' : '+ Neu'}
             </button>
             <button
               type="button"
@@ -402,7 +473,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
               }}
               title="Diesen Vertrag kopieren"
             >
-              {kopiert ? '…' : '📋'}
+              {kopiert ? 'Kopiere…' : 'Duplizieren'}
             </button>
             {vertragIds.length > 1 && (
               <>
@@ -479,7 +550,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
               style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: '6px 10px', cursor: 'pointer', fontWeight: 600, minHeight: 40, display: 'flex', alignItems: 'center', fontSize: 16 }}
               title="Zurück"
             >
-              ✕
+              ← Zurück
             </button>
         </div>
       </div>
@@ -504,7 +575,15 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
           <DateField label="Vertragsdatum" value={daten.vertrags_datum} onChange={v => setFeld('vertrags_datum', v)} />
           <DateField label="Beginn" value={daten.vertrags_beginn} onChange={v => setFeld('vertrags_beginn', v)} />
           <DateField label="Ablauf" value={daten.vertrags_ablauf} onChange={v => setFeld('vertrags_ablauf', v)} />
-          <Field label="Logo" value={daten.datei_pfad_2} onChange={v => setFeld('datei_pfad_2', v)} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: T.sp3 }}>
+            <Field label="Aktiv" value={Boolean(daten.aktiv)} type="checkbox" onChange={v => setFeld('aktiv', v)} />
+            <Field
+              label={<LabelMitHinweis text="Diskret" hinweis="Zugangsdaten werden nicht von Filemaker übertragen." />}
+              value={isDiskretValue(daten.diskret)}
+              type="checkbox"
+              onChange={v => setFeld('diskret', v ? 'x' : null)}
+            />
+          </div>
         </div>
 
         <div className="vertrag-detail-karte" style={{ borderColor: T.border, borderRadius: T.r2, padding: T.sp3 }}>
@@ -516,6 +595,21 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
         <div style={{ padding: T.sp4, borderBottom: `1px solid ${T.border}`, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: T.sp2 }}>
           <span>Zugehörige Vorgänge</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: T.sp2 }}>
+            <button
+              type="button"
+              onClick={() => setDatumSortAsc(v => !v)}
+              style={{
+                border: `1px solid ${T.border}`,
+                borderRadius: 8,
+                padding: '2px 10px',
+                background: T.bgCard,
+                cursor: 'pointer',
+                fontWeight: 700,
+              }}
+              title="Zugehörige Vorgänge nach Datum sortieren"
+            >
+              {datumSortAsc ? '↑ Datum' : '↓ Datum'}
+            </button>
             <button
               type="button"
               onClick={neuVorgang}
@@ -587,15 +681,12 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
             onEditOptions={bearbeiteZahlungsweisen}
           />
           <KostenBlock daten={daten} onChange={setFeld} />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: T.sp3 }}>
-            <Field label="Aktiv" value={Boolean(daten.aktiv)} type="checkbox" onChange={v => setFeld('aktiv', v)} />
-            <Field
-              label={<LabelMitHinweis text="Diskret" hinweis="Zugangsdaten werden nicht von Filemaker übertragen." />}
-              value={isDiskretValue(daten.diskret)}
-              type="checkbox"
-              onChange={v => setFeld('diskret', v ? 'x' : null)}
-            />
-          </div>
+          <Field
+            label="Logo"
+            value={daten.datei_pfad_2}
+            onChange={v => setFeld('datei_pfad_2', v)}
+            inputStyle={{ fontSize: 12, color: T.textMuted, opacity: 0.85 }}
+          />
         </div>
       </div>
     </div>
@@ -1151,11 +1242,8 @@ function SecretZeile({ label, rawValue, onChange, onCopy, status, type = 'text' 
           <input
             key="masked"
             type="password"
-            value={hasValue ? String(rawValue ?? '') : ''}
-            onChange={e => {
-              if (!hasValue) onChange(e.target.value)
-            }}
-            readOnly={hasValue}
+            value={String(rawValue ?? '')}
+            onChange={e => onChange(e.target.value)}
             style={{ width: '100%', minWidth: 0, padding: '2px 0', border: 'none', borderBottom: `1px solid ${T.border}`, background: 'transparent', outline: 'none', borderRadius: 0 }}
           />
         )}
@@ -1269,6 +1357,21 @@ function normalisiereVertragId(value) {
   return String(value ?? '').trim().toLowerCase()
 }
 
+function normalisiereVertragKompakt(value) {
+  return normalisiereVertragId(value).replace(/[^a-z0-9]/g, '')
+}
+
+function ownerVarianten(ownerId) {
+  const raw = String(ownerId ?? '').trim()
+  if (!raw || raw === '__all__') return []
+
+  // Keep combined owners together: nicole-stefan <-> nicole+stefan
+  const plus = raw.replace(/-/g, '+')
+  const dash = raw.replace(/\+/g, '-')
+
+  return [...new Set([raw, plus, dash])]
+}
+
 function LogoPreview({ vertrag, logoFehler, setLogoFehler }) {
   const logoSrc = normalisiereLogoQuelle(ersterWert(vertrag?.datei_pfad_2, vertrag?.logo, vertrag?.Logo, vertrag?.dateiPfad2))
 
@@ -1278,7 +1381,7 @@ function LogoPreview({ vertrag, logoFehler, setLogoFehler }) {
         src={logoSrc}
         alt={vertrag?.firma || 'Logo'}
         onError={() => setLogoFehler(true)}
-        style={{ width: 64, height: 64, borderRadius: 12, border: `1px solid ${T.border}`, objectFit: 'contain', background: '#fff', padding: 4 }}
+        style={{ width: 64, height: 64, borderRadius: 12, border: 'none', objectFit: 'contain', background: 'transparent', display: 'block', transform: 'scale(1.05)' }}
       />
     )
   }
@@ -1301,11 +1404,11 @@ function normalisiereLogoQuelle(value) {
   if (!value || typeof value !== 'string') return null
   const v = value.trim()
   if (!v) return null
-  if (v.startsWith('http://') || v.startsWith('https://')) return v
+  if (v.startsWith('http://') || v.startsWith('https://')) return optimizeImageUrl(v, { width: 320, quality: 68 })
   if (v.startsWith('data:')) return v
   if (/^<svg[\s>]/i.test(v)) return `data:image/svg+xml;utf8,${encodeURIComponent(v)}`
   if (/^[A-Za-z0-9+/=\r\n]+$/.test(v) && v.length >= 40) return `data:image/png;base64,${v.replace(/\s+/g, '')}`
-  if (/^[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(v)) return `https://${v}`
+  if (/^[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(v)) return optimizeImageUrl(`https://${v}`, { width: 320, quality: 68 })
   return null
 }
 
