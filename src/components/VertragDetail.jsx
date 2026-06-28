@@ -567,7 +567,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
         </div>
       )}
 
-      <div className="vertrag-detail-dreispalten" style={{ gap: T.sp4, gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', alignItems: 'start' }}>
+      <div className="vertrag-detail-dreispalten" style={{ gap: T.sp4, gridTemplateColumns: '1fr', alignItems: 'start' }}>
         <div className="vertrag-detail-karte" style={{ borderColor: T.border, borderRadius: T.r2, padding: T.sp3 }}>
           <Field label="Firma" value={daten.firma} onChange={v => setFeld('firma', v)} />
           <Field label="Vertragsnummer" value={daten.vertragsnummer} onChange={v => setFeld('vertragsnummer', v)} />
@@ -584,10 +584,6 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
               onChange={v => setFeld('diskret', v ? 'x' : null)}
             />
           </div>
-        </div>
-
-        <div className="vertrag-detail-karte" style={{ borderColor: T.border, borderRadius: T.r2, padding: T.sp3 }}>
-          <KontaktAktionen vertrag={daten} onChange={setFeld} />
         </div>
       </div>
 
@@ -665,6 +661,10 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
       </div>
 
       <div style={{ marginTop: T.sp4 }}>
+        <div className="vertrag-detail-karte" style={{ borderColor: T.border, borderRadius: T.r2, padding: T.sp3, marginBottom: T.sp4 }}>
+          <KontaktAktionen vertrag={daten} onChange={setFeld} />
+        </div>
+
         <div className="vertrag-detail-karte" style={{ borderColor: T.border, borderRadius: T.r2, padding: T.sp3 }}>
           <Field
             label="IBAN"

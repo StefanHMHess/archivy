@@ -140,12 +140,13 @@ export default function App() {
       <header style={{
         background: T.primary,
         color: T.textOnTeal,
-        padding: `${T.sp3} ${T.sp6}`,
+        padding: `clamp(10px, 2.2vw, ${T.sp3}) clamp(12px, 3vw, ${T.sp6})`,
+        paddingTop: `calc(clamp(10px, 2.2vw, ${T.sp3}) + env(safe-area-inset-top))`,
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: T.sp4,
+        gap: 'clamp(8px, 1.8vw, 16px)',
         boxShadow: T.shadowMd,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: T.sp4 }}>
@@ -230,7 +231,7 @@ export default function App() {
         background: T.surface,
         display: 'flex',
         gap: 2,
-        padding: `0 ${T.sp6}`,
+        padding: `0 clamp(12px, 3vw, ${T.sp6})`,
         overflowX: 'auto',
       }}>
         {NAV.map(n => (
@@ -254,7 +255,7 @@ export default function App() {
         ))}
       </nav>
 
-      <main style={{ flex: 1, padding: T.sp6, maxWidth: 1200, margin: '0 auto', width: '100%' }}>
+      <main style={{ flex: 1, padding: 'clamp(12px, 3vw, 24px)', maxWidth: 1200, margin: '0 auto', width: '100%' }}>
         {selectedVorgangId ? (
           <VorgangDetail
             vorgang_id={selectedVorgangId}
