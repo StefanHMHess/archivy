@@ -2,3 +2,5 @@ node_modules
 dist
 .env
 .env.local
+_noop_tmp/
+tmp_*
