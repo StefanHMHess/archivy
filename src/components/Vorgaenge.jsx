@@ -125,7 +125,7 @@ export default function Vorgaenge({ owner, onSelectVorgang }) {
                   onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
                   onMouseLeave={e => e.currentTarget.style.background = ''}>
                   <td style={{ padding: `${T.sp2} ${T.sp3}` }}>
-                    <span>{cleanText(v.beschreibung) || '—'}</span>
+                    <span>{cleanText(v.beschreibung) || cleanText(v.kurzbeschreibung) || cleanText(v.vorgang_art) || '—'}</span>
                     {v.datei_pfad && <span style={{ marginLeft: T.sp2, color: T.primary }}>📄</span>}
                   </td>
                   <td style={{ padding: `${T.sp2} ${T.sp3}` }}>{v.kurzbeschreibung || v.vorgang_art || '—'}</td>
