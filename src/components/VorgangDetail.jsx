@@ -320,6 +320,12 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
   const titelNotiz = daten.kurzbeschreibung || daten.beschreibung || 'Vorgang'
   const logoSrc = normalisiereLogoQuelle(vertragMeta?.datei_pfad_2)
   const beschreibungAnzeige = daten.beschreibung || daten.kurzbeschreibung || null
+  const dateiIstPdf = istPdfPfad(daten?.datei_pfad)
+
+  function oeffneDateiExtern() {
+    if (!dateiUrl) return
+    window.open(dateiUrl, '_blank', 'noopener,noreferrer')
+  }
 
   return (
     <div ref={containerRef} style={{ maxWidth: 1000, margin: '0 auto' }}>
@@ -515,8 +521,8 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
           {/* PDF */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: T.sp3 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>Dokument</h3>
-              {dateiUrl && (
+              <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>Dokument (PDF/Foto)</h3>
+              {dateiUrl && dateiIstPdf && (
                 <button
                   onClick={() => setPdfRotation((prev) => (prev + 90) % 360)}
                   style={{
@@ -541,21 +547,27 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
               }}
             >
               {dateiUrl ? (
-                <Document
-                  file={dateiUrl}
-                  onLoadSuccess={({ numPages }) => { setPdfPages(numPages); setPdfError(null) }}
-                  onLoadError={e => { console.error('PDF Fehler:', e); setPdfError(e?.message || String(e)); setFehler('PDF konnte nicht geladen werden'); }}
-                  loading={<p style={{ color: T.textMuted }}>PDF wird geladen…</p>}
-                  error={<p style={{ color: T.danger }}>PDF konnte nicht geladen werden</p>}
-                >
-                  <div
-                    onClick={() => setPdfVollbild(true)}
-                    style={{ cursor: 'zoom-in' }}
-                    title="Klicken für Vollansicht"
+                dateiIstPdf ? (
+                  <Document
+                    file={dateiUrl}
+                    onLoadSuccess={({ numPages }) => { setPdfPages(numPages); setPdfError(null) }}
+                    onLoadError={e => { console.error('PDF Fehler:', e); setPdfError(e?.message || String(e)); setFehler('PDF konnte nicht geladen werden'); }}
+                    loading={<p style={{ color: T.textMuted }}>PDF wird geladen…</p>}
+                    error={<p style={{ color: T.danger }}>PDF konnte nicht geladen werden</p>}
                   >
-                    <Page pageNumber={1} width={300} renderTextLayer={false} rotate={pdfRotation} />
+                    <div
+                      onClick={() => setPdfVollbild(true)}
+                      style={{ cursor: 'zoom-in' }}
+                      title="Klicken für Vollansicht"
+                    >
+                      <Page pageNumber={1} width={300} renderTextLayer={false} rotate={pdfRotation} />
+                    </div>
+                  </Document>
+                ) : (
+                  <div onClick={oeffneDateiExtern} style={{ cursor: 'zoom-in' }} title="Klicken zum Öffnen">
+                    <img src={dateiUrl} alt="Dokument" style={{ maxWidth: '100%', maxHeight: 360, borderRadius: T.r2, display: 'block', margin: '0 auto' }} />
                   </div>
-                </Document>
+                )
               ) : (
                 <p style={{ color: T.textMuted, textAlign: 'center' }}>Keine Datei hochgeladen</p>
               )}
@@ -574,8 +586,8 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
                   opacity: uploading ? 0.7 : 1,
                 }}
               >
-                {uploading ? 'Wird hochgeladen…' : '📄 Datei hochladen'}
-                <input type="file" accept="application/pdf,.pdf" onChange={handleDateiUpload} disabled={uploading} style={{ display: 'none' }} />
+                {uploading ? 'Wird hochgeladen…' : '📎 Dokument hochladen'}
+                <input type="file" accept="application/pdf,.pdf,image/*" onChange={handleDateiUpload} disabled={uploading} style={{ display: 'none' }} />
               </label>
               {daten.datei_pfad && (
                 <button
@@ -587,7 +599,7 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
                     borderRadius: T.r2, cursor: uploading ? 'not-allowed' : 'pointer', fontWeight: 600,
                   }}
                 >
-                  PDF löschen
+                  Dokument löschen
                 </button>
               )}
             </div>
@@ -661,6 +673,11 @@ function normalisiereLogoQuelle(value) {
   if (v.startsWith('data:image/')) return v
   if (/^[A-Za-z0-9+/=\r\n]+$/.test(v) && v.length > 120) return `data:image/png;base64,${v.replace(/\s+/g, '')}`
   return null
+}
+
+function istPdfPfad(value) {
+  if (!value || typeof value !== 'string') return false
+  return /\.pdf(?:$|[?#])/i.test(value.trim())
 }
 
 function EditTextFeld({ label, value, onChange, type = 'text', multiline = false }) {
