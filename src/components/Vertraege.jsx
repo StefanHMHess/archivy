@@ -5,7 +5,6 @@ import { optimizeImageUrl } from '../lib/storage'
 
 const PAGE = 300
 const FILTERS_STORAGE_PREFIX = 'archivy.vertraege.filters.v1'
-const LOGO_MAX_INLINE_CHARS = 12000
 const SORTIERUNGEN = {
   firma_asc: { column: 'firma', ascending: true, label: 'Firma A-Z' },
   firma_desc: { column: 'firma', ascending: false, label: 'Firma Z-A' },
@@ -433,9 +432,9 @@ function normalisiereLogoQuelle(value) {
   const v = value.trim()
   if (!v) return null
   if (v.startsWith('http://') || v.startsWith('https://')) return optimizeImageUrl(v, { width: 48, quality: 40 })
-  if (v.startsWith('data:')) return v.length <= LOGO_MAX_INLINE_CHARS ? v : null
+  if (v.startsWith('data:')) return v
   if (/^<svg[\s>]/i.test(v)) return `data:image/svg+xml;utf8,${encodeURIComponent(v)}`
-  if (/^[A-Za-z0-9+/=\r\n]+$/.test(v) && v.length >= 40 && v.length <= LOGO_MAX_INLINE_CHARS) return `data:image/png;base64,${v.replace(/\s+/g, '')}`
+  if (/^[A-Za-z0-9+/=\r\n]+$/.test(v) && v.length >= 40) return `data:image/png;base64,${v.replace(/\s+/g, '')}`
   if (/^[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(v)) return optimizeImageUrl(`https://${v}`, { width: 48, quality: 40 })
   return null
 }
