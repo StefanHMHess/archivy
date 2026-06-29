@@ -3,7 +3,7 @@ import { T } from '../tokens'
 import { supabase } from '../lib/supabase'
 import { optimizeImageUrl } from '../lib/storage'
 
-const PAGE = 50
+const PAGE = 500
 const SORTIERUNGEN = {
   firma_asc: { column: 'firma', ascending: true, label: 'Firma A-Z' },
   firma_desc: { column: 'firma', ascending: false, label: 'Firma Z-A' },
@@ -216,9 +216,14 @@ export default function Vertraege({ owner, onSelectContract }) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr style={{ background: T.bg, textAlign: 'left' }}>
-                {['Gruppe', 'Logo', 'Firma', 'Beschreibung', 'Nr.', 'Kosten/Jahr', 'Ablauf', 'Aktion'].map(h => (
-                  <th key={h} style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>{h}</th>
-                ))}
+                <th className="vt-col-gruppe" style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted }}>Gruppe</th>
+                <th style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Logo</th>
+                <th className="vt-col-firma" style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Firma</th>
+                <th className="vt-col-beschreibung" style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Beschreibung</th>
+                <th className="vt-col-nr" style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Nr.</th>
+                <th className="vt-col-kosten" style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Kosten/Jahr</th>
+                <th style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Ablauf</th>
+                <th style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Aktion</th>
               </tr>
             </thead>
             <tbody>
@@ -227,12 +232,12 @@ export default function Vertraege({ owner, onSelectContract }) {
                   onClick={() => onSelectContract(v.vertrag_id, zeilen.map(z => z.vertrag_id))}
                   onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
                   onMouseLeave={e => e.currentTarget.style.background = ''}>
-                  <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap' }}>{v.gruppe ?? '—'}</td>
+                  <td className="vt-col-gruppe" style={{ padding: `${T.sp2} ${T.sp3}`, verticalAlign: 'top' }}>{v.gruppe ?? '—'}</td>
                   <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap' }}>
                     <LogoCell logo={v.logo} firma={v.firma} />
                   </td>
-                  <td style={{ padding: `${T.sp2} ${T.sp3}` }}>{v.firma ?? '—'}</td>
-                  <td style={{ padding: `${T.sp2} ${T.sp3}`, maxWidth: 340 }}>
+                  <td className="vt-col-firma" style={{ padding: `${T.sp2} ${T.sp3}` }}>{v.firma ?? '—'}</td>
+                  <td className="vt-col-beschreibung" style={{ padding: `${T.sp2} ${T.sp3}`, maxWidth: 340 }}>
                     <div style={{
                       overflow: 'hidden',
                       display: '-webkit-box',
@@ -245,8 +250,8 @@ export default function Vertraege({ owner, onSelectContract }) {
                       {v.beschreibung ?? '—'}
                     </div>
                   </td>
-                  <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap' }}>{v.vertragsnummer ?? '—'}</td>
-                  <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap', textAlign: 'right' }}>
+                  <td className="vt-col-nr" style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap' }}>{v.vertragsnummer ?? '—'}</td>
+                  <td className="vt-col-kosten" style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap', textAlign: 'right' }}>
                     {formatKostenJaehrlich(v.kosten_jaehrlich)}
                   </td>
                   <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap', color: ablaufFarbe(v.vertrags_ablauf) }}>{formatDateDisplay(v.vertrags_ablauf)}</td>

@@ -10,7 +10,7 @@ import Impressum from './components/Impressum'
 import OwnerSelector from './components/OwnerSelector'
 import Login from './components/Login'
 import { supabase } from './lib/supabase'
-import appIcon from '../archivy_icon_512 (1).svg'
+const appIcon = '/icons/archivy-icon.svg'
 
 const NAV = [
   { id: 'dashboard',  label: 'Dashboard' },
@@ -83,7 +83,6 @@ export default function App() {
           setIsAdmin(false)
         }
       } catch (e) {
-        // Tabelle existiert nicht oder andere Fehler -> nicht Admin
         setIsAdmin(false)
       } finally {
         setLoadingAdmin(false)
@@ -110,9 +109,9 @@ export default function App() {
         return
       }
 
-      const allowed = (data ?? []).filter(owner => Array.isArray(owner.allowed_users) && owner.allowed_users.includes(user.email))
-      if (allowed.length > 0) {
-        setOwnerOptions(allowed)
+      const nextOwners = buildOwnerOptions(data, user.email)
+      if (nextOwners.length > 0) {
+        setOwnerOptions(nextOwners)
       } else if (selectedOwner) {
         setOwnerOptions([selectedOwner])
       } else {
@@ -140,26 +139,28 @@ export default function App() {
       <header style={{
         background: T.primary,
         color: T.textOnTeal,
-        padding: `clamp(10px, 2.2vw, ${T.sp3}) clamp(12px, 3vw, ${T.sp6})`,
-        paddingTop: `calc(clamp(10px, 2.2vw, ${T.sp3}) + env(safe-area-inset-top))`,
+        padding: `clamp(8px, 2vw, ${T.sp3}) clamp(10px, 3vw, ${T.sp5})`,
+        paddingTop: `calc(clamp(8px, 2vw, ${T.sp3}) + env(safe-area-inset-top))`,
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 'clamp(8px, 1.8vw, 16px)',
+        gap: 8,
         boxShadow: T.shadowMd,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: T.sp4 }}>
-          <img src={appIcon} alt="Archivy" style={{ width: 40, height: 40, flex: '0 0 auto' }} />
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 20, letterSpacing: '-0.3px' }}>Archivy</div>
-            <div style={{ fontSize: 13, color: T.textOnTeal, opacity: 0.85 }}>
-              Angemeldet als {user.email}
+        {/* Logo + Titel */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: '0 0 auto' }}>
+          <img src={appIcon} alt="Archivy" style={{ width: 36, height: 36, flex: '0 0 auto' }} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: 18, letterSpacing: '-0.3px' }}>Archivy</div>
+            <div style={{ fontSize: 11, color: T.textOnTeal, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '40vw' }}>
+              {user.email}
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: T.sp3, alignItems: 'center' }}>
+        {/* Rechte Seite: Buttons + Inhaberauswahl */}
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', flex: '1 1 auto', justifyContent: 'flex-end' }}>
           <button
             onClick={() => {
               setSelectedOwner(null)
@@ -171,12 +172,15 @@ export default function App() {
               color: T.textOnTeal,
               border: '1px solid rgba(255,255,255,0.35)',
               borderRadius: T.r2,
-              padding: `${T.sp2} ${T.sp4}`,
+              padding: '5px 10px',
               cursor: 'pointer',
+              fontSize: 13,
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
             }}
             title="Zum Willkommensbildschirm"
           >
-            Startbildschirm
+            ⬚
           </button>
           <button
             onClick={() => {
@@ -188,42 +192,45 @@ export default function App() {
               color: T.textMain,
               border: `1px solid ${T.border}`,
               borderRadius: T.r2,
-              padding: `${T.sp2} ${T.sp4}`,
+              padding: '5px 10px',
               cursor: 'pointer',
+              fontSize: 13,
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+            title="Abmelden"
+          >
+            ↪
+          </button>
+          <select
+            value={selectedOwner?.id || ''}
+            onChange={(e) => {
+              const next = ownerOptions.find(o => o.id === e.target.value)
+              if (!next) return
+              setSelectedOwner(next)
+              setSelectedContractId(null)
+              setSelectedVorgangId(null)
+            }}
+            title="Inhaber wechseln"
+            style={{
+              background: 'rgba(255,255,255,0.14)',
+              color: T.textOnTeal,
+              border: '1px solid rgba(255,255,255,0.35)',
+              borderRadius: T.r2,
+              padding: '5px 8px',
+              cursor: 'pointer',
+              fontSize: 13,
+              minWidth: 0,
+              flex: '1 1 120px',
+              maxWidth: 220,
             }}
           >
-            Abmelden
-          </button>
-          <label style={{ display: 'flex', alignItems: 'center', gap: T.sp2, color: T.textOnTeal }}>
-            <span style={{ fontSize: 12, whiteSpace: 'nowrap' }}>Inhaber:</span>
-            <select
-              value={selectedOwner?.id || ''}
-              onChange={(e) => {
-                const next = ownerOptions.find(o => o.id === e.target.value)
-                if (!next) return
-                setSelectedOwner(next)
-                setSelectedContractId(null)
-                setSelectedVorgangId(null)
-              }}
-              title="Inhaber wechseln"
-              style={{
-                background: 'rgba(255,255,255,0.14)',
-                color: T.textOnTeal,
-                border: '1px solid rgba(255,255,255,0.35)',
-                borderRadius: T.r2,
-                padding: `${T.sp2} ${T.sp3}`,
-                minWidth: 170,
-                cursor: 'pointer',
-                fontSize: 13,
-              }}
-            >
-              {(ownerOptions.length > 0 ? ownerOptions : [selectedOwner].filter(Boolean)).map(owner => (
-                <option key={owner.id} value={owner.id} style={{ color: T.textMain, background: T.bgCard }}>
-                  {owner.display_name || owner.name || owner.id}
-                </option>
-              ))}
-            </select>
-          </label>
+            {(ownerOptions.length > 0 ? ownerOptions : [selectedOwner].filter(Boolean)).map(owner => (
+              <option key={owner.id} value={owner.id} style={{ color: T.textMain, background: T.bgCard }}>
+                {owner.display_name || owner.name || owner.id}
+              </option>
+            ))}
+          </select>
         </div>
       </header>
 
@@ -295,4 +302,21 @@ export default function App() {
       </main>
     </div>
   )
+}
+
+function buildOwnerOptions(rows, userEmail) {
+  const normalizedEmail = String(userEmail ?? '').trim().toLowerCase()
+
+  return (rows ?? [])
+    .map(row => ({
+      id: String(row?.id ?? '').trim(),
+      name: String(row?.name ?? '').trim(),
+      display_name: String(row?.display_name ?? '').trim(),
+      allowed_users: Array.isArray(row?.allowed_users) ? row.allowed_users : [],
+    }))
+    .filter(row => row.id)
+    .filter(row => {
+      if (row.allowed_users.length === 0) return true
+      return row.allowed_users.some(email => String(email || '').trim().toLowerCase() === normalizedEmail)
+    })
 }

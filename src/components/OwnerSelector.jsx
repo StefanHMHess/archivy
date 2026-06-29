@@ -13,14 +13,12 @@ export default function OwnerSelector({ user, onSelectOwner }) {
   const [owners, setOwners] = useState([])
   const [laden, setLaden] = useState(true)
   const [fehler, setFehler] = useState(null)
-  const [tableMissing, setTableMissing] = useState(false)
-  const [firstOwnerName, setFirstOwnerName] = useState('')
-  const [creatingFirstOwner, setCreatingFirstOwner] = useState(false)
 
   useEffect(() => {
     let aktiv = true
     async function ladenOwners() {
       setLaden(true)
+      setFehler(null)
       const { data, error } = await supabase
         .from('vertragsbesitzer')
         .select('id,name,display_name,allowed_users')
@@ -28,17 +26,11 @@ export default function OwnerSelector({ user, onSelectOwner }) {
 
       if (!aktiv) return
       if (error) {
-        const msg = error.message || ''
-        const missing = msg.includes("Could not find the table 'public.vertragsbesitzer'")
-        setTableMissing(missing)
-        setFehler(missing ? null : msg)
-        if (missing) {
-          setOwners([FALLBACK_OWNER])
-        }
+        setFehler(error.message || 'Inhaber konnten nicht geladen werden.')
+        setOwners([FALLBACK_OWNER])
       } else {
-        const rows = data ?? []
+        const rows = buildOwnerOptions(data)
         setOwners(rows.length === 0 ? [FALLBACK_OWNER] : rows)
-        setTableMissing(false)
       }
       setLaden(false)
     }
@@ -48,39 +40,9 @@ export default function OwnerSelector({ user, onSelectOwner }) {
 
   function isAllowed(owner) {
     if (owner.id === FALLBACK_OWNER.id) return true
-    if (!owner.allowed_users) return false
-    return owner.allowed_users.includes(user.email)
-  }
-
-  async function handleCreateFirstOwner() {
-    const name = firstOwnerName.trim()
-    if (!name) return
-    setCreatingFirstOwner(true)
-    setFehler(null)
-
-    const payload = {
-      id: slugify(name),
-      name,
-      display_name: name,
-      allowed_users: [user.email],
-    }
-
-    const { error } = await supabase.from('vertragsbesitzer').insert(payload)
-    if (error) {
-      setFehler(error.message)
-      setCreatingFirstOwner(false)
-      return
-    }
-
-    const createdOwner = {
-      id: payload.id,
-      name: payload.name,
-      display_name: payload.display_name,
-      allowed_users: payload.allowed_users,
-    }
-    setCreatingFirstOwner(false)
-    setFirstOwnerName('')
-    onSelectOwner(createdOwner)
+    const allowedUsers = Array.isArray(owner.allowed_users) ? owner.allowed_users : []
+    if (allowedUsers.length === 0) return true
+    return allowedUsers.some(email => String(email || '').trim().toLowerCase() === user.email.toLowerCase())
   }
 
   return (
@@ -105,7 +67,7 @@ export default function OwnerSelector({ user, onSelectOwner }) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: T.sp4, marginBottom: T.sp3, flexWrap: 'wrap' }}>
-          <img src="/archivy_icon_512 (1).svg" alt="Archivy" style={{ width: 52, height: 52 }} />
+          <img src="/icons/archivy-icon.svg" alt="Archivy" style={{ width: 52, height: 52 }} />
           <div>
             <div style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#0f766e' }}>ARCHIVY</div>
             <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, lineHeight: 1.15 }}>Willkommen, {user.email}</h1>
@@ -118,12 +80,6 @@ export default function OwnerSelector({ user, onSelectOwner }) {
         <p style={{ marginTop: 0, marginBottom: T.sp4, color: T.textMuted, fontSize: 13, lineHeight: 1.45 }}>
           Archivy ist ein Produkt entwickelt von Wohnbau Hess.
         </p>
-
-        {tableMissing && (
-          <div style={{ marginTop: T.sp4, padding: T.sp3, borderRadius: T.r2, background: '#fff7ed', color: '#9a3412', fontSize: 13 }}>
-            Tabelle für <strong>Inhaber</strong> fehlt (technisch: <strong>vertragsbesitzer</strong>). Du kannst mit "Alle Bereiche" weiterarbeiten und die Tabelle später anlegen.
-          </div>
-        )}
 
         {fehler && <div style={{ marginTop: T.sp4, color: T.danger }}>{fehler}</div>}
 
@@ -179,41 +135,6 @@ export default function OwnerSelector({ user, onSelectOwner }) {
               )
             })}
 
-            {owners.length === 1 && owners[0]?.id === FALLBACK_OWNER.id && !tableMissing && (
-              <div style={{ marginTop: T.sp2, display: 'grid', gap: T.sp2 }}>
-                <p style={{ margin: 0, fontSize: 13, color: T.textMuted }}>
-                  Es sind noch keine Inhaber angelegt. Du kannst mit "Alle Bereiche" starten oder direkt den ersten Inhaber erstellen.
-                </p>
-                <div style={{ display: 'flex', gap: T.sp2, flexWrap: 'wrap' }}>
-                  <input
-                    value={firstOwnerName}
-                    onChange={e => setFirstOwnerName(e.target.value)}
-                    placeholder="Name des ersten Inhabers"
-                    style={{
-                      flex: 1,
-                      minWidth: 220,
-                      border: `1px solid ${T.border}`,
-                      borderRadius: T.r2,
-                      padding: `${T.sp2} ${T.sp3}`,
-                    }}
-                  />
-                  <button
-                    onClick={handleCreateFirstOwner}
-                    disabled={creatingFirstOwner || !firstOwnerName.trim()}
-                    style={{
-                      background: T.primary,
-                      color: T.textOnTeal,
-                      border: 'none',
-                      borderRadius: T.r2,
-                      padding: `${T.sp2} ${T.sp4}`,
-                      cursor: creatingFirstOwner ? 'wait' : 'pointer',
-                    }}
-                  >
-                    {creatingFirstOwner ? 'Erstellt…' : 'Ersten Inhaber anlegen'}
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -221,11 +142,13 @@ export default function OwnerSelector({ user, onSelectOwner }) {
   )
 }
 
-function slugify(value) {
-  const base = value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
-  return base || `inhaber-${Date.now()}`
+function buildOwnerOptions(rows) {
+  return (rows ?? [])
+    .map(row => ({
+      id: String(row?.id ?? '').trim(),
+      name: String(row?.name ?? '').trim(),
+      display_name: String(row?.display_name ?? '').trim(),
+      allowed_users: Array.isArray(row?.allowed_users) ? row.allowed_users : [],
+    }))
+    .filter(row => row.id)
 }
