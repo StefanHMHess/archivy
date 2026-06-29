@@ -1436,6 +1436,7 @@ function normalisiereLogoQuelle(value) {
 }
 
 function buildVertragPayload(daten, owner) {
+  const istDiskret = isDiskretValue(daten.diskret)
   return {
     gruppe: cleanText(daten.gruppe),
     untergruppe: cleanText(daten.untergruppe),
@@ -1447,8 +1448,8 @@ function buildVertragPayload(daten, owner) {
     fax: cleanText(daten.fax),
     email: cleanText(daten.email),
     webseite: cleanText(daten.webseite),
-    zugang: cleanText(daten.zugang),
-    passwort: cleanText(daten.passwort),
+    zugang: istDiskret ? null : cleanText(daten.zugang),
+    passwort: istDiskret ? null : cleanText(daten.passwort),
     diskret: diskretDbValue(daten.diskret),
     beschreibung: cleanText(daten.beschreibung),
     vertragsnummer: cleanText(daten.vertragsnummer),
