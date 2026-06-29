@@ -619,44 +619,46 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
         {angezeigteVorgaenge.length === 0 ? (
           <p style={{ padding: T.sp4, color: T.textMuted, margin: 0 }}>Keine Vorgänge zu diesem Vertrag vorhanden.</p>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-            <thead>
-              <tr style={{ textAlign: 'left', background: T.bg }}>
-                {['Beschreibung', 'Datum', 'Notiz', 'Frist', 'Status', 'PDF'].map(h => (
-                  <th key={h} style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `1px solid ${T.border}`, color: T.textMuted, whiteSpace: 'nowrap' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {angezeigteVorgaenge.map(v => (
-                <tr
-                  key={v.vorgang_id}
-                  onClick={() => onSelectVorgang?.(v.vorgang_id, angezeigteVorgaenge.map(x => x.vorgang_id))}
-                  style={{ borderBottom: `1px solid ${T.border}`, cursor: 'pointer', verticalAlign: 'middle' }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
-                  onMouseLeave={e => e.currentTarget.style.background = ''}
-                >
-                  <td style={{ padding: `${T.sp2} ${T.sp3}` }}>
-                    <div style={{ fontWeight: 600 }}>{cleanText(v.beschreibung) || '—'}</div>
-                    <div style={{ color: T.textMuted, fontSize: 12 }}>ID {v.vorgang_id}</div>
-                  </td>
-                  <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap' }}>{formatDateDisplay(v.datum) || ''}</td>
-                  <td style={{ padding: `${T.sp2} ${T.sp3}`, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.kurzbeschreibung || ''}</td>
-                  <td style={{ padding: `${T.sp2} ${T.sp3}`, color: fristFarbe(v.frist, v.erledigt), whiteSpace: 'nowrap' }}>{formatDateDisplay(v.frist) || ''}</td>
-                  <td style={{ padding: `${T.sp2} ${T.sp3}` }}>
-                    {statusBadge(v.frist, v.erledigt)}
-                  </td>
-                  <td style={{ padding: `${T.sp2} ${T.sp3}` }}>
-                    {v.datei_pfad ? (
-                      <PdfThumbnail pfad={v.datei_pfad} width={56} />
-                    ) : (
-                      <span style={{ color: T.textMuted, fontSize: 12 }}>—</span>
-                    )}
-                  </td>
+          <div className="vertrag-vorgaenge-scroll" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ width: '100%', minWidth: 860, borderCollapse: 'collapse', fontSize: 14 }}>
+              <thead>
+                <tr style={{ textAlign: 'left', background: T.bg }}>
+                  {['Beschreibung', 'Datum', 'Notiz', 'Frist', 'Status', 'PDF'].map(h => (
+                    <th key={h} style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `1px solid ${T.border}`, color: T.textMuted, whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {angezeigteVorgaenge.map(v => (
+                  <tr
+                    key={v.vorgang_id}
+                    onClick={() => onSelectVorgang?.(v.vorgang_id, angezeigteVorgaenge.map(x => x.vorgang_id))}
+                    style={{ borderBottom: `1px solid ${T.border}`, cursor: 'pointer', verticalAlign: 'middle' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+                    onMouseLeave={e => e.currentTarget.style.background = ''}
+                  >
+                    <td style={{ padding: `${T.sp2} ${T.sp3}` }}>
+                      <div style={{ fontWeight: 600 }}>{cleanText(v.beschreibung) || cleanText(v.kurzbeschreibung) || cleanText(v.vorgang_art) || '—'}</div>
+                      <div style={{ color: T.textMuted, fontSize: 12 }}>ID {v.vorgang_id}</div>
+                    </td>
+                    <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap' }}>{formatDateDisplay(v.datum) || ''}</td>
+                    <td style={{ padding: `${T.sp2} ${T.sp3}`, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.kurzbeschreibung || ''}</td>
+                    <td style={{ padding: `${T.sp2} ${T.sp3}`, color: fristFarbe(v.frist, v.erledigt), whiteSpace: 'nowrap' }}>{formatDateDisplay(v.frist) || ''}</td>
+                    <td style={{ padding: `${T.sp2} ${T.sp3}` }}>
+                      {statusBadge(v.frist, v.erledigt)}
+                    </td>
+                    <td style={{ padding: `${T.sp2} ${T.sp3}`, minWidth: 72 }}>
+                      {v.datei_pfad ? (
+                        <PdfThumbnail pfad={v.datei_pfad} width={56} />
+                      ) : (
+                        <span style={{ color: T.textMuted, fontSize: 12 }}>—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
