@@ -3,7 +3,9 @@ import { T } from '../tokens'
 import { supabase } from '../lib/supabase'
 import { optimizeImageUrl } from '../lib/storage'
 
-const PAGE = 500
+const PAGE = 300
+const FILTERS_STORAGE_PREFIX = 'archivy.vertraege.filters.v1'
+const LOGO_MAX_INLINE_CHARS = 12000
 const SORTIERUNGEN = {
   firma_asc: { column: 'firma', ascending: true, label: 'Firma A-Z' },
   firma_desc: { column: 'firma', ascending: false, label: 'Firma Z-A' },
@@ -14,6 +16,7 @@ const SORTIERUNGEN = {
 
 export default function Vertraege({ owner, onSelectContract }) {
   const ownerIds = useMemo(() => ownerVarianten(owner?.id), [owner?.id])
+  const filterStorageKey = useMemo(() => `${FILTERS_STORAGE_PREFIX}:${owner?.id ?? '__all__'}`, [owner?.id])
   const [zeilen, setZeilen] = useState([])
   const [suche, setSuche] = useState('')
   const [gruppen, setGruppen] = useState([])
@@ -22,6 +25,32 @@ export default function Vertraege({ owner, onSelectContract }) {
   const [laden, setLaden] = useState(true)
   const [busy, setBusy] = useState(false)
   const [reloadToken, setReloadToken] = useState(0)
+
+  useEffect(() => {
+    if (!owner) return
+    const saved = loadFilterState(filterStorageKey)
+    if (!saved) {
+      setSuche('')
+      setGruppeFilter('__all__')
+      setSortierung('firma_asc')
+      return
+    }
+
+    setSuche(saved.suche ?? '')
+    setGruppeFilter(saved.gruppeFilter ?? '__all__')
+    setSortierung(saved.sortierung && SORTIERUNGEN[saved.sortierung] ? saved.sortierung : 'firma_asc')
+  }, [owner, filterStorageKey])
+
+  useEffect(() => {
+    if (!owner) return
+    saveFilterState(filterStorageKey, { suche, gruppeFilter, sortierung })
+  }, [owner, filterStorageKey, suche, gruppeFilter, sortierung])
+
+  useEffect(() => {
+    if (gruppeFilter !== '__all__' && !gruppen.includes(gruppeFilter)) {
+      setGruppeFilter('__all__')
+    }
+  }, [gruppen, gruppeFilter])
 
   useEffect(() => {
     if (!owner) return
@@ -383,8 +412,10 @@ function LogoCell({ logo, firma }) {
         <img
           src={src}
           alt={firma || 'Logo'}
+          loading="lazy"
+          decoding="async"
           onError={() => setError(true)}
-          style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', transform: 'scale(1.06)' }}
+          style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', transform: 'scale(1.04)' }}
         />
       </div>
     )
@@ -401,10 +432,38 @@ function normalisiereLogoQuelle(value) {
   if (!value || typeof value !== 'string') return null
   const v = value.trim()
   if (!v) return null
-  if (v.startsWith('http://') || v.startsWith('https://')) return optimizeImageUrl(v, { width: 96, quality: 55 })
-  if (v.startsWith('data:')) return v
+  if (v.startsWith('http://') || v.startsWith('https://')) return optimizeImageUrl(v, { width: 48, quality: 40 })
+  if (v.startsWith('data:')) return v.length <= LOGO_MAX_INLINE_CHARS ? v : null
   if (/^<svg[\s>]/i.test(v)) return `data:image/svg+xml;utf8,${encodeURIComponent(v)}`
-  if (/^[A-Za-z0-9+/=\r\n]+$/.test(v) && v.length >= 40) return `data:image/png;base64,${v.replace(/\s+/g, '')}`
-  if (/^[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(v)) return optimizeImageUrl(`https://${v}`, { width: 96, quality: 55 })
+  if (/^[A-Za-z0-9+/=\r\n]+$/.test(v) && v.length >= 40 && v.length <= LOGO_MAX_INLINE_CHARS) return `data:image/png;base64,${v.replace(/\s+/g, '')}`
+  if (/^[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(v)) return optimizeImageUrl(`https://${v}`, { width: 48, quality: 40 })
   return null
+}
+
+function loadFilterState(key) {
+  try {
+    const raw = window.localStorage.getItem(key)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return null
+    return {
+      suche: typeof parsed.suche === 'string' ? parsed.suche : '',
+      gruppeFilter: typeof parsed.gruppeFilter === 'string' ? parsed.gruppeFilter : '__all__',
+      sortierung: typeof parsed.sortierung === 'string' ? parsed.sortierung : 'firma_asc',
+    }
+  } catch {
+    return null
+  }
+}
+
+function saveFilterState(key, state) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify({
+      suche: state.suche ?? '',
+      gruppeFilter: state.gruppeFilter ?? '__all__',
+      sortierung: state.sortierung ?? 'firma_asc',
+    }))
+  } catch {
+    // Ignore storage errors (private mode or quota exceeded).
+  }
 }
