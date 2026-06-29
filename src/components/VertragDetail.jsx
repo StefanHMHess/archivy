@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { T } from '../tokens'
 import { supabase } from '../lib/supabase'
-import { optimizeImageUrl } from '../lib/storage'
+import { getSignedUrl, optimizeImageUrl } from '../lib/storage'
 import PdfThumbnail from './PdfThumbnail'
 
 const FIXED_SECRET_MASK = '••••••••••'
 const DEFAULT_ZAHLUNGSWEISEN = ['Abbuchung', 'Amex', 'Dauerauftrag', 'Mastercard', 'Eingang', 'Überweisungen']
+const DOKU_BUCKET = 'archivy-dokumente'
 
 // Hook für responsive Design
 function useIsMobile() {
@@ -177,6 +178,16 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
   const hasNext = idx >= 0 && idx < vertragIds.length - 1
   const quelle = quelleText(daten?.modified_by)
   const angezeigteVorgaenge = sortVorgaengeNachDatum(vorgaenge, datumSortAsc)
+
+  async function oeffnePdfSofort(pfad) {
+    if (!pfad) return
+    const signed = await getSignedUrl(DOKU_BUCKET, pfad)
+    if (!signed) {
+      setFehler('PDF-Link konnte nicht erstellt werden.')
+      return
+    }
+    window.open(signed, '_blank', 'noopener,noreferrer')
+  }
 
   function setFeld(name, value) {
     setEntwurf(prev => ({ ...(prev ?? {}), [name]: value }))
@@ -649,7 +660,17 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
                     </td>
                     <td style={{ padding: `${T.sp2} ${T.sp3}`, minWidth: 72 }}>
                       {v.datei_pfad ? (
-                        <PdfThumbnail pfad={v.datei_pfad} width={56} />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            oeffnePdfSofort(v.datei_pfad)
+                          }}
+                          style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}
+                          title="PDF direkt öffnen"
+                        >
+                          <PdfThumbnail pfad={v.datei_pfad} width={56} />
+                        </button>
                       ) : (
                         <span style={{ color: T.textMuted, fontSize: 12 }}>—</span>
                       )}

@@ -575,7 +575,7 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
                 }}
               >
                 {uploading ? 'Wird hochgeladen…' : '📄 Datei hochladen'}
-                <input type="file" onChange={handleDateiUpload} disabled={uploading} style={{ display: 'none' }} />
+                <input type="file" accept="application/pdf,.pdf" onChange={handleDateiUpload} disabled={uploading} style={{ display: 'none' }} />
               </label>
               {daten.datei_pfad && (
                 <button
@@ -617,7 +617,7 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
               }}
             >
               {uploading ? 'Wird hochgeladen…' : '📸 Foto hochladen'}
-              <input type="file" accept="image/*" onChange={handleFotoUpload} disabled={uploading} style={{ display: 'none' }} />
+              <input type="file" accept="image/*" capture="environment" onChange={handleFotoUpload} disabled={uploading} style={{ display: 'none' }} />
             </label>
           </div>
         </div>
