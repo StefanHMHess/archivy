@@ -207,7 +207,7 @@ CREATE TABLE IF NOT EXISTS vertraege (
     beschreibung        TEXT,
     vertragsnummer      TEXT,
 
-    vertragsbesitzer_id TEXT REFERENCES vertragsbesitzer(id) ON DELETE SET NULL,
+    vertragsbesitzer_id TEXT,
 
     -- Bankdaten
     iban                TEXT,

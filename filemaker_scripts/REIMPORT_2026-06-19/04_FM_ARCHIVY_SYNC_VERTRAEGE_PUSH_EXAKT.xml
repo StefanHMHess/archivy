@@ -25,14 +25,14 @@ Let([
 <Name>$url</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA["04-2026-06-25.01"]]></Calculation></Value>
+<Value><Calculation><![CDATA["04-2026-06-28.05"]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$script_version</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[
 MBS("FM.SQL.Execute"; "";
-"SELECT \"Vertrag_ID\", \"Vertragseigentümer\", \"Gruppe\", \"Untergruppe\", \"Firma\", \"Beschreibung\", \"Vertragsnummer\", \"Kontakt\", \"Telefon\", \"Mobil\", \"Fax\", \"Email\", \"Webseite\", \"Zugang\", \"Passwort\", \"diskret\", \"IBAN\", \"BIC\", \"Bank\", \"Jahresraten\", \"Kosten pro Rate\", \"Kosten jährlich\", \"Zahlungsweise\", \"Vertrag\", \"Vertrags_Datum\", \"Vertrags_Beginn\", \"Vertrags_Ablauf\", \"Logo\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Archivy_sync\" = 'x'")
+"SELECT \"Vertrag_ID\", \"Vertragseigentümer\" as \"owner\", \"Gruppe\", \"Untergruppe\", \"Firma\", \"Beschreibung\", \"Vertragsnummer\", \"Kontakt\", \"Telefon\", \"Mobil\", \"Fax\", \"Email\", \"Webseite\", \"Zugang\", \"Passwort\", \"diskret\", \"IBAN\", \"BIC\", \"Bank\", \"Jahresraten\", \"Kosten pro Rate\", \"Kosten jährlich\", \"Zahlungsweise\", \"Vertrag\", \"Vertrags_Datum\", \"Vertrags_Beginn\", \"Vertrags_Ablauf\", \"Logo\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Archivy_sync\" = 'x'")
 ]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$sql</Name>
@@ -43,7 +43,7 @@ If ( Left ( $sql ; 5 ) = "[MBS]" ; "[]" ;
 Let([
 	j = MBS("FM.SQL.JSONRecords"; $sql;
 "vertrag_id" & ¶ &
-"vertragseigentuemer" & ¶ &
+"owner" & ¶ &
 "gruppe" & ¶ &
 "untergruppe" & ¶ &
 "firma" & ¶ &
@@ -94,14 +94,123 @@ Let([
 <Name>$ok</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["¶"]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$seen_vertrag_ids</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$uniq_vertrag_ids</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$dup_vertrag_ids</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$debug_ids</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$server_ids</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$body_first</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$resp_first</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[30]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$debug_ids_max</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_nonempty</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_examples</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_owner_last</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$http_200</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$http_201</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$http_204</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$http_other</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( $anzahl > 0 ; TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql; 0; 0 ) ) ; 1 ; 1 ) ; "" )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_c0</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( $anzahl > 0 ; TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql; 0; 1 ) ) ; 1 ; 1 ) ; "" )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_c1</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( $anzahl > 0 ; TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql; 0; 2 ) ) ; 1 ; 1 ) ; "" )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_c2</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$obj_invalid</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[""]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$fehler</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA[If ( JSONGetElementType ( $json ; "" ) = JSONArray ; "" ; Left ( "JSON_PARSE_ERROR: " & $json ; 200 ) )]]></Calculation></Value>
+<Value><Calculation><![CDATA[
+Let([
+	url_norm = Lower ( TrimAll ( GetAsText ( $$SUPABASE_URL ) ; 1 ; 1 ) ) ;
+	url_ok = url_norm = "https://pjwfrshrhikcubssytfw.supabase.co" or url_norm = "https://yiyiqinzdilnnqqrepkm.supabase.co" ;
+	parse_err = If ( JSONGetElementType ( $json ; "" ) = JSONArray ; "" ; Left ( "JSON_PARSE_ERROR: " & $json ; 200 ) ) ;
+	url_err = If ( url_ok ; "" ; "URL_NOT_ALLOWED: " & url_norm )
+] ;
+	List ( parse_err ; url_err )
+)
+]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$fehler</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( PatternCount ( $fehler ; "URL_NOT_ALLOWED:" ) > 0 ; 0 ; $anzahl )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$anzahl</Name>
 </Step>
 <Step enable="True" id="71" name="Loop"></Step>
 <Step enable="True" id="141" name="Set Variable">
@@ -118,19 +227,129 @@ Let([
 <Name>$idx</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].vertrag_id" ) ) ; 1 ; 1 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrag_id_row</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+""
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_sql_direct</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$dup_vertrag_ids + If ( IsEmpty ( $vertrag_id_row ) ; 1 ; PatternCount ( $seen_vertrag_ids ; "¶" & $vertrag_id_row & "¶" ) > 0 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$dup_vertrag_ids</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$uniq_vertrag_ids + If ( IsEmpty ( $vertrag_id_row ) ; 0 ; PatternCount ( $seen_vertrag_ids ; "¶" & $vertrag_id_row & "¶" ) = 0 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$uniq_vertrag_ids</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $vertrag_id_row ) or PatternCount ( $seen_vertrag_ids ; "¶" & $vertrag_id_row & "¶" ) > 0 ; $seen_vertrag_ids ; $seen_vertrag_ids & $vertrag_id_row & "¶" )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$seen_vertrag_ids</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( ValueCount ( $debug_ids ) < $debug_ids_max ; List ( $debug_ids ; Case ( IsEmpty ( $vertrag_id_row ) ; "[leer]" ; $vertrag_id_row ) ) ; $debug_ids )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$debug_ids</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[Lower ( TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].diskret" ) ) ; 1 ; 1 ) ) = "x"]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$diskret</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Lower ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql; $idx; 1 ) ) ; 1 ; 1 ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertragsbesitzer_id_calc</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$owner_nonempty + If ( IsEmpty ( $vertragsbesitzer_id_calc ) ; 0 ; 1 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_nonempty</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( ValueCount ( $owner_examples ) < 5 ; List ( $owner_examples ; $vertrag_id_row & ":" & Case ( IsEmpty ( $vertragsbesitzer_id_calc ) ; "[leer]" ; $vertragsbesitzer_id_calc ) ) ; $owner_examples )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_examples</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[not IsEmpty ( $vertragsbesitzer_id_calc )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$owner_valid</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let([
+	raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].jahresraten" ) ) ; 1 ; 1 ) ;
+	allowed = Filter ( raw ; "0123456789,.- " ) ;
+	parse_ok = Length ( allowed ) = Length ( raw ) and not IsEmpty ( raw ) and raw ≠ "null" ;
+	raw_dot = Substitute ( Substitute ( allowed ; " " ; "" ) ; "," ; "." ) ;
+	n2 = GetAsNumber ( raw_dot )
+] ; If ( parse_ok and Abs ( n2 ) < 10000000000 ; n2 ; "" ))]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$jahresraten_val</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let([
+	raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].kosten_pro_rate" ) ) ; 1 ; 1 ) ;
+	allowed = Filter ( raw ; "0123456789,.- " ) ;
+	parse_ok = Length ( allowed ) = Length ( raw ) and not IsEmpty ( raw ) and raw ≠ "null" ;
+	raw_clean = Substitute ( Substitute ( allowed ; " " ; "" ) ; "," ; "." ) ;
+	n = GetAsNumber ( raw_clean ) ;
+	v = Case ( not parse_ok ; "" ; n > 1000 ; n / 100 ; n )
+] ; If ( not IsEmpty ( v ) and Abs ( v ) < 10000000000 ; v ; "" ))]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$kosten_pro_rate_val</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let([
+	raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].kosten_jaehrlich" ) ) ; 1 ; 1 ) ;
+	allowed = Filter ( raw ; "0123456789,.- " ) ;
+	parse_ok = Length ( allowed ) = Length ( raw ) and not IsEmpty ( raw ) and raw ≠ "null" ;
+	raw_clean = Substitute ( Substitute ( allowed ; " " ; "" ) ; "," ; "." ) ;
+	n = GetAsNumber ( raw_clean ) ;
+	v = Case ( not parse_ok ; "" ; n > 1000 ; n / 100 ; n )
+] ; If ( not IsEmpty ( v ) and Abs ( v ) < 10000000000 ; v ; "" ))]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$kosten_jaehrlich_val</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let([
+	d_raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].vertrags_datum" ) ) ; 1 ; 1 ) ;
+	d_token = GetValue ( Substitute ( d_raw ; " " ; "¶" ) ; 1 ) ;
+	d_clean = Substitute ( Substitute ( d_token ; Char(34) ; "" ) ; Char(92) ; "" )
+] ; Case ( IsEmpty ( d_clean ) or Lower ( d_clean ) = "null" ; "" ; PatternCount ( d_clean ; "-" ) = 2 ; Left ( d_clean ; 10 ) ; "" ))]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$d_vertrags_datum</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let([
+	d_raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].vertrags_beginn" ) ) ; 1 ; 1 ) ;
+	d_token = GetValue ( Substitute ( d_raw ; " " ; "¶" ) ; 1 ) ;
+	d_clean = Substitute ( Substitute ( d_token ; Char(34) ; "" ) ; Char(92) ; "" )
+] ; Case ( IsEmpty ( d_clean ) or Lower ( d_clean ) = "null" ; "" ; PatternCount ( d_clean ; "-" ) = 2 ; Left ( d_clean ; 10 ) ; "" ))]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$d_vertrags_beginn</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Let([
+	d_raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].vertrags_ablauf" ) ) ; 1 ; 1 ) ;
+	d_token = GetValue ( Substitute ( d_raw ; " " ; "¶" ) ; 1 ) ;
+	d_clean = Substitute ( Substitute ( d_token ; Char(34) ; "" ) ; Char(92) ; "" )
+] ; Case ( IsEmpty ( d_clean ) or Lower ( d_clean ) = "null" ; "" ; PatternCount ( d_clean ; "-" ) = 2 ; Left ( d_clean ; 10 ) ; "" ))]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$d_vertrags_ablauf</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[
 JSONSetElement ( "{}" ;
 [ "vertrag_id" ; JSONGetElement ( $json ; "[" & $idx & "].vertrag_id" ) ; JSONString ] ;
-[ "vertragsbesitzer_id" ; Let([
-	own_raw = Lower ( TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].vertragseigentuemer" ) ) ; 1 ; 1 ) ) ;
-	own_norm = Substitute ( own_raw ; "+" ; "-" ; " " ; "-" ; "&" ; "-" ; "/" ; "-" ; "_" ; "-" ) ;
-	own_val = Case ( IsEmpty ( own_norm ) or own_norm = "null" ; "unbekannt" ; own_norm )
-] ; own_val ) ; JSONString ] ;
+[ "vertragsbesitzer_id" ; $vertragsbesitzer_id_calc ; JSONString ] ;
 [ "gruppe" ; JSONGetElement ( $json ; "[" & $idx & "].gruppe" ) ; JSONString ] ;
 [ "untergruppe" ; JSONGetElement ( $json ; "[" & $idx & "].untergruppe" ) ; JSONString ] ;
 [ "firma" ; JSONGetElement ( $json ; "[" & $idx & "].firma" ) ; JSONString ] ;
@@ -145,163 +364,37 @@ JSONSetElement ( "{}" ;
 [ "iban" ; JSONGetElement ( $json ; "[" & $idx & "].iban" ) ; JSONString ] ;
 [ "bic" ; JSONGetElement ( $json ; "[" & $idx & "].bic" ) ; JSONString ] ;
 [ "bank" ; JSONGetElement ( $json ; "[" & $idx & "].bank" ) ; JSONString ] ;
-[ "jahresraten" ; Let([
-	raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].jahresraten" ) ) ; 1 ; 1 ) ;
-	allowed = Filter ( raw ; "0123456789,.- " ) ;
-	parse_ok = Length ( allowed ) = Length ( raw ) and not IsEmpty ( raw ) and raw ≠ "null" ;
-	raw_dot = Substitute ( Substitute ( allowed ; " " ; "" ) ; "," ; "." ) ;
-	n2 = GetAsNumber ( raw_dot ) ;
-	n_ok = parse_ok and Abs ( n2 ) < 10000000000
-];
-	If ( n_ok ; n2 ; "" )
-) ; Let([
-	raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].jahresraten" ) ) ; 1 ; 1 ) ;
-	allowed = Filter ( raw ; "0123456789,.- " ) ;
-	parse_ok = Length ( allowed ) = Length ( raw ) and not IsEmpty ( raw ) and raw ≠ "null" ;
-	raw_dot = Substitute ( Substitute ( allowed ; " " ; "" ) ; "," ; "." ) ;
-	n2 = GetAsNumber ( raw_dot )
-];
-	If ( parse_ok and Abs ( n2 ) < 10000000000 ; JSONNumber ; JSONNull )
-) ] ;
-[ "kosten_pro_rate" ; Let([
-	raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].kosten_pro_rate" ) ) ; 1 ; 1 ) ;
-	allowed = Filter ( raw ; "0123456789,.- " ) ;
-	parse_ok = Length ( allowed ) = Length ( raw ) and not IsEmpty ( raw ) and raw ≠ "null" ;
-	raw_clean = Substitute ( Substitute ( allowed ; " " ; "" ) ; "," ; "." ) ;
-	n = GetAsNumber ( raw_clean ) ;
-	v = Case (
-		not parse_ok ; "" ;
-		n > 1000 ; n / 100 ;
-		n
-	) ;
-	v_ok = not IsEmpty ( v ) and Abs ( v ) < 10000000000
-];
-	If ( v_ok ; v ; "" )
-) ; Let([
-	raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].kosten_pro_rate" ) ) ; 1 ; 1 ) ;
-	allowed = Filter ( raw ; "0123456789,.- " ) ;
-	parse_ok = Length ( allowed ) = Length ( raw ) and not IsEmpty ( raw ) and raw ≠ "null" ;
-	raw_clean = Substitute ( Substitute ( allowed ; " " ; "" ) ; "," ; "." ) ;
-	n = GetAsNumber ( raw_clean ) ;
-	v = Case (
-		not parse_ok ; "" ;
-		n > 1000 ; n / 100 ;
-		n
-	)
-];
-	If ( not IsEmpty ( v ) and Abs ( v ) < 10000000000 ; JSONNumber ; JSONNull )
-) ] ;
-[ "kosten_jaehrlich" ; Let([
-	raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].kosten_jaehrlich" ) ) ; 1 ; 1 ) ;
-	allowed = Filter ( raw ; "0123456789,.- " ) ;
-	parse_ok = Length ( allowed ) = Length ( raw ) and not IsEmpty ( raw ) and raw ≠ "null" ;
-	raw_clean = Substitute ( Substitute ( allowed ; " " ; "" ) ; "," ; "." ) ;
-	n = GetAsNumber ( raw_clean ) ;
-	v = Case (
-		not parse_ok ; "" ;
-		n > 1000 ; n / 100 ;
-		n
-	) ;
-	v_ok = not IsEmpty ( v ) and Abs ( v ) < 10000000000
-];
-	If ( v_ok ; v ; "" )
-) ; Let([
-	raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].kosten_jaehrlich" ) ) ; 1 ; 1 ) ;
-	allowed = Filter ( raw ; "0123456789,.- " ) ;
-	parse_ok = Length ( allowed ) = Length ( raw ) and not IsEmpty ( raw ) and raw ≠ "null" ;
-	raw_clean = Substitute ( Substitute ( allowed ; " " ; "" ) ; "," ; "." ) ;
-	n = GetAsNumber ( raw_clean ) ;
-	v = Case (
-		not parse_ok ; "" ;
-		n > 1000 ; n / 100 ;
-		n
-	)
-];
-	If ( not IsEmpty ( v ) and Abs ( v ) < 10000000000 ; JSONNumber ; JSONNull )
-) ] ;
+[ "jahresraten" ; $jahresraten_val ; If ( IsEmpty ( $jahresraten_val ) ; JSONNull ; JSONNumber ) ] ;
+[ "kosten_pro_rate" ; $kosten_pro_rate_val ; If ( IsEmpty ( $kosten_pro_rate_val ) ; JSONNull ; JSONNumber ) ] ;
+[ "kosten_jaehrlich" ; $kosten_jaehrlich_val ; If ( IsEmpty ( $kosten_jaehrlich_val ) ; JSONNull ; JSONNumber ) ] ;
 [ "zahlungsweise" ; JSONGetElement ( $json ; "[" & $idx & "].zahlungsweise" ) ; JSONString ] ;
-[ "vertrags_datum" ; Let([
-	d_raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].vertrags_datum" ) ) ; 1 ; 1 ) ;
-	d_token = GetValue ( Substitute ( d_raw ; " " ; "¶" ) ; 1 ) ;
-	d_clean = Substitute ( Substitute ( d_token ; Char(34) ; "" ) ; Char(92) ; "" ) ;
-	iso = Case (
-		IsEmpty ( d_clean ) or Lower ( d_clean ) = "null" ; "" ;
-		PatternCount ( d_clean ; "-" ) = 2 ; Left ( d_clean ; 10 ) ;
-		""
-	)
-];
-	iso
-) ; Let([
-	d_raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].vertrags_datum" ) ) ; 1 ; 1 ) ;
-	d_token = GetValue ( Substitute ( d_raw ; " " ; "¶" ) ; 1 ) ;
-	d_clean = Substitute ( Substitute ( d_token ; Char(34) ; "" ) ; Char(92) ; "" ) ;
-	iso = Case (
-		IsEmpty ( d_clean ) or Lower ( d_clean ) = "null" ; "" ;
-		PatternCount ( d_clean ; "-" ) = 2 ; Left ( d_clean ; 10 ) ;
-		""
-	)
-];
-	If ( IsEmpty ( iso ) ; JSONNull ; JSONString )
-) ] ;
-[ "vertrags_beginn" ; Let([
-	d_raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].vertrags_beginn" ) ) ; 1 ; 1 ) ;
-	d_token = GetValue ( Substitute ( d_raw ; " " ; "¶" ) ; 1 ) ;
-	d_clean = Substitute ( Substitute ( d_token ; Char(34) ; "" ) ; Char(92) ; "" ) ;
-	iso = Case (
-		IsEmpty ( d_clean ) or Lower ( d_clean ) = "null" ; "" ;
-		PatternCount ( d_clean ; "-" ) = 2 ; Left ( d_clean ; 10 ) ;
-		""
-	)
-];
-	iso
-) ; Let([
-	d_raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].vertrags_beginn" ) ) ; 1 ; 1 ) ;
-	d_token = GetValue ( Substitute ( d_raw ; " " ; "¶" ) ; 1 ) ;
-	d_clean = Substitute ( Substitute ( d_token ; Char(34) ; "" ) ; Char(92) ; "" ) ;
-	iso = Case (
-		IsEmpty ( d_clean ) or Lower ( d_clean ) = "null" ; "" ;
-		PatternCount ( d_clean ; "-" ) = 2 ; Left ( d_clean ; 10 ) ;
-		""
-	)
-];
-	If ( IsEmpty ( iso ) ; JSONNull ; JSONString )
-) ] ;
-[ "vertrags_ablauf" ; Let([
-	d_raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].vertrags_ablauf" ) ) ; 1 ; 1 ) ;
-	d_token = GetValue ( Substitute ( d_raw ; " " ; "¶" ) ; 1 ) ;
-	d_clean = Substitute ( Substitute ( d_token ; Char(34) ; "" ) ; Char(92) ; "" ) ;
-	iso = Case (
-		IsEmpty ( d_clean ) or Lower ( d_clean ) = "null" ; "" ;
-		PatternCount ( d_clean ; "-" ) = 2 ; Left ( d_clean ; 10 ) ;
-		""
-	)
-];
-	iso
-) ; Let([
-	d_raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].vertrags_ablauf" ) ) ; 1 ; 1 ) ;
-	d_token = GetValue ( Substitute ( d_raw ; " " ; "¶" ) ; 1 ) ;
-	d_clean = Substitute ( Substitute ( d_token ; Char(34) ; "" ) ; Char(92) ; "" ) ;
-	iso = Case (
-		IsEmpty ( d_clean ) or Lower ( d_clean ) = "null" ; "" ;
-		PatternCount ( d_clean ; "-" ) = 2 ; Left ( d_clean ; 10 ) ;
-		""
-	)
-];
-	If ( IsEmpty ( iso ) ; JSONNull ; JSONString )
-) ] ;
+[ "vertrags_datum" ; $d_vertrags_datum ; If ( IsEmpty ( $d_vertrags_datum ) ; JSONNull ; JSONString ) ] ;
+[ "vertrags_beginn" ; $d_vertrags_beginn ; If ( IsEmpty ( $d_vertrags_beginn ) ; JSONNull ; JSONString ) ] ;
+[ "vertrags_ablauf" ; $d_vertrags_ablauf ; If ( IsEmpty ( $d_vertrags_ablauf ) ; JSONNull ; JSONString ) ] ;
 [ "datei_pfad_2" ; JSONGetElement ( $json ; "[" & $idx & "].logo" ) ; JSONString ] ;
 [ "notizen" ; JSONGetElement ( $json ; "[" & $idx & "].vertrag" ) ; JSONString ] ;
 [ "modified_by" ; "filemaker" ; JSONString ] ;
 [ "sync_state" ; "geaendert" ; JSONString ]
-)
-]]></Calculation></Value>
+
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Left ( TrimAll ( GetAsText ( $obj ) ; 1 ; 1 ) ; 1 ) = "{" and not IsEmpty ( TrimAll ( GetAsText ( $obj ) ; 1 ; 1 ) ) and $owner_valid]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
-<Name>$obj</Name>
+<Name>$obj_valid</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA["[" & $obj & "]"]]></Calculation></Value>
+<Value><Calculation><![CDATA[$obj_invalid + If ( $obj_valid ; 0 ; 1 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$obj_invalid</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( $obj_valid ; "[" & $obj & "]" ; "[]" )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$body</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[TrimAll ( GetAsText ( JSONGetElement ( $obj ; "vertragsbesitzer_id" ) ) ; 1 ; 1 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$payload_owner</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[MBS("CURL.New")]]></Calculation></Value>
@@ -319,7 +412,7 @@ JSONSetElement ( "{}" ;
 <Name>$r</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA[MBS("CURL.SetOptionHTTPHeader"; $c; "apikey: " & $key; "Authorization: Bearer " & $key; "Content-Type: application/json"; "Prefer: resolution=merge-duplicates,return=minimal")]]></Calculation></Value>
+<Value><Calculation><![CDATA[MBS("CURL.SetOptionHTTPHeader"; $c; "apikey: " & $key; "Authorization: Bearer " & $key; "Content-Type: application/json"; "Prefer: resolution=merge-duplicates,return=representation")]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$r</Name>
 </Step>
@@ -344,6 +437,36 @@ JSONSetElement ( "{}" ;
 <Name>$resp</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( IsEmpty ( $body_first ) ; Left ( $body ; 220 ) ; $body_first )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$body_first</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( IsEmpty ( $resp_first ) ; Left ( $resp ; 220 ) ; $resp_first )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$resp_first</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$http_200 + If ( $http = 200 ; 1 ; 0 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$http_200</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$http_201 + If ( $http = 201 ; 1 ; 0 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$http_201</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$http_204 + If ( $http = 204 ; 1 ; 0 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$http_204</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$http_other + If ( $http ≠ 200 and $http ≠ 201 and $http ≠ 204 ; 1 ; 0 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$http_other</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[MBS("CURL.Cleanup"; $c)]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$r</Name>
@@ -354,12 +477,17 @@ JSONSetElement ( "{}" ;
 <Name>$clr</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( ValueCount ( $server_ids ) < $debug_ids_max and Left ( TrimAll ( GetAsText ( $resp ) ; 1 ; 1 ) ; 1 ) = "[" ; List ( $server_ids ; Case ( IsEmpty ( TrimAll ( GetAsText ( JSONGetElement ( $resp ; "[0].vertrag_id" ) ) ; 1 ; 1 ) ) ; "[leer]" ; TrimAll ( GetAsText ( JSONGetElement ( $resp ; "[0].vertrag_id" ) ) ; 1 ; 1 ) ) ) ; $server_ids )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$server_ids</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[$ok + If ( $http = 200 or $http = 201 or $http = 204 ; 1 ; 0 )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$ok</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA[$fehler & If ( $http = 200 or $http = 201 or $http = 204 ; "" ; "Vertrag_ID " & JSONGetElement ( $json ; "[" & $idx & "].vertrag_id" ) & ": HTTP " & $http & " - " & Left ( $resp ; 200 ) & ¶ )]]></Calculation></Value>
+<Value><Calculation><![CDATA[$fehler & If ( $obj_valid ; "" ; "Vertrag_ID " & JSONGetElement ( $json ; "[" & $idx & "].vertrag_id" ) & ": PAYLOAD_EMPTY_OR_INVALID (owner='" & $vertragsbesitzer_id_calc & "', sql_owner='" & $sql_owner_last & "')" & ¶ ) & If ( $http = 200 or $http = 201 or $http = 204 ; "" ; "Vertrag_ID " & JSONGetElement ( $json ; "[" & $idx & "].vertrag_id" ) & ": HTTP " & $http & " - " & Left ( $resp ; 200 ) & ¶ )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$fehler</Name>
 </Step>
@@ -370,7 +498,7 @@ JSONSetElement ( "{}" ;
 <Name>$rel</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA["VERTRAEGE: verarbeitet=" & $anzahl & " ok=" & $ok & " fehler=" & If(IsEmpty($fehler);"keine";Left($fehler;500))]]></Calculation></Value>
+<Value><Calculation><![CDATA["VERTRAEGE: verarbeitet=" & $anzahl & " ok=" & $ok & " unique_vertrag_id=" & $uniq_vertrag_ids & " dup_vertrag_id=" & $dup_vertrag_ids & " invalid_obj=" & $obj_invalid & " supabase_url_var=" & Left ( $$SUPABASE_URL ; 70 ) & " url=" & Left ( $url ; 90 ) & " http[200=" & $http_200 & ",201=" & $http_201 & ",204=" & $http_204 & ",other=" & $http_other & "] ids30=" & Left ( Substitute ( $debug_ids ; "¶" ; "," ) ; 280 ) & " server30=" & Left ( Substitute ( $server_ids ; "¶" ; "," ) ; 280 ) & " sql0[c0=" & Left ( $sql_c0 ; 60 ) & ",c1=" & Left ( $sql_c1 ; 60 ) & ",c2=" & Left ( $sql_c2 ; 60 ) & "]" & " body1=" & Left ( Substitute ( $body_first ; "¶" ; " " ) ; 220 ) & " resp1=" & Left ( Substitute ( $resp_first ; "¶" ; " " ) ; 220 ) & " fehler=" & If(IsEmpty($fehler);"keine";Left($fehler;500))]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$$SYNC_RESULT_V</Name>
 </Step>
