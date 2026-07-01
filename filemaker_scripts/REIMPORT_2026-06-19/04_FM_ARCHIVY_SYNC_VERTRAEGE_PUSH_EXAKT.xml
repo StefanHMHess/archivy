@@ -168,6 +168,11 @@ Let([
 <Name>$http_other</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$auth_invalid</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[Case ( $anzahl > 0 ; TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql; 0; 0 ) ) ; 1 ; 1 ) ; "" )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$sql_c0</Name>
@@ -195,19 +200,21 @@ Let([
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[
 Let([
+	key_norm = TrimAll ( GetAsText ( $key ) ; 1 ; 1 ) ;
 	url_norm = Lower ( TrimAll ( GetAsText ( $$SUPABASE_URL ) ; 1 ; 1 ) ) ;
 	url_ok = url_norm = "https://pjwfrshrhikcubssytfw.supabase.co" or url_norm = "https://yiyiqinzdilnnqqrepkm.supabase.co" ;
+	key_err = If ( IsEmpty ( key_norm ) ; "KEY_EMPTY: $$SUPABASE_KEY / $$SUPABASE_SERVICE_KEY fehlt" ; "" ) ;
 	parse_err = If ( JSONGetElementType ( $json ; "" ) = JSONArray ; "" ; Left ( "JSON_PARSE_ERROR: " & $json ; 200 ) ) ;
 	url_err = If ( url_ok ; "" ; "URL_NOT_ALLOWED: " & url_norm )
 ] ;
-	List ( parse_err ; url_err )
+	List ( key_err ; parse_err ; url_err )
 )
 ]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$fehler</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA[If ( PatternCount ( $fehler ; "URL_NOT_ALLOWED:" ) > 0 ; 0 ; $anzahl )]]></Calculation></Value>
+<Value><Calculation><![CDATA[If ( PatternCount ( $fehler ; "URL_NOT_ALLOWED:" ) > 0 or PatternCount ( $fehler ; "KEY_EMPTY:" ) > 0 ; 0 ; $anzahl )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$anzahl</Name>
 </Step>
@@ -263,9 +270,14 @@ Let([
 <Name>$diskret</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA[Lower ( TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql; $idx; 1 ) ) ; 1 ; 1 ) )]]></Calculation></Value>
+<Value><Calculation><![CDATA[Lower ( TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].owner" ) ) ; 1 ; 1 ) )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$vertragsbesitzer_id_calc</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$vertragsbesitzer_id_calc]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql_owner_last</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[$owner_nonempty + If ( IsEmpty ( $vertragsbesitzer_id_calc ) ; 0 ; 1 )]]></Calculation></Value>
@@ -475,6 +487,11 @@ JSONSetElement ( "{}" ;
 <Name>$http_other</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$auth_invalid + If ( $http = 401 and PatternCount ( Lower ( $resp ) ; "invalid api key" ) > 0 ; 1 ; 0 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$auth_invalid</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[MBS("CURL.Cleanup"; $c)]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$r</Name>
@@ -509,6 +526,9 @@ JSONSetElement ( "{}" ;
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$fehler</Name>
 </Step>
+<Step enable="True" id="72" name="Exit Loop If">
+<Calculation><![CDATA[$http = 401 and PatternCount ( Lower ( $resp ) ; "invalid api key" ) > 0]]></Calculation>
+</Step>
 <Step enable="True" id="73" name="End Loop"></Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[MBS("FM.SQL.Release"; $sql)]]></Calculation></Value>
@@ -516,7 +536,7 @@ JSONSetElement ( "{}" ;
 <Name>$rel</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA["VERTRAEGE: verarbeitet=" & $anzahl & " ok=" & $ok & " unique_vertrag_id=" & $uniq_vertrag_ids & " dup_vertrag_id=" & $dup_vertrag_ids & " invalid_obj=" & $obj_invalid & " supabase_url_var=" & Left ( $$SUPABASE_URL ; 70 ) & " url=" & Left ( $url ; 90 ) & " http[200=" & $http_200 & ",201=" & $http_201 & ",204=" & $http_204 & ",other=" & $http_other & "] ids30=" & Left ( Substitute ( $debug_ids ; "¶" ; "," ) ; 280 ) & " server30=" & Left ( Substitute ( $server_ids ; "¶" ; "," ) ; 280 ) & " sql0[c0=" & Left ( $sql_c0 ; 60 ) & ",c1=" & Left ( $sql_c1 ; 60 ) & ",c2=" & Left ( $sql_c2 ; 60 ) & "]" & " body1=" & Left ( Substitute ( $body_first ; "¶" ; " " ) ; 220 ) & " resp1=" & Left ( Substitute ( $resp_first ; "¶" ; " " ) ; 220 ) & " fehler=" & If(IsEmpty($fehler);"keine";Left($fehler;500))]]></Calculation></Value>
+<Value><Calculation><![CDATA["VERTRAEGE: verarbeitet=" & $anzahl & " ok=" & $ok & " unique_vertrag_id=" & $uniq_vertrag_ids & " dup_vertrag_id=" & $dup_vertrag_ids & " invalid_obj=" & $obj_invalid & " auth_invalid=" & $auth_invalid & " supabase_url_var=" & Left ( $$SUPABASE_URL ; 70 ) & " url=" & Left ( $url ; 90 ) & " http[200=" & $http_200 & ",201=" & $http_201 & ",204=" & $http_204 & ",other=" & $http_other & "] ids30=" & Left ( Substitute ( $debug_ids ; "¶" ; "," ) ; 280 ) & " server30=" & Left ( Substitute ( $server_ids ; "¶" ; "," ) ; 280 ) & " sql0[c0=" & Left ( $sql_c0 ; 60 ) & ",c1=" & Left ( $sql_c1 ; 60 ) & ",c2=" & Left ( $sql_c2 ; 60 ) & "]" & " body1=" & Left ( Substitute ( $body_first ; "¶" ; " " ) ; 220 ) & " resp1=" & Left ( Substitute ( $resp_first ; "¶" ; " " ) ; 220 ) & " fehler=" & If(IsEmpty($fehler);"keine";Left($fehler;500))]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$$SYNC_RESULT_V</Name>
 </Step>
