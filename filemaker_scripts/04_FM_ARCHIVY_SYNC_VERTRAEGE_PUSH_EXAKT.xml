@@ -25,14 +25,14 @@ Let([
 <Name>$url</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA["04-2026-06-30.06"]]></Calculation></Value>
+<Value><Calculation><![CDATA["04-2026-07-01.07"]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$script_version</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[
 MBS("FM.SQL.Execute"; "";
-"SELECT \"Vertrag_ID\", \"Vertragseigentümer\" as \"owner\", \"Gruppe\", \"Untergruppe\", \"Firma\", \"Beschreibung\", \"Vertragsnummer\", \"Kontakt\", \"Telefon\", \"Mobil\", \"Fax\", \"Email\", \"Webseite\", \"Zugang\", \"Passwort\", \"diskret\", \"IBAN\", \"BIC\", \"Bank\", \"Jahresraten\", \"Kosten pro Rate\", \"Kosten jährlich\", \"Zahlungsweise\", \"Vertrag\", \"Vertrags_Datum\", \"Vertrags_Beginn\", \"Vertrags_Ablauf\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Archivy_sync\" = 'x'")
+"SELECT \"Vertrag_ID\", \"Vertragseigentümer\" as \"owner\", \"Gruppe\", \"Untergruppe\", \"Firma\", \"Beschreibung\", \"Vertragsnummer\", \"Kontakt\", \"Telefon\", \"Mobil\", \"Fax\", \"Email\", \"Webseite\", \"Zugang\", \"Passwort\", \"diskret\", \"IBAN\", \"BIC\", \"Bank\", \"Jahresraten\", \"Kosten pro Rate\", \"Kosten jährlich\", \"Zahlungsweise\", \"Vertrag\", \"Vertrags_Datum\", \"Vertrags_Beginn\", \"Vertrags_Ablauf\", \"Logo\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Archivy_sync\" = 'x'")
 ]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$sql</Name>
@@ -68,7 +68,8 @@ Let([
 "vertrag" & ¶ &
 "vertrags_datum" & ¶ &
 "vertrags_beginn" & ¶ &
-"vertrags_ablauf")
+"vertrags_ablauf" & ¶ &
+"logo")
 ];
 	If ( Left ( j ; 5 ) = "[MBS]" ; "[]" ; j )
 )
@@ -201,6 +202,16 @@ Let([
 <Value><Calculation><![CDATA[0]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$owner_nonempty</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$logo_sent</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$logo_skipped</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[""]]></Calculation></Value>
@@ -406,6 +417,22 @@ Let([
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[
+Let([
+	raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].logo" ) ) ; 1 ; 1 ) ;
+	lc = Lower ( raw ) ;
+	is_url = Left ( lc ; 7 ) = "http://" or Left ( lc ; 8 ) = "https://" ;
+	is_data = Left ( lc ; 5 ) = "data:" ;
+	is_svg = Left ( lc ; 4 ) = "<svg" ;
+	is_small = Length ( raw ) > 0 and Length ( raw ) ≤ 2000
+] ;
+	Case ( IsEmpty ( raw ) ; "" ; is_url or is_data or is_svg or is_small ; raw ; "" )
+)
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$logo_sync</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
 JSONSetElement ( "{}" ;
 [ "vertrag_id" ; JSONGetElement ( $json ; "[" & $idx & "].vertrag_id" ) ; JSONString ] ;
 [ "vertragsbesitzer_id" ; $vertragsbesitzer_id_calc ; JSONString ] ;
@@ -433,6 +460,7 @@ JSONSetElement ( "{}" ;
 [ "vertrags_datum" ; $d_vertrags_datum ; If ( IsEmpty ( $d_vertrags_datum ) ; JSONNull ; JSONString ) ] ;
 [ "vertrags_beginn" ; $d_vertrags_beginn ; If ( IsEmpty ( $d_vertrags_beginn ) ; JSONNull ; JSONString ) ] ;
 [ "vertrags_ablauf" ; $d_vertrags_ablauf ; If ( IsEmpty ( $d_vertrags_ablauf ) ; JSONNull ; JSONString ) ] ;
+[ "datei_pfad_2" ; $logo_sync ; JSONString ] ;
 [ "notizen" ; JSONGetElement ( $json ; "[" & $idx & "].vertrag" ) ; JSONString ] ;
 [ "modified_by" ; "filemaker" ; JSONString ] ;
 [ "sync_state" ; "geaendert" ; JSONString ]
@@ -440,6 +468,21 @@ JSONSetElement ( "{}" ;
 ]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$obj</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( IsEmpty ( $logo_sync ) ; JSONDeleteElement ( $obj ; "datei_pfad_2" ) ; $obj )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$obj</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$logo_sent + If ( IsEmpty ( $logo_sync ) ; 0 ; 1 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$logo_sent</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$logo_skipped + If ( IsEmpty ( $logo_sync ) ; 1 ; 0 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$logo_skipped</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[Left ( TrimAll ( GetAsText ( $obj ) ; 1 ; 1 ) ; 1 ) = "{" and not IsEmpty ( TrimAll ( GetAsText ( $obj ) ; 1 ; 1 ) ) and $owner_valid]]></Calculation></Value>
@@ -599,6 +642,7 @@ If ( $http = 200 or $http = 201 or $http = 204 ; "" ; "Payload: " & Left ( $body
 " ids30=" & Left ( Substitute ( $debug_ids ; "¶" ; "," ) ; 280 ) &
 " server30=" & Left ( Substitute ( $server_ids ; "¶" ; "," ) ; 280 ) &
 " owners5=" & Left ( Substitute ( $owner_examples ; "¶" ; "|" ) ; 220 ) &
+" logo[sent=" & $logo_sent & ", skipped=" & $logo_skipped & "]" &
 " body1=" & Left ( Substitute ( $body_first ; "¶" ; " " ) ; 220 ) &
 " resp1=" & Left ( Substitute ( $resp_first ; "¶" ; " " ) ; 220 ) &
 " felder[tel=" & $cnt_tel & ", mobil=" & $cnt_mobil & ", fax=" & $cnt_fax & ", email=" & $cnt_email & ", web=" & $cnt_web & "] " &
