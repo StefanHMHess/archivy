@@ -421,11 +421,9 @@ Let([
 	raw = TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].logo" ) ) ; 1 ; 1 ) ;
 	lc = Lower ( raw ) ;
 	is_url = Left ( lc ; 7 ) = "http://" or Left ( lc ; 8 ) = "https://" ;
-	is_data = Left ( lc ; 5 ) = "data:" ;
-	is_svg = Left ( lc ; 4 ) = "<svg" ;
 	is_small = Length ( raw ) > 0 and Length ( raw ) ≤ 2000
 ] ;
-	Case ( IsEmpty ( raw ) ; "" ; is_url or is_data or is_svg or is_small ; raw ; "" )
+	Case ( IsEmpty ( raw ) ; "" ; is_url or is_small ; raw ; "" )
 )
 ]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>

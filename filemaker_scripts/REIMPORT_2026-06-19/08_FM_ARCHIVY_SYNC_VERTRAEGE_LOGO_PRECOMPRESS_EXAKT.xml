@@ -1,0 +1,181 @@
+<fmxmlsnippet type="FMObjectList">
+<Step enable="True" id="89" name="# (comment)"><Text>ARCHIVY LOGO PRECOMPRESS (exakt) - bereinigt grosse Logo-Strings vor dem Sync (Whitespace raus), damit FileMaker/Sync schneller wird.</Text></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA["08-2026-07-01.01"]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$script_version</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[2000]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$logo_large_threshold</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+MBS("FM.SQL.Execute"; "";
+"SELECT \"Vertrag_ID\", \"Logo\" FROM \"" & $$FM_VERTRAEGE_TABELLE & "\" WHERE \"Archivy_sync\" = 'x' AND \"Logo\" IS NOT NULL")
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$sql</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql ; 5 ) = "[MBS]" ; 0 ; GetAsNumber ( MBS("FM.SQL.RowCount"; $sql) ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$anzahl</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$i</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$ok</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$skip</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$bytes_before</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$bytes_after</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[""]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$fehler</Name>
+</Step>
+<Step enable="True" id="71" name="Loop"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$i + 1]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$i</Name>
+</Step>
+<Step enable="True" id="72" name="Exit Loop If">
+<Calculation><![CDATA[$i > $anzahl]]></Calculation>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$i - 1]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$idx</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[TrimAll ( GetAsText ( MBS("FM.SQL.Field"; $sql; $idx; 0 ) ) ; 1 ; 1 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$vertrag_id</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[GetAsText ( MBS("FM.SQL.Field"; $sql; $idx; 1 ) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$logo_raw</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[TrimAll ( GetAsText ( $logo_raw ) ; 1 ; 1 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$logo_trim</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Lower ( $logo_trim )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$logo_lc</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+Case (
+	IsEmpty ( $logo_trim ) ; "" ;
+	Left ( $logo_lc ; 7 ) = "http://" or Left ( $logo_lc ; 8 ) = "https://" ; $logo_trim ;
+	Length ( $logo_trim ) <= $logo_large_threshold ; $logo_trim ;
+	Substitute ( Substitute ( Substitute ( Substitute ( $logo_trim ; Char ( 13 ) ; "" ) ; Char ( 10 ) ; "" ) ; Char ( 9 ) ; "" ) ; " " ; "" )
+)
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$logo_compact</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$bytes_before + Length ( $logo_trim )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$bytes_before</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$bytes_after + Length ( $logo_compact )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$bytes_after</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[not IsEmpty ( $vertrag_id ) and not IsEmpty ( $logo_trim ) and Length ( $logo_compact ) > 0 and $logo_compact ≠ $logo_trim]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$needs_update</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$skip + If ( $needs_update ; 0 ; 1 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$skip</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+If ( $needs_update ;
+	MBS("FM.ExecuteFileSQL"; Get(FileName);
+	"UPDATE \"" & $$FM_VERTRAEGE_TABELLE & "\" SET \"Logo\"=? WHERE \"Vertrag_ID\"=?";
+	9; 2; $logo_compact; $vertrag_id
+	) ;
+	""
+)
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$upd</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$ok + If ( $needs_update and Left ( $upd ; 5 ) ≠ "[MBS]" ; 1 ; 0 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$ok</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$fehler & If ( $needs_update and Left ( $upd ; 5 ) = "[MBS]" ; "Vertrag_ID " & $vertrag_id & ": " & $upd & ¶ ; "" )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$fehler</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+"LOGO-PRECOMPRESS-LIVE: idx=" & $i & "/" & $anzahl &
+" ok=" & $ok &
+" skip=" & $skip &
+" vertrag_id=" & Case ( IsEmpty ( $vertrag_id ) ; "[leer]" ; $vertrag_id )
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$$SYNC_RESULT_V</Name>
+</Step>
+<Step enable="True" id="73" name="End Loop"></Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[If ( Left ( $sql ; 5 ) = "[MBS]" ; "" ; MBS("FM.SQL.Release"; $sql) )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$rel</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+"VERTRAEGE-LOGO-PRECOMPRESS: verarbeitet=" & $anzahl &
+" ok=" & $ok &
+" skip=" & $skip &
+" threshold=" & $logo_large_threshold &
+" bytes_before=" & $bytes_before &
+" bytes_after=" & $bytes_after &
+" saved=" & ( $bytes_before - $bytes_after ) &
+" version=" & $script_version &
+" fehler=" & If ( IsEmpty ( $fehler ) ; "keine" ; Left ( $fehler ; 500 ) )
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$$SYNC_RESULT_V</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[MBS("Msgbox"; $$SYNC_RESULT_V)]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$msg</Name>
+</Step>
+</fmxmlsnippet>
