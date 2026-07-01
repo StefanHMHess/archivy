@@ -613,6 +613,7 @@ JSONSetElement ( "{}" ;
 " ok=" & $ok &
 " http_last=" & $http &
 " vertrag_id=" & Case ( IsEmpty ( $vertrag_id_row ) ; "[leer]" ; $vertrag_id_row )
+" firma=" & Case ( IsEmpty ( TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].firma" ) ) ; 1 ; 1 ) ) ; "[leer]" ; TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].firma" ) ) ; 1 ; 1 ) )
 ]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$$SYNC_RESULT_V</Name>
@@ -621,6 +622,7 @@ JSONSetElement ( "{}" ;
 <Value><Calculation><![CDATA[
 "VERTRAEGE-LIVE: phase=send idx=" & $i & "/" & $anzahl &
 " vertrag_id=" & Case ( IsEmpty ( $vertrag_id_row ) ; "[leer]" ; $vertrag_id_row ) &
+" firma=" & Case ( IsEmpty ( TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].firma" ) ) ; 1 ; 1 ) ) ; "[leer]" ; TrimAll ( GetAsText ( JSONGetElement ( $json ; "[" & $idx & "].firma" ) ) ; 1 ; 1 ) ) &
 " owner=" & Case ( IsEmpty ( $vertragsbesitzer_id_calc ) ; "[leer]" ; $vertragsbesitzer_id_calc )
 ]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
