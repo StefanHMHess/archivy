@@ -190,8 +190,8 @@ Let([
 ] ;
 	Case (
 		IsEmpty ( w ) ; "" ;
-		PatternCount ( iso ; "-" ) = 2 ; Middle ( iso ; 9 ; 2 ) & "." & Middle ( iso ; 6 ; 2 ) & "." & Left ( iso ; 4 ) ;
-		PatternCount ( w ; "." ) = 2 ; w ;
+		PatternCount ( iso ; "-" ) = 2 ; Date ( Middle ( iso ; 6 ; 2 ) ; Middle ( iso ; 9 ; 2 ) ; Left ( iso ; 4 ) ) ;
+		PatternCount ( w ; "." ) = 2 ; Date ( Middle ( w ; 4 ; 2 ) ; Left ( w ; 2 ) ; Right ( w ; 4 ) ) ;
 		w
 	)
 )
@@ -208,8 +208,8 @@ Let([
 ] ;
 	Case (
 		IsEmpty ( w ) ; "" ;
-		PatternCount ( iso ; "-" ) = 2 ; Middle ( iso ; 9 ; 2 ) & "." & Middle ( iso ; 6 ; 2 ) & "." & Left ( iso ; 4 ) ;
-		PatternCount ( w ; "." ) = 2 ; w ;
+		PatternCount ( iso ; "-" ) = 2 ; Date ( Middle ( iso ; 6 ; 2 ) ; Middle ( iso ; 9 ; 2 ) ; Left ( iso ; 4 ) ) ;
+		PatternCount ( w ; "." ) = 2 ; Date ( Middle ( w ; 4 ; 2 ) ; Left ( w ; 2 ) ; Right ( w ; 4 ) ) ;
 		w
 	)
 )
@@ -226,8 +226,8 @@ Let([
 ] ;
 	Case (
 		IsEmpty ( w ) ; "" ;
-		PatternCount ( iso ; "-" ) = 2 ; Middle ( iso ; 9 ; 2 ) & "." & Middle ( iso ; 6 ; 2 ) & "." & Left ( iso ; 4 ) ;
-		PatternCount ( w ; "." ) = 2 ; w ;
+		PatternCount ( iso ; "-" ) = 2 ; Date ( Middle ( iso ; 6 ; 2 ) ; Middle ( iso ; 9 ; 2 ) ; Left ( iso ; 4 ) ) ;
+		PatternCount ( w ; "." ) = 2 ; Date ( Middle ( w ; 4 ; 2 ) ; Left ( w ; 2 ) ; Right ( w ; 4 ) ) ;
 		w
 	)
 )
