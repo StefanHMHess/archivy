@@ -49,6 +49,16 @@ MBS("FM.SQL.Execute"; "";
 <Name>$bytes_after</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$large_found</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$url_found</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[""]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$fehler</Name>
@@ -88,6 +98,26 @@ MBS("FM.SQL.Execute"; "";
 <Name>$logo_lc</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Left ( $logo_lc ; 7 ) = "http://" or Left ( $logo_lc ; 8 ) = "https://"]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$is_url</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Length ( $logo_trim ) > $logo_large_threshold]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$is_large</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$large_found + If ( $is_large ; 1 ; 0 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$large_found</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$url_found + If ( $is_url ; 1 ; 0 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$url_found</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[
 Case (
 	IsEmpty ( $logo_trim ) ; "" ;
@@ -110,7 +140,7 @@ Case (
 <Name>$bytes_after</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA[not IsEmpty ( $vertrag_id ) and not IsEmpty ( $logo_trim ) and Length ( $logo_compact ) > 0 and $logo_compact ≠ $logo_trim]]></Calculation></Value>
+<Value><Calculation><![CDATA[not IsEmpty ( $vertrag_id ) and not IsEmpty ( $logo_trim ) and $is_large and not $is_url and Length ( $logo_compact ) > 0 and $logo_compact ≠ $logo_trim]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$needs_update</Name>
 </Step>
@@ -164,6 +194,8 @@ If ( $needs_update ;
 " ok=" & $ok &
 " skip=" & $skip &
 " threshold=" & $logo_large_threshold &
+" large_found=" & $large_found &
+" url_found=" & $url_found &
 " bytes_before=" & $bytes_before &
 " bytes_after=" & $bytes_after &
 " saved=" & ( $bytes_before - $bytes_after ) &
