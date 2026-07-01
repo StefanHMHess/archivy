@@ -1,5 +1,5 @@
 ﻿<fmxmlsnippet type="FMObjectList">
-<Step enable="True" id="89" name="# (comment)"><Text>ARCHIVY SYNC VERTRAEGE PUSH (exakt) - uebertraegt nur Datensaetze mit Archivy_sync = x und leert die Markierung nach Erfolg.</Text></Step>
+<Step enable="True" id="89" name="# (comment)"><Text>ARCHIVY SYNC VERTRAEGE PUSH (exakt) - uebertraegt Datensaetze mit Archivy_sync = x. Logo-Transfer laeuft separat ueber 07_FM_ARCHIVY_SYNC_VERTRAEGE_LOGO_PUSH_EXAKT.</Text></Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[
 Let([
