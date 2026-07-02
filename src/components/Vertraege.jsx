@@ -462,31 +462,18 @@ function ownerVarianten(ownerId) {
   const raw = String(ownerId ?? '').trim()
   if (!raw || raw === '__all__') return []
 
-  const ids = new Set()
-  const addForms = (value) => {
-    const v = String(value ?? '').trim()
-    if (!v) return
-    ids.add(v)
-    ids.add(v.toLowerCase())
+  const normalized = raw.replace(/\s*[+-]\s*/g, m => m.includes('+') ? '+' : '-')
+  const plus = normalized.replace(/-/g, '+')
+  const dash = normalized.replace(/\+/g, '-')
 
-    const plus = v.replace(/-/g, '+')
-    const dash = v.replace(/\+/g, '-')
-    ids.add(plus)
-    ids.add(dash)
-    ids.add(plus.toLowerCase())
-    ids.add(dash.toLowerCase())
-  }
-
-  addForms(raw)
-
-  const teile = raw.split(/[+-]/).map(v => v.trim()).filter(Boolean)
-  if (teile.length > 1) {
-    for (const teil of teile) addForms(teil)
-    addForms(teile.join('+'))
-    addForms(teile.join('-'))
-  }
-
-  return [...ids]
+  return [...new Set([
+    normalized,
+    plus,
+    dash,
+    normalized.toLowerCase(),
+    plus.toLowerCase(),
+    dash.toLowerCase(),
+  ])]
 }
 
 function normalizeGruppe(value) {
