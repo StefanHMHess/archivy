@@ -151,8 +151,9 @@ MBS("FM.SQL.Execute"; "";
 <Value><Calculation><![CDATA[
 Case (
 	not IsEmpty ( $vertrag_id ) ;
-	MBS("FM.SQL.Execute"; "";
-		"UPDATE \"" & $$FM_VERTRAEGE_TABELLE & "\" SET \"Logo_zu_gross\"='" & $logo_too_large_mark & "', \"Logo_groesse\"=" & $logo_size & " WHERE \"Vertrag_ID\"='" & Substitute ( $vertrag_id ; "'" ; "''" ) & "'"
+	MBS("FM.ExecuteFileSQL"; Get(FileName);
+		"UPDATE \"" & $$FM_VERTRAEGE_TABELLE & "\" SET \"Logo_zu_gross\"=?, \"Logo_groesse\"=? WHERE \"Vertrag_ID\"=?";
+		9; 3; $logo_too_large_mark; $logo_size; $vertrag_id
 	) ;
 	""
 )
