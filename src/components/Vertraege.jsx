@@ -376,6 +376,9 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
           width: 'min(1200px, calc(100vw - 24px))',
           zIndex: 65,
           background: T.bg,
+          paddingLeft: T.sp3,
+          paddingRight: T.sp3,
+          boxSizing: 'border-box',
           paddingTop: 2,
           paddingBottom: 2,
         }}

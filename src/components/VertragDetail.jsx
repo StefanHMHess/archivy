@@ -24,8 +24,9 @@ function useIsMobile() {
   return isMobile
 }
 
-export default function VertragDetail({ vertragId, vertragIds = [], owner, onNavigate, onSelectVorgang, onClose }) {
+export default function VertragDetail({ vertragId, vertragIds = [], owner, stickyTop = 0, onNavigate, onSelectVorgang, onClose }) {
   const containerRef = useRef(null)
+  const toolbarRef = useRef(null)
   const touchStartX = useRef(0)
   const isMobile = useIsMobile()
   const ownerIds = useMemo(() => ownerVarianten(owner?.id), [owner?.id])
@@ -46,6 +47,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
   const [pdfVollbildUrl, setPdfVollbildUrl] = useState(null)
   const [pdfVollbild, setPdfVollbild] = useState(false)
   const [pdfVollbildPages, setPdfVollbildPages] = useState(0)
+  const [toolbarHeight, setToolbarHeight] = useState(0)
   const dirtyFields = useMemo(() => {
     if (!vertrag || !entwurf) return new Set()
     const vorher = buildVertragPayload(vertrag, owner)
@@ -58,6 +60,16 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
     return dirty
   }, [entwurf, vertrag, owner])
   const hasUnsavedChanges = dirtyFields.size > 0
+
+  useEffect(() => {
+    const updateToolbarHeight = () => {
+      setToolbarHeight(toolbarRef.current?.offsetHeight ?? 0)
+    }
+
+    updateToolbarHeight()
+    window.addEventListener('resize', updateToolbarHeight)
+    return () => window.removeEventListener('resize', updateToolbarHeight)
+  }, [isMobile, vertragId, vertrag?.firma, entwurf?.firma, vertragIds.length])
 
   useEffect(() => {
     const container = containerRef.current
@@ -497,7 +509,29 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
           </button>
         </div>
       )}
-      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', marginBottom: T.sp2, position: 'sticky', top: 0, zIndex: 10, background: T.bg, paddingTop: 6, paddingBottom: 6, gap: isMobile ? T.sp2 : T.sp1 }}>
+      <div
+        ref={toolbarRef}
+        style={{
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          alignItems: isMobile ? 'stretch' : 'center',
+          justifyContent: 'space-between',
+          marginBottom: T.sp2,
+          position: 'fixed',
+          top: stickyTop,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 'min(1200px, calc(100vw - 24px))',
+          zIndex: 65,
+          background: T.bg,
+          paddingTop: 6,
+          paddingBottom: 6,
+          paddingLeft: T.sp3,
+          paddingRight: T.sp3,
+          boxSizing: 'border-box',
+          gap: isMobile ? T.sp2 : T.sp1,
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: T.sp2, flex: 1, minWidth: 0 }}>
           <LogoPreview vertrag={daten} logoFehler={logoFehler} setLogoFehler={setLogoFehler} />
           {/* Title Column */}
@@ -638,6 +672,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
             </button>
         </div>
       </div>
+      <div style={{ height: toolbarHeight + 8 }} />
 
       {fehler && (
         <div style={{ background: '#fee', color: T.danger, padding: T.sp3, borderRadius: T.r2, marginBottom: T.sp4 }}>

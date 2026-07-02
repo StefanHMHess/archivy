@@ -304,6 +304,7 @@ export default function App() {
             vertragId={selectedContractId}
             vertragIds={vertragIds}
             owner={selectedOwner}
+            stickyTop={stickyOffsets.header + stickyOffsets.nav}
             onNavigate={(id) => setSelectedContractId(id)}
             onSelectVorgang={(id, ids) => {
               setSelectedVorgangId(id)

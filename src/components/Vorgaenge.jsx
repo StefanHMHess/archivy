@@ -1,15 +1,27 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { T } from '../tokens'
 import { supabase } from '../lib/supabase'
 
 const PAGE = 50
 
-export default function Vorgaenge({ owner, onSelectVorgang }) {
+export default function Vorgaenge({ owner, onSelectVorgang, stickyTop = 0 }) {
   const ownerIds = useMemo(() => ownerVarianten(owner?.id), [owner?.id])
+  const toolbarRef = useRef(null)
   const [zeilen, setZeilen] = useState([])
   const [suche, setSuche] = useState('')
   const [laden, setLaden] = useState(true)
   const [busy, setBusy] = useState(false)
+  const [toolbarHeight, setToolbarHeight] = useState(0)
+
+  useEffect(() => {
+    const updateToolbarHeight = () => {
+      setToolbarHeight(toolbarRef.current?.offsetHeight ?? 0)
+    }
+
+    updateToolbarHeight()
+    window.addEventListener('resize', updateToolbarHeight)
+    return () => window.removeEventListener('resize', updateToolbarHeight)
+  }, [suche, busy])
 
   useEffect(() => {
     if (!owner) return
@@ -80,8 +92,27 @@ export default function Vorgaenge({ owner, onSelectVorgang }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: T.sp4, marginBottom: T.sp5 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700 }}>Vorgänge</h1>
+      <div
+        ref={toolbarRef}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: T.sp4,
+          position: 'fixed',
+          top: stickyTop,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 'min(1200px, calc(100vw - 24px))',
+          zIndex: 65,
+          background: T.bg,
+          paddingTop: 2,
+          paddingBottom: 2,
+          paddingLeft: T.sp3,
+          paddingRight: T.sp3,
+          boxSizing: 'border-box',
+        }}
+      >
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Vorgänge</h1>
         <input
           value={suche}
           onChange={e => setSuche(e.target.value)}
@@ -101,6 +132,8 @@ export default function Vorgaenge({ owner, onSelectVorgang }) {
           {busy ? 'Anlegen…' : '+ Neuer Vorgang'}
         </button>
       </div>
+
+      <div style={{ height: toolbarHeight + 10 }} />
 
       {laden ? (
         <p style={{ color: T.textMuted }}>Wird geladen…</p>
