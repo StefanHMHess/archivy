@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { T } from '../tokens'
 import { supabase } from '../lib/supabase'
-import { optimizeImageUrl } from '../lib/storage'
 
 const PAGE = 300
+const LIST_CACHE = new Map()
 const FILTERS_STORAGE_PREFIX = 'archivy.vertraege.filters.v1'
 const GROUPEN_STORAGE_PREFIX = 'archivy.vertraege.gruppen.v1'
 const DEFAULT_GROUPEN = [
@@ -46,6 +46,7 @@ export default function Vertraege({ owner, onSelectContract }) {
   const [gruppeFilter, setGruppeFilter] = useState('__all__')
   const [sortierung, setSortierung] = useState('firma_asc')
   const [laden, setLaden] = useState(true)
+  const [fehler, setFehler] = useState(null)
   const [busy, setBusy] = useState(false)
   const [reloadToken, setReloadToken] = useState(0)
   const [gruppenEditorOpen, setGruppenEditorOpen] = useState(false)
@@ -101,11 +102,20 @@ export default function Vertraege({ owner, onSelectContract }) {
     let aktiv = true
 
     async function laden() {
-      setLaden(true)
+      setFehler(null)
+      const cacheKey = JSON.stringify({ owner: owner?.id ?? '__all__', suche: suche.trim(), gruppeFilter, sortierung })
+      const cachedRows = LIST_CACHE.get(cacheKey)
+      if (cachedRows) {
+        setZeilen(cachedRows)
+        setLaden(false)
+      } else {
+        setLaden(true)
+      }
+
       const sortDef = SORTIERUNGEN[sortierung] || SORTIERUNGEN.firma_asc
       let query = supabase
         .from('vertraege')
-        .select('id, vertrag_id, gruppe, firma, beschreibung, vertragsnummer, kosten_monatlich, kosten_jaehrlich, vertrags_ablauf, aktiv, logo:datei_pfad_2')
+        .select('id, vertrag_id, gruppe, firma, beschreibung, vertragsnummer, kosten_monatlich, kosten_jaehrlich, vertrags_ablauf, aktiv')
         .order(sortDef.column, { ascending: sortDef.ascending })
         .limit(PAGE)
 
@@ -121,8 +131,16 @@ export default function Vertraege({ owner, onSelectContract }) {
         query = query.or(`firma.ilike.%${suche.trim()}%,beschreibung.ilike.%${suche.trim()}%,vertragsnummer.ilike.%${suche.trim()}%`)
       }
 
-      const { data } = await query
+      const { data, error } = await query
       if (aktiv) {
+        if (error) {
+          setFehler(error.message || 'Verträge konnten nicht geladen werden.')
+          setZeilen([])
+          setLaden(false)
+          return
+        }
+
+        LIST_CACHE.set(cacheKey, data ?? [])
         setZeilen(data ?? [])
         setLaden(false)
       }
@@ -192,6 +210,7 @@ export default function Vertraege({ owner, onSelectContract }) {
     }
 
     setReloadToken(t => t + 1)
+    LIST_CACHE.clear()
     onSelectContract?.(data?.vertrag_id || vertrag_id, [data?.vertrag_id || vertrag_id])
   }
 
@@ -246,6 +265,7 @@ export default function Vertraege({ owner, onSelectContract }) {
       return
     }
     setReloadToken(t => t + 1)
+    LIST_CACHE.clear()
   }
 
   if (!owner) {
@@ -308,6 +328,12 @@ export default function Vertraege({ owner, onSelectContract }) {
         </button>
       </div>
 
+      {fehler && (
+        <div style={{ marginBottom: T.sp3, border: `1px solid ${T.danger}`, color: T.danger, background: '#fef2f2', borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}` }}>
+          {fehler}
+        </div>
+      )}
+
       {laden ? (
         <p style={{ color: T.textMuted }}>Wird geladen…</p>
       ) : zeilen.length === 0 ? (
@@ -349,7 +375,7 @@ export default function Vertraege({ owner, onSelectContract }) {
                   onMouseLeave={e => e.currentTarget.style.background = ''}>
                   <td className="vt-col-gruppe" style={{ padding: `${T.sp2} ${T.sp3}`, verticalAlign: 'top', whiteSpace: 'pre-line' }}>{normalizeGruppe(v.gruppe) ?? '—'}</td>
                   <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap' }}>
-                    <LogoCell logo={v.logo} firma={v.firma} />
+                    <LogoCell firma={v.firma} />
                   </td>
                   <td className="vt-col-firma" style={{ padding: `${T.sp2} ${T.sp3}` }}>{cleanText(v.firma) || '—'}</td>
                   <td className="vt-col-beschreibung" style={{ padding: `${T.sp2} ${T.sp3}`, maxWidth: 340 }}>
@@ -660,9 +686,7 @@ function splitKostenTeile(text) {
   }
 }
 
-function LogoCell({ logo, firma }) {
-  const [error, setError] = useState(false)
-  const src = normalisiereLogoQuelle(logo)
+function LogoCell({ firma }) {
   const boxStyle = {
     width: 36,
     height: 36,
@@ -672,38 +696,11 @@ function LogoCell({ logo, firma }) {
     overflow: 'hidden',
   }
 
-  if (src && !error) {
-    return (
-      <div style={boxStyle}>
-        <img
-          src={src}
-          alt={firma || 'Logo'}
-          loading="lazy"
-          decoding="async"
-          onError={() => setError(true)}
-          style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', transform: 'scale(1.04)' }}
-        />
-      </div>
-    )
-  }
-
   return (
     <div style={{ ...boxStyle, background: '#dbeafe', color: '#1d4ed8', display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 700 }}>
       {logoText(firma)}
     </div>
   )
-}
-
-function normalisiereLogoQuelle(value) {
-  if (!value || typeof value !== 'string') return null
-  const v = value.trim()
-  if (!v) return null
-  if (v.startsWith('http://') || v.startsWith('https://')) return optimizeImageUrl(v, { width: 48, quality: 40 })
-  if (v.startsWith('data:')) return v
-  if (/^<svg[\s>]/i.test(v)) return `data:image/svg+xml;utf8,${encodeURIComponent(v)}`
-  if (/^[A-Za-z0-9+/=\r\n]+$/.test(v) && v.length >= 40) return `data:image/png;base64,${v.replace(/\s+/g, '')}`
-  if (/^[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(v)) return optimizeImageUrl(`https://${v}`, { width: 48, quality: 40 })
-  return null
 }
 
 function loadFilterState(key) {
