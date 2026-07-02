@@ -6,7 +6,6 @@ import { optimizeImageUrl } from '../lib/storage'
 const PAGE = 300
 const LIST_CACHE = new Map()
 const LOGO_CACHE = new Map()
-const VERTRAEGE_TOOLBAR_HEIGHT = 74
 const FILTERS_STORAGE_PREFIX = 'archivy.vertraege.filters.v1'
 const GROUPEN_STORAGE_PREFIX = 'archivy.vertraege.gruppen.v1'
 const DEFAULT_GROUPEN = [
@@ -432,16 +431,16 @@ export default function Vertraege({ owner, onSelectContract }) {
             <table style={{ width: '100%', minWidth: 980, borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr style={{ background: T.bg, textAlign: 'left' }}>
-                <th className="vt-col-gruppe" style={{ position: 'sticky', top: VERTRAEGE_TOOLBAR_HEIGHT, zIndex: 9, background: T.bg, padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted }}>Gruppe</th>
-                <th style={{ position: 'sticky', top: VERTRAEGE_TOOLBAR_HEIGHT, zIndex: 9, background: T.bg, padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Logo</th>
-                <th className="vt-col-firma" style={{ position: 'sticky', top: VERTRAEGE_TOOLBAR_HEIGHT, zIndex: 9, background: T.bg, padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Firma</th>
-                <th className="vt-col-beschreibung" style={{ position: 'sticky', top: VERTRAEGE_TOOLBAR_HEIGHT, zIndex: 9, background: T.bg, padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Beschreibung</th>
-                <th className="vt-col-kosten" style={{ position: 'sticky', top: VERTRAEGE_TOOLBAR_HEIGHT, zIndex: 9, background: T.bg, padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap', textAlign: 'right' }}>
+                <th className="vt-col-gruppe" style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted }}>Gruppe</th>
+                <th style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Logo</th>
+                <th className="vt-col-firma" style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Firma</th>
+                <th className="vt-col-beschreibung" style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Beschreibung</th>
+                <th className="vt-col-kosten" style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap', textAlign: 'right' }}>
                   <div style={{ lineHeight: 1.2 }}>Kosten/Monat</div>
                   <div style={{ lineHeight: 1.2, marginTop: 2 }}>Kosten/Jahr</div>
                 </th>
-                <th style={{ position: 'sticky', top: VERTRAEGE_TOOLBAR_HEIGHT, zIndex: 9, background: T.bg, padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Ablauf</th>
-                <th style={{ position: 'sticky', top: VERTRAEGE_TOOLBAR_HEIGHT, zIndex: 9, background: T.bg, padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Aktion</th>
+                <th style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Ablauf</th>
+                <th style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Aktion</th>
               </tr>
             </thead>
             <tbody>
