@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { T } from '../tokens'
 import { supabase } from '../lib/supabase'
+import { optimizeImageUrl } from '../lib/storage'
 
 const PAGE = 300
 const LIST_CACHE = new Map()
+const LOGO_CACHE = new Map()
 const FILTERS_STORAGE_PREFIX = 'archivy.vertraege.filters.v1'
 const GROUPEN_STORAGE_PREFIX = 'archivy.vertraege.gruppen.v1'
 const DEFAULT_GROUPEN = [
@@ -47,6 +49,7 @@ export default function Vertraege({ owner, onSelectContract }) {
   const [sortierung, setSortierung] = useState('firma_asc')
   const [laden, setLaden] = useState(true)
   const [fehler, setFehler] = useState(null)
+  const [logoMap, setLogoMap] = useState({})
   const [busy, setBusy] = useState(false)
   const [reloadToken, setReloadToken] = useState(0)
   const [gruppenEditorOpen, setGruppenEditorOpen] = useState(false)
@@ -148,6 +151,79 @@ export default function Vertraege({ owner, onSelectContract }) {
     laden()
     return () => { aktiv = false }
   }, [suche, owner, gruppeFilter, sortierung, reloadToken, filtersHydrated, hydratedFilterKey, filterStorageKey])
+
+  useEffect(() => {
+    if (!owner) return
+    let aktiv = true
+
+    async function ladeLogos() {
+      if (!Array.isArray(zeilen) || zeilen.length === 0) {
+        setLogoMap({})
+        return
+      }
+
+      const ids = zeilen
+        .map(v => String(v?.vertrag_id ?? '').trim())
+        .filter(Boolean)
+
+      if (ids.length === 0) {
+        setLogoMap({})
+        return
+      }
+
+      const updateMapFromCache = () => {
+        const next = {}
+        for (const id of ids) {
+          const key = normalisiereVertragId(id)
+          if (LOGO_CACHE.has(key)) {
+            next[key] = LOGO_CACHE.get(key)
+          }
+        }
+        if (aktiv) setLogoMap(next)
+      }
+
+      updateMapFromCache()
+
+      const missingIds = ids.filter(id => !LOGO_CACHE.has(normalisiereVertragId(id)))
+      if (missingIds.length === 0) return
+
+      const CHUNK_SIZE = 40
+      for (let i = 0; i < missingIds.length; i += CHUNK_SIZE) {
+        const chunk = missingIds.slice(i, i + CHUNK_SIZE)
+        let query = supabase
+          .from('vertraege')
+          .select('vertrag_id,datei_pfad_2')
+          .in('vertrag_id', chunk)
+
+        if (owner.id !== '__all__') {
+          query = query.in('vertragsbesitzer_id', ownerIds)
+        }
+
+        const { data, error } = await query
+        if (!aktiv) return
+        if (error) continue
+
+        const seen = new Set()
+        for (const row of data ?? []) {
+          const key = normalisiereVertragId(row?.vertrag_id)
+          seen.add(key)
+          LOGO_CACHE.set(key, row?.datei_pfad_2 ?? null)
+        }
+
+        for (const id of chunk) {
+          const key = normalisiereVertragId(id)
+          if (!seen.has(key) && !LOGO_CACHE.has(key)) {
+            LOGO_CACHE.set(key, null)
+          }
+        }
+
+        updateMapFromCache()
+      }
+    }
+
+    ladeLogos()
+    return () => { aktiv = false }
+  }, [owner, owner?.id, ownerIds, zeilen])
 
   function bearbeiteGruppen() {
     setGruppenEditorText((gruppen.length > 0 ? gruppen : DEFAULT_GROUPEN).join('\n'))
@@ -375,7 +451,7 @@ export default function Vertraege({ owner, onSelectContract }) {
                   onMouseLeave={e => e.currentTarget.style.background = ''}>
                   <td className="vt-col-gruppe" style={{ padding: `${T.sp2} ${T.sp3}`, verticalAlign: 'top', whiteSpace: 'pre-line' }}>{normalizeGruppe(v.gruppe) ?? '—'}</td>
                   <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap' }}>
-                    <LogoCell firma={v.firma} />
+                    <LogoCell logo={logoMap[normalisiereVertragId(v.vertrag_id)]} firma={v.firma} />
                   </td>
                   <td className="vt-col-firma" style={{ padding: `${T.sp2} ${T.sp3}` }}>{cleanText(v.firma) || '—'}</td>
                   <td className="vt-col-beschreibung" style={{ padding: `${T.sp2} ${T.sp3}`, maxWidth: 340 }}>
@@ -686,7 +762,9 @@ function splitKostenTeile(text) {
   }
 }
 
-function LogoCell({ firma }) {
+function LogoCell({ logo, firma }) {
+  const [error, setError] = useState(false)
+  const src = normalisiereLogoQuelle(logo)
   const boxStyle = {
     width: 36,
     height: 36,
@@ -696,11 +774,38 @@ function LogoCell({ firma }) {
     overflow: 'hidden',
   }
 
+  if (src && !error) {
+    return (
+      <div style={boxStyle}>
+        <img
+          src={src}
+          alt={firma || 'Logo'}
+          loading="lazy"
+          decoding="async"
+          onError={() => setError(true)}
+          style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', transform: 'scale(1.04)' }}
+        />
+      </div>
+    )
+  }
+
   return (
     <div style={{ ...boxStyle, background: '#dbeafe', color: '#1d4ed8', display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 700 }}>
       {logoText(firma)}
     </div>
   )
+}
+
+function normalisiereLogoQuelle(value) {
+  if (!value || typeof value !== 'string') return null
+  const v = value.trim()
+  if (!v) return null
+  if (v.startsWith('http://') || v.startsWith('https://')) return optimizeImageUrl(v, { width: 48, quality: 40 })
+  if (v.startsWith('data:')) return v
+  if (/^<svg[\s>]/i.test(v)) return `data:image/svg+xml;utf8,${encodeURIComponent(v)}`
+  if (/^[A-Za-z0-9+/=\r\n]+$/.test(v) && v.length >= 40) return `data:image/png;base64,${v.replace(/\s+/g, '')}`
+  if (/^[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(v)) return optimizeImageUrl(`https://${v}`, { width: 48, quality: 40 })
+  return null
 }
 
 function loadFilterState(key) {
