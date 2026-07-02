@@ -603,6 +603,10 @@ function ownerVarianten(ownerId) {
   ])]
 }
 
+function normalisiereVertragId(value) {
+  return String(value ?? '').trim().toLowerCase()
+}
+
 function normalizeGruppe(value) {
   if (value == null) return null
   const text = String(value).trim()
