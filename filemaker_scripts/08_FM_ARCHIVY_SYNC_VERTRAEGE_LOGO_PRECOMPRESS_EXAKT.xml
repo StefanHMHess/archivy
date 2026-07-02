@@ -59,6 +59,16 @@ MBS("FM.SQL.Execute"; "";
 <Name>$url_found</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$marked_too_large</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[0]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$mark_errors</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[""]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$fehler</Name>
@@ -108,6 +118,11 @@ MBS("FM.SQL.Execute"; "";
 <Name>$is_large</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Length ( $logo_trim )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$logo_size</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[$large_found + If ( $is_large ; 1 ; 0 )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$large_found</Name>
@@ -116,6 +131,34 @@ MBS("FM.SQL.Execute"; "";
 <Value><Calculation><![CDATA[$url_found + If ( $is_url ; 1 ; 0 )]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$url_found</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[Case ( $is_large ; "x" ; "" )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$logo_too_large_mark</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[
+Case (
+	not IsEmpty ( $vertrag_id ) ;
+	MBS("FM.SQL.Execute"; "";
+		"UPDATE \"" & $$FM_VERTRAEGE_TABELLE & "\" SET \"Logo_zu_gross\"='" & $logo_too_large_mark & "', \"Logo_groesse\"=" & $logo_size & " WHERE \"Vertrag_ID\"='" & Substitute ( $vertrag_id ; "'" ; "''" ) & "'"
+	) ;
+	""
+)
+]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$mark_upd</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$marked_too_large + If ( $logo_too_large_mark = "x" ; 1 ; 0 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$marked_too_large</Name>
+</Step>
+<Step enable="True" id="141" name="Set Variable">
+<Value><Calculation><![CDATA[$mark_errors + If ( not IsEmpty ( $mark_upd ) and Left ( $mark_upd ; 5 ) = "[MBS]" ; 1 ; 0 )]]></Calculation></Value>
+<Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+<Name>$mark_errors</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
 <Value><Calculation><![CDATA[
@@ -196,6 +239,8 @@ If ( $needs_update ;
 " threshold=" & $logo_large_threshold &
 " large_found=" & $large_found &
 " url_found=" & $url_found &
+" marked_too_large=" & $marked_too_large &
+" mark_errors=" & $mark_errors &
 " bytes_before=" & $bytes_before &
 " bytes_after=" & $bytes_after &
 " saved=" & ( $bytes_before - $bytes_after ) &
