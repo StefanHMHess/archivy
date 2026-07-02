@@ -123,7 +123,7 @@ export default function Vertraege({ owner, onSelectContract }) {
 
       const { data } = await query
       if (aktiv) {
-        setZeilen((data ?? []).filter(v => !enthaeltParserFehler(v.vertrag_id) && !enthaeltParserFehler(v.firma) && !enthaeltParserFehler(v.beschreibung) && !enthaeltParserFehler(v.vertragsnummer)))
+        setZeilen(data ?? [])
         setLaden(false)
       }
     }
@@ -134,6 +134,12 @@ export default function Vertraege({ owner, onSelectContract }) {
   function bearbeiteGruppen() {
     setGruppenEditorText((gruppen.length > 0 ? gruppen : DEFAULT_GROUPEN).join('\n'))
     setGruppenEditorOpen(true)
+  }
+
+  function resetFilter() {
+    setSuche('')
+    setGruppeFilter('__all__')
+    setSortierung('firma_asc')
   }
 
   function speichereGruppen() {
@@ -275,6 +281,14 @@ export default function Vertraege({ owner, onSelectContract }) {
         >
           Gruppen bearbeiten
         </button>
+        <button
+          type="button"
+          onClick={resetFilter}
+          style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: 'pointer', whiteSpace: 'nowrap' }}
+          title="Suche, Gruppenfilter und Sortierung zurücksetzen"
+        >
+          Filter zurücksetzen
+        </button>
         <select
           value={sortierung}
           onChange={e => setSortierung(e.target.value)}
@@ -297,7 +311,18 @@ export default function Vertraege({ owner, onSelectContract }) {
       {laden ? (
         <p style={{ color: T.textMuted }}>Wird geladen…</p>
       ) : zeilen.length === 0 ? (
-        <p style={{ color: T.textMuted }}>Keine Verträge gefunden.</p>
+        <div>
+          <p style={{ color: T.textMuted }}>Keine Verträge gefunden.</p>
+          {(suche.trim() || gruppeFilter !== '__all__' || sortierung !== 'firma_asc') && (
+            <button
+              type="button"
+              onClick={resetFilter}
+              style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: 'pointer' }}
+            >
+              Aktive Filter zurücksetzen
+            </button>
+          )}
+        </div>
       ) : (
         <>
           <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
@@ -322,11 +347,11 @@ export default function Vertraege({ owner, onSelectContract }) {
                   onClick={() => onSelectContract(v.vertrag_id, zeilen.map(z => z.vertrag_id))}
                   onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
                   onMouseLeave={e => e.currentTarget.style.background = ''}>
-                  <td className="vt-col-gruppe" style={{ padding: `${T.sp2} ${T.sp3}`, verticalAlign: 'top', whiteSpace: 'pre-line' }}>{v.gruppe ?? '—'}</td>
+                  <td className="vt-col-gruppe" style={{ padding: `${T.sp2} ${T.sp3}`, verticalAlign: 'top', whiteSpace: 'pre-line' }}>{normalizeGruppe(v.gruppe) ?? '—'}</td>
                   <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap' }}>
                     <LogoCell logo={v.logo} firma={v.firma} />
                   </td>
-                  <td className="vt-col-firma" style={{ padding: `${T.sp2} ${T.sp3}` }}>{v.firma ?? '—'}</td>
+                  <td className="vt-col-firma" style={{ padding: `${T.sp2} ${T.sp3}` }}>{cleanText(v.firma) || '—'}</td>
                   <td className="vt-col-beschreibung" style={{ padding: `${T.sp2} ${T.sp3}`, maxWidth: 340 }}>
                     <div style={{
                       overflow: 'hidden',
@@ -336,8 +361,8 @@ export default function Vertraege({ owner, onSelectContract }) {
                       lineHeight: '1.35em',
                       maxHeight: '2.7em',
                       whiteSpace: 'normal',
-                    }} title={v.beschreibung ?? ''}>
-                      {v.beschreibung ?? '—'}
+                    }} title={cleanText(v.beschreibung) || ''}>
+                      {cleanText(v.beschreibung) || '—'}
                     </div>
                   </td>
                   <td className="vt-col-kosten" style={{ padding: `${T.sp2} ${T.sp3}`, textAlign: 'right' }}>
@@ -505,6 +530,13 @@ function ablaufFarbe(ablauf) {
 function enthaeltParserFehler(value) {
   if (typeof value !== 'string') return false
   return value.includes('Line 1, Column') || value.includes('Syntax error: value, object or array expected')
+}
+
+function cleanText(value) {
+  if (value == null) return ''
+  const text = String(value).trim()
+  if (!text || enthaeltParserFehler(text)) return ''
+  return text
 }
 
 function logoText(name) {
