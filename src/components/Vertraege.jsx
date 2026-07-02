@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { T } from '../tokens'
 import { supabase } from '../lib/supabase'
 import { optimizeImageUrl } from '../lib/storage'
@@ -56,7 +56,19 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
   const [gruppenEditorText, setGruppenEditorText] = useState('')
   const [filtersHydrated, setFiltersHydrated] = useState(false)
   const [hydratedFilterKey, setHydratedFilterKey] = useState(null)
+  const toolbarRef = useRef(null)
+  const [toolbarHeight, setToolbarHeight] = useState(0)
   const kostenSummen = useMemo(() => berechneKostenSummen(zeilen), [zeilen])
+
+  useEffect(() => {
+    const updateToolbarHeight = () => {
+      setToolbarHeight(toolbarRef.current?.offsetHeight ?? 0)
+    }
+
+    updateToolbarHeight()
+    window.addEventListener('resize', updateToolbarHeight)
+    return () => window.removeEventListener('resize', updateToolbarHeight)
+  }, [suche, gruppeFilter, sortierung, gruppen.length, busy])
 
   useEffect(() => {
     if (!owner) return
@@ -350,7 +362,24 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: T.sp2, marginBottom: 6, position: 'sticky', top: stickyTop, zIndex: 60, background: T.bg, paddingTop: 2, paddingBottom: 2 }}>
+      <div
+        ref={toolbarRef}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: T.sp2,
+          position: 'fixed',
+          top: stickyTop,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 'min(1200px, calc(100vw - 24px))',
+          zIndex: 65,
+          background: T.bg,
+          paddingTop: 2,
+          paddingBottom: 2,
+        }}
+      >
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, lineHeight: 1.1 }}>Verträge</h1>
         <input
           value={suche}
@@ -403,6 +432,8 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
           + Neuer Vertrag
         </button>
       </div>
+
+      <div style={{ height: toolbarHeight + 8 }} />
 
       {fehler && (
         <div style={{ marginBottom: T.sp3, border: `1px solid ${T.danger}`, color: T.danger, background: '#fef2f2', borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}` }}>
