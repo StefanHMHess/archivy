@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { T } from './tokens'
 import Dashboard from './components/Dashboard'
 import VorgangDetail from './components/VorgangDetail'
@@ -32,6 +32,9 @@ export default function App() {
   const [loadingAuth, setLoadingAuth] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [loadingAdmin, setLoadingAdmin] = useState(true)
+  const headerRef = useRef(null)
+  const navRef = useRef(null)
+  const [stickyOffsets, setStickyOffsets] = useState({ header: 0, nav: 0 })
 
   function openVorgang(id, ids = []) {
     if (!id) return
@@ -122,6 +125,19 @@ export default function App() {
     loadOwnerOptions()
   }, [user?.email, selectedOwner?.id])
 
+  useEffect(() => {
+    const updateStickyOffsets = () => {
+      setStickyOffsets({
+        header: headerRef.current?.offsetHeight ?? 0,
+        nav: navRef.current?.offsetHeight ?? 0,
+      })
+    }
+
+    updateStickyOffsets()
+    window.addEventListener('resize', updateStickyOffsets)
+    return () => window.removeEventListener('resize', updateStickyOffsets)
+  }, [selectedOwner?.id, ownerOptions.length, isAdmin, aktiv])
+
   if (loadingAuth) {
     return <p style={{ padding: T.sp6 }}>Lade Anmeldung…</p>
   }
@@ -136,11 +152,14 @@ export default function App() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <header style={{
+      <header ref={headerRef} style={{
         background: T.primary,
         color: T.textOnTeal,
         padding: `clamp(8px, 2vw, ${T.sp3}) clamp(10px, 3vw, ${T.sp5})`,
         paddingTop: `calc(clamp(8px, 2vw, ${T.sp3}) + env(safe-area-inset-top))`,
+        position: 'sticky',
+        top: 0,
+        zIndex: 80,
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
@@ -150,7 +169,7 @@ export default function App() {
       }}>
         {/* Logo + Titel */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: '0 0 auto' }}>
-          <img src={appIcon} alt="Archivy" style={{ width: 36, height: 36, flex: '0 0 auto' }} />
+          <img src={appIcon} alt="Archivy" style={{ width: 48, height: 48, flex: '0 0 auto', marginTop: -3 }} />
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 700, fontSize: 18, letterSpacing: '-0.3px' }}>Archivy</div>
             <div style={{ fontSize: 11, color: T.textOnTeal, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '40vw' }}>
@@ -234,8 +253,11 @@ export default function App() {
         </div>
       </header>
 
-      <nav style={{
+      <nav ref={navRef} style={{
         background: T.surface,
+        position: 'sticky',
+        top: stickyOffsets.header,
+        zIndex: 70,
         display: 'flex',
         gap: 2,
         padding: `0 clamp(12px, 3vw, ${T.sp6})`,
@@ -288,6 +310,7 @@ export default function App() {
             {aktiv === 'vertraege' && (
               <Vertraege
                 owner={selectedOwner}
+                stickyTop={stickyOffsets.header + stickyOffsets.nav}
                 onSelectContract={(id, ids = []) => {
                   setSelectedContractId(id)
                   setVertragIds(ids?.length ? ids : [id])

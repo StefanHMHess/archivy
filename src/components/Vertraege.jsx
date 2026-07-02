@@ -38,7 +38,7 @@ const SORTIERUNGEN = {
   kosten_desc: { column: 'kosten_jaehrlich', ascending: false, label: 'Kosten/Jahr (hoch zuerst)' },
 }
 
-export default function Vertraege({ owner, onSelectContract }) {
+export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
   const ownerIds = useMemo(() => ownerVarianten(owner?.id), [owner?.id])
   const filterStorageKey = useMemo(() => `${FILTERS_STORAGE_PREFIX}:${owner?.id ?? '__all__'}`, [owner?.id])
   const gruppenStorageKey = useMemo(() => `${GROUPEN_STORAGE_PREFIX}:${owner?.id ?? '__all__'}`, [owner?.id])
@@ -350,8 +350,8 @@ export default function Vertraege({ owner, onSelectContract }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: T.sp3, marginBottom: T.sp5, position: 'sticky', top: 0, zIndex: 10, background: T.bg, paddingTop: T.sp3, paddingBottom: T.sp3 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700 }}>Verträge</h1>
+      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: T.sp3, marginBottom: T.sp2, position: 'sticky', top: stickyTop, zIndex: 60, background: T.bg, paddingTop: T.sp1, paddingBottom: T.sp1 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, lineHeight: 1.1 }}>Verträge</h1>
         <input
           value={suche}
           onChange={e => setSuche(e.target.value)}
