@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { T } from '../tokens'
 import { supabase } from '../lib/supabase'
-import { optimizeImageUrl } from '../lib/storage'
 
 function Kachel({ label, wert, farbe, onClick }) {
   return (
@@ -35,9 +34,7 @@ export default function Dashboard({ onNavigate, owner, onSelectVorgang }) {
   useEffect(() => {
     async function laden() {
       let vorgaengeQuery = supabase.from('vorgaenge').select('id', { count: 'exact', head: true })
-      let vertraegeQuery = supabase
-        .from('vertraege')
-        .select('vertrag_id,firma,beschreibung,vertragsnummer,datei_pfad_2')
+      let vertraegeQuery = supabase.from('vertraege').select('id', { count: 'exact', head: true })
       let faelligQuery = supabase
         .from('vorgaenge')
         .select('vorgang_id, kurzbeschreibung, vertrag, frist, erledigung, verantwortlicher')
@@ -52,24 +49,28 @@ export default function Dashboard({ onNavigate, owner, onSelectVorgang }) {
         faelligQuery = faelligQuery.in('vertragsbesitzer_id', ownerIds)
       }
 
-      const [{ count: v }, { data: vtRows }, { data: due }] = await Promise.all([
+      const [{ count: v }, { count: vtCount }, { data: due }] = await Promise.all([
         vorgaengeQuery,
         vertraegeQuery,
         faelligQuery,
       ])
-      const sichtbareVertraege = (vtRows ?? []).filter(vt => (
-        !enthaeltParserFehler(vt.vertrag_id) &&
-        !enthaeltParserFehler(vt.firma) &&
-        !enthaeltParserFehler(vt.beschreibung) &&
-        !enthaeltParserFehler(vt.vertragsnummer)
-      ))
 
+      const dueIds = [...new Set((due ?? []).map(vt => normalisiereVertragId(vt?.vertrag)).filter(Boolean))]
       const map = {}
-      for (const vt of sichtbareVertraege) {
-        map[normalisiereVertragId(vt.vertrag_id)] = vt
+      if (dueIds.length > 0) {
+        let dueVertraegeQuery = supabase.from('vertraege').select('vertrag_id,firma')
+        if (owner && owner.id !== '__all__') {
+          dueVertraegeQuery = dueVertraegeQuery.in('vertragsbesitzer_id', ownerIds)
+        }
+        dueVertraegeQuery = dueVertraegeQuery.in('vertrag_id', dueIds)
+
+        const { data: dueVertraege } = await dueVertraegeQuery
+        for (const vt of dueVertraege ?? []) {
+          map[normalisiereVertragId(vt.vertrag_id)] = vt
+        }
       }
 
-      setZahlen({ vorgaenge: v, vertraege: sichtbareVertraege.length })
+      setZahlen({ vorgaenge: Number(v || 0), vertraege: Number(vtCount || 0) })
       setFaellige(due ?? [])
       setVertragMap(map)
     }
@@ -104,24 +105,15 @@ export default function Dashboard({ onNavigate, owner, onSelectVorgang }) {
               {(() => {
                 const vertrag = vertragMap[normalisiereVertragId(v.vertrag)]
                 const firma = vertrag?.firma || v.vertrag || '—'
-                const logoSrc = normalisiereLogoQuelle(vertrag?.datei_pfad_2)
                 return (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: T.sp3 }}>
                 <div>
                   <div style={{ fontWeight: 600 }}>{v.kurzbeschreibung || 'Ohne Bezeichnung'}</div>
                   <div style={{ color: T.textMuted, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      {logoSrc ? (
-                        <img
-                          src={logoSrc}
-                          alt={firma}
-                          style={{ width: 18, height: 18, borderRadius: 6, objectFit: 'contain', border: `1px solid ${T.border}`, background: '#fff', padding: 1 }}
-                        />
-                      ) : (
-                        <span style={{ width: 18, height: 18, borderRadius: 6, background: '#dbeafe', color: '#1d4ed8', display: 'inline-grid', placeItems: 'center', fontSize: 9, fontWeight: 700 }}>
-                          {logoText(firma)}
-                        </span>
-                      )}
+                      <span style={{ width: 18, height: 18, borderRadius: 6, background: '#dbeafe', color: '#1d4ed8', display: 'inline-grid', placeItems: 'center', fontSize: 9, fontWeight: 700 }}>
+                        {logoText(firma)}
+                      </span>
                       Vertrag: {firma}
                     </span>
                     <span>· Verantwortlich: {v.verantwortlicher || '—'}</span>
@@ -188,11 +180,31 @@ function ownerVarianten(ownerId) {
   const raw = String(ownerId ?? '').trim()
   if (!raw || raw === '__all__') return []
 
-  // Keep combined owners together: nicole-stefan <-> nicole+stefan
-  const plus = raw.replace(/-/g, '+')
-  const dash = raw.replace(/\+/g, '-')
+  const ids = new Set()
+  const addForms = (value) => {
+    const v = String(value ?? '').trim()
+    if (!v) return
+    ids.add(v)
+    ids.add(v.toLowerCase())
 
-  return [...new Set([raw, plus, dash])]
+    const plus = v.replace(/-/g, '+')
+    const dash = v.replace(/\+/g, '-')
+    ids.add(plus)
+    ids.add(dash)
+    ids.add(plus.toLowerCase())
+    ids.add(dash.toLowerCase())
+  }
+
+  addForms(raw)
+
+  const teile = raw.split(/[+-]/).map(v => v.trim()).filter(Boolean)
+  if (teile.length > 1) {
+    for (const teil of teile) addForms(teil)
+    addForms(teile.join('+'))
+    addForms(teile.join('-'))
+  }
+
+  return [...ids]
 }
 
 function logoText(name) {
@@ -202,14 +214,3 @@ function logoText(name) {
   return (letters || parts[0].slice(0, 2)).toUpperCase()
 }
 
-function normalisiereLogoQuelle(value) {
-  if (!value || typeof value !== 'string') return null
-  const v = value.trim()
-  if (!v) return null
-  if (v.startsWith('http://') || v.startsWith('https://')) return optimizeImageUrl(v, { width: 180, quality: 60 })
-  if (v.startsWith('data:')) return v
-  if (/^<svg[\s>]/i.test(v)) return `data:image/svg+xml;utf8,${encodeURIComponent(v)}`
-  if (/^[A-Za-z0-9+/=\r\n]+$/.test(v) && v.length >= 40) return `data:image/png;base64,${v.replace(/\s+/g, '')}`
-  if (/^[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(v)) return optimizeImageUrl(`https://${v}`, { width: 180, quality: 60 })
-  return null
-}

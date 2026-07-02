@@ -5,6 +5,29 @@ import { optimizeImageUrl } from '../lib/storage'
 
 const PAGE = 300
 const FILTERS_STORAGE_PREFIX = 'archivy.vertraege.filters.v1'
+const GROUPEN_STORAGE_PREFIX = 'archivy.vertraege.gruppen.v1'
+const DEFAULT_GROUPEN = [
+  'Abo',
+  'Betreuung',
+  'Beschäftigung',
+  'Dauerauftrag',
+  'Dienstleistung',
+  'Einkünfte',
+  'Fahrzeug',
+  'Finanzen',
+  'Gesundheit',
+  'Haustiere',
+  'Immobilienbesitz',
+  'Kauf',
+  'Miete',
+  'Mitgliedschaft',
+  'Privat',
+  'Reisen',
+  'Steuern',
+  'Vermietung',
+  'Versicherung',
+  'Wohnen',
+]
 const SORTIERUNGEN = {
   firma_asc: { column: 'firma', ascending: true, label: 'Firma A-Z' },
   firma_desc: { column: 'firma', ascending: false, label: 'Firma Z-A' },
@@ -16,6 +39,7 @@ const SORTIERUNGEN = {
 export default function Vertraege({ owner, onSelectContract }) {
   const ownerIds = useMemo(() => ownerVarianten(owner?.id), [owner?.id])
   const filterStorageKey = useMemo(() => `${FILTERS_STORAGE_PREFIX}:${owner?.id ?? '__all__'}`, [owner?.id])
+  const gruppenStorageKey = useMemo(() => `${GROUPEN_STORAGE_PREFIX}:${owner?.id ?? '__all__'}`, [owner?.id])
   const [zeilen, setZeilen] = useState([])
   const [suche, setSuche] = useState('')
   const [gruppen, setGruppen] = useState([])
@@ -24,26 +48,37 @@ export default function Vertraege({ owner, onSelectContract }) {
   const [laden, setLaden] = useState(true)
   const [busy, setBusy] = useState(false)
   const [reloadToken, setReloadToken] = useState(0)
+  const [gruppenEditorOpen, setGruppenEditorOpen] = useState(false)
+  const [gruppenEditorText, setGruppenEditorText] = useState('')
+  const [filtersHydrated, setFiltersHydrated] = useState(false)
+  const [hydratedFilterKey, setHydratedFilterKey] = useState(null)
+  const kostenSummen = useMemo(() => berechneKostenSummen(zeilen), [zeilen])
 
   useEffect(() => {
     if (!owner) return
+    setFiltersHydrated(false)
+    setHydratedFilterKey(null)
     const saved = loadFilterState(filterStorageKey)
     if (!saved) {
       setSuche('')
       setGruppeFilter('__all__')
       setSortierung('firma_asc')
+      setFiltersHydrated(true)
+      setHydratedFilterKey(filterStorageKey)
       return
     }
 
     setSuche(saved.suche ?? '')
     setGruppeFilter(saved.gruppeFilter ?? '__all__')
     setSortierung(saved.sortierung && SORTIERUNGEN[saved.sortierung] ? saved.sortierung : 'firma_asc')
+    setFiltersHydrated(true)
+    setHydratedFilterKey(filterStorageKey)
   }, [owner, filterStorageKey])
 
   useEffect(() => {
-    if (!owner) return
+    if (!owner || !filtersHydrated || hydratedFilterKey !== filterStorageKey) return
     saveFilterState(filterStorageKey, { suche, gruppeFilter, sortierung })
-  }, [owner, filterStorageKey, suche, gruppeFilter, sortierung])
+  }, [owner, filtersHydrated, hydratedFilterKey, filterStorageKey, suche, gruppeFilter, sortierung])
 
   useEffect(() => {
     if (gruppeFilter !== '__all__' && !gruppen.includes(gruppeFilter)) {
@@ -53,31 +88,24 @@ export default function Vertraege({ owner, onSelectContract }) {
 
   useEffect(() => {
     if (!owner) return
+    setGruppen(loadGruppenState(gruppenStorageKey))
+  }, [owner, gruppenStorageKey])
+
+  useEffect(() => {
+    if (!owner) return
+    saveGruppenState(gruppenStorageKey, gruppen)
+  }, [owner, gruppenStorageKey, gruppen])
+
+  useEffect(() => {
+    if (!owner || !filtersHydrated || hydratedFilterKey !== filterStorageKey) return
     let aktiv = true
-
-    async function ladenGruppen() {
-      let gruppenQuery = supabase
-        .from('vertraege')
-        .select('gruppe')
-        .order('gruppe', { ascending: true })
-        .limit(500)
-
-      if (owner.id !== '__all__') {
-        gruppenQuery = gruppenQuery.in('vertragsbesitzer_id', ownerIds)
-      }
-
-      const { data } = await gruppenQuery
-      if (!aktiv) return
-      const distinct = [...new Set((data ?? []).map(r => r.gruppe).filter(Boolean))]
-      setGruppen(distinct)
-    }
 
     async function laden() {
       setLaden(true)
       const sortDef = SORTIERUNGEN[sortierung] || SORTIERUNGEN.firma_asc
       let query = supabase
         .from('vertraege')
-        .select('id, vertrag_id, gruppe, firma, beschreibung, vertragsnummer, kosten_jaehrlich, vertrags_ablauf, aktiv, logo:datei_pfad_2')
+        .select('id, vertrag_id, gruppe, firma, beschreibung, vertragsnummer, kosten_monatlich, kosten_jaehrlich, vertrags_ablauf, aktiv, logo:datei_pfad_2')
         .order(sortDef.column, { ascending: sortDef.ascending })
         .limit(PAGE)
 
@@ -86,7 +114,7 @@ export default function Vertraege({ owner, onSelectContract }) {
       }
 
       if (gruppeFilter !== '__all__') {
-        query = query.eq('gruppe', gruppeFilter)
+        query = query.or(`gruppe.eq.${escapePostgrestValue(gruppeFilter)},gruppe.ilike.${escapePostgrestPattern(gruppeFilter)}%`)
       }
 
       if (suche.trim()) {
@@ -99,10 +127,34 @@ export default function Vertraege({ owner, onSelectContract }) {
         setLaden(false)
       }
     }
-    ladenGruppen()
     laden()
     return () => { aktiv = false }
-  }, [suche, owner, gruppeFilter, sortierung, reloadToken])
+  }, [suche, owner, gruppeFilter, sortierung, reloadToken, filtersHydrated, hydratedFilterKey, filterStorageKey])
+
+  function bearbeiteGruppen() {
+    setGruppenEditorText((gruppen.length > 0 ? gruppen : DEFAULT_GROUPEN).join('\n'))
+    setGruppenEditorOpen(true)
+  }
+
+  function speichereGruppen() {
+    const liste = [...new Set(
+      String(gruppenEditorText)
+        .split(/\r?\n/)
+        .map(v => v.trim())
+        .filter(Boolean)
+    )]
+
+    if (liste.length === 0) {
+      alert('Die Gruppenliste darf nicht leer sein.')
+      return
+    }
+
+    setGruppen(liste)
+    if (gruppeFilter !== '__all__' && !liste.includes(gruppeFilter)) {
+      setGruppeFilter('__all__')
+    }
+    setGruppenEditorOpen(false)
+  }
 
   async function neuVertrag() {
     if (!owner || owner.id === '__all__') {
@@ -216,6 +268,13 @@ export default function Vertraege({ owner, onSelectContract }) {
           <option value="__all__">Alle Gruppen</option>
           {gruppen.map(g => <option key={g} value={g}>{g}</option>)}
         </select>
+        <button
+          type="button"
+          onClick={bearbeiteGruppen}
+          style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: 'pointer', whiteSpace: 'nowrap' }}
+        >
+          Gruppen bearbeiten
+        </button>
         <select
           value={sortierung}
           onChange={e => setSortierung(e.target.value)}
@@ -240,16 +299,19 @@ export default function Vertraege({ owner, onSelectContract }) {
       ) : zeilen.length === 0 ? (
         <p style={{ color: T.textMuted }}>Keine Verträge gefunden.</p>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+        <>
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
+            <table style={{ width: '100%', minWidth: 980, borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr style={{ background: T.bg, textAlign: 'left' }}>
                 <th className="vt-col-gruppe" style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted }}>Gruppe</th>
                 <th style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Logo</th>
                 <th className="vt-col-firma" style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Firma</th>
                 <th className="vt-col-beschreibung" style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Beschreibung</th>
-                <th className="vt-col-nr" style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Nr.</th>
-                <th className="vt-col-kosten" style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Kosten/Jahr</th>
+                <th className="vt-col-kosten" style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap', textAlign: 'right' }}>
+                  <div style={{ lineHeight: 1.2 }}>Kosten/Monat</div>
+                  <div style={{ lineHeight: 1.2, marginTop: 2 }}>Kosten/Jahr</div>
+                </th>
                 <th style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Ablauf</th>
                 <th style={{ padding: `${T.sp2} ${T.sp3}`, borderBottom: `2px solid ${T.border}`, fontWeight: 600, color: T.textMuted, whiteSpace: 'nowrap' }}>Aktion</th>
               </tr>
@@ -260,7 +322,7 @@ export default function Vertraege({ owner, onSelectContract }) {
                   onClick={() => onSelectContract(v.vertrag_id, zeilen.map(z => z.vertrag_id))}
                   onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
                   onMouseLeave={e => e.currentTarget.style.background = ''}>
-                  <td className="vt-col-gruppe" style={{ padding: `${T.sp2} ${T.sp3}`, verticalAlign: 'top' }}>{v.gruppe ?? '—'}</td>
+                  <td className="vt-col-gruppe" style={{ padding: `${T.sp2} ${T.sp3}`, verticalAlign: 'top', whiteSpace: 'pre-line' }}>{v.gruppe ?? '—'}</td>
                   <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap' }}>
                     <LogoCell logo={v.logo} firma={v.firma} />
                   </td>
@@ -269,18 +331,22 @@ export default function Vertraege({ owner, onSelectContract }) {
                     <div style={{
                       overflow: 'hidden',
                       display: '-webkit-box',
-                      WebkitLineClamp: 4,
+                      WebkitLineClamp: 2,
                       WebkitBoxOrient: 'vertical',
                       lineHeight: '1.35em',
-                      maxHeight: '5.4em',
+                      maxHeight: '2.7em',
                       whiteSpace: 'normal',
                     }} title={v.beschreibung ?? ''}>
                       {v.beschreibung ?? '—'}
                     </div>
                   </td>
-                  <td className="vt-col-nr" style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap' }}>{v.vertragsnummer ?? '—'}</td>
-                  <td className="vt-col-kosten" style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap', textAlign: 'right' }}>
-                    {formatKostenJaehrlich(v.kosten_jaehrlich)}
+                  <td className="vt-col-kosten" style={{ padding: `${T.sp2} ${T.sp3}`, textAlign: 'right' }}>
+                    <div style={{ color: '#15803d', fontWeight: 700, lineHeight: 1.25, whiteSpace: 'nowrap' }}>
+                      <Kostenwert value={formatKostenMonatlich(v.kosten_monatlich, v.kosten_jaehrlich)} />
+                    </div>
+                    <div style={{ color: '#334155', lineHeight: 1.25, whiteSpace: 'nowrap' }}>
+                      <Kostenwert value={formatKostenJaehrlich(v.kosten_jaehrlich)} />
+                    </div>
                   </td>
                   <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap', color: ablaufFarbe(v.vertrags_ablauf) }}>{formatDateDisplay(v.vertrags_ablauf)}</td>
                   <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap' }}>
@@ -299,7 +365,93 @@ export default function Vertraege({ owner, onSelectContract }) {
                 </tr>
               ))}
             </tbody>
-          </table>
+            <tfoot>
+              <tr style={{ borderTop: `2px solid ${T.border}`, background: T.bgCard }}>
+                <td colSpan={5} style={{ padding: `${T.sp2} ${T.sp3}`, color: T.textMuted, fontWeight: 700, textAlign: 'right' }}>
+                  Summe
+                </td>
+                <td className="vt-col-kosten" style={{ padding: `${T.sp2} ${T.sp3}`, textAlign: 'right' }}>
+                  <div style={{ color: '#15803d', fontWeight: 700, lineHeight: 1.25, whiteSpace: 'nowrap' }}>
+                    <Kostenwert value={formatKosten(kostenSummen.monat)} />
+                  </div>
+                  <div style={{ color: '#334155', lineHeight: 1.25, whiteSpace: 'nowrap' }}>
+                    <Kostenwert value={formatKosten(kostenSummen.jahr)} />
+                  </div>
+                </td>
+                <td style={{ padding: `${T.sp2} ${T.sp3}` }} />
+                <td style={{ padding: `${T.sp2} ${T.sp3}` }} />
+              </tr>
+            </tfoot>
+            </table>
+          </div>
+        </>
+      )}
+
+      {gruppenEditorOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.45)',
+            display: 'grid',
+            placeItems: 'center',
+            padding: T.sp4,
+            zIndex: 100,
+          }}
+          onClick={() => setGruppenEditorOpen(false)}
+        >
+          <div
+            style={{
+              width: 'min(680px, 100%)',
+              background: T.bgCard,
+              border: `1px solid ${T.border}`,
+              borderRadius: 12,
+              padding: T.sp4,
+              boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 style={{ marginTop: 0, marginBottom: T.sp2, fontSize: 18 }}>Gruppen bearbeiten</h2>
+            <p style={{ marginTop: 0, marginBottom: T.sp3, color: T.textMuted }}>
+              Eine Gruppe pro Zeile. Diese Liste gilt nur für den aktuellen Benutzer/Inhaber.
+            </p>
+            <div style={{ marginBottom: T.sp3, borderRadius: T.r2, padding: T.sp3, background: '#fff7ed', border: '1px solid #fdba74', color: '#9a3412', lineHeight: 1.4 }}>
+              Warnhinweis: Wenn du Gruppen umbenennst oder löschst, können vorhandene Verträge in der Liste nicht mehr angezeigt werden, weil sie der alten Gruppe zugeordnet bleiben.
+            </div>
+            <textarea
+              value={gruppenEditorText}
+              onChange={e => setGruppenEditorText(e.target.value)}
+              rows={18}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                border: `1px solid ${T.border}`,
+                borderRadius: T.r2,
+                padding: T.sp3,
+                font: 'inherit',
+                resize: 'vertical',
+                minHeight: 280,
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: T.sp2, marginTop: T.sp3, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setGruppenEditorOpen(false)}
+                style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: 'pointer' }}
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={speichereGruppen}
+                style={{ border: 'none', borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.primary, color: T.textOnTeal, cursor: 'pointer', fontWeight: 700 }}
+              >
+                Speichern
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -310,11 +462,49 @@ function ownerVarianten(ownerId) {
   const raw = String(ownerId ?? '').trim()
   if (!raw || raw === '__all__') return []
 
-  // Keep combined owners together: nicole-stefan <-> nicole+stefan
-  const plus = raw.replace(/-/g, '+')
-  const dash = raw.replace(/\+/g, '-')
+  const ids = new Set()
+  const addForms = (value) => {
+    const v = String(value ?? '').trim()
+    if (!v) return
+    ids.add(v)
+    ids.add(v.toLowerCase())
 
-  return [...new Set([raw, plus, dash])]
+    const plus = v.replace(/-/g, '+')
+    const dash = v.replace(/\+/g, '-')
+    ids.add(plus)
+    ids.add(dash)
+    ids.add(plus.toLowerCase())
+    ids.add(dash.toLowerCase())
+  }
+
+  addForms(raw)
+
+  const teile = raw.split(/[+-]/).map(v => v.trim()).filter(Boolean)
+  if (teile.length > 1) {
+    for (const teil of teile) addForms(teil)
+    addForms(teile.join('+'))
+    addForms(teile.join('-'))
+  }
+
+  return [...ids]
+}
+
+function normalizeGruppe(value) {
+  if (value == null) return null
+  const text = String(value).trim()
+  if (!text) return null
+  return text.split(/\r?\n/).map(part => part.trim()).filter(Boolean)[0] ?? null
+}
+
+function escapePostgrestValue(value) {
+  return String(value ?? '').replace(/,/g, '%2C')
+}
+
+function escapePostgrestPattern(value) {
+  return String(value ?? '')
+    .replace(/%/g, '\\%')
+    .replace(/_/g, '\\_')
+    .replace(/,/g, '%2C')
 }
 
 function ablaufFarbe(ablauf) {
@@ -357,17 +547,29 @@ function formatDateDisplay(value) {
   return `${day}.${month}.${d.getFullYear()}`
 }
 
-function formatKostenJaehrlich(raw) {
-  const value = parseKostenJaehrlich(raw)
+function formatKosten(raw) {
+  const value = parseKostenWert(raw)
   if (value == null) return '—'
-  return value.toLocaleString('de-AT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function parseKostenJaehrlich(raw) {
+function formatKostenMonatlich(rawMonat, rawJahr) {
+  const monat = parseKostenWert(rawMonat)
+  if (monat != null) return formatKosten(monat)
+
+  const jahr = parseKostenWert(rawJahr)
+  if (jahr == null) return '—'
+  return formatKosten(jahr / 12)
+}
+
+function formatKostenJaehrlich(raw) {
+  return formatKosten(raw)
+}
+
+function parseKostenWert(raw) {
   if (raw == null || raw === '') return null
   if (typeof raw === 'number') {
     if (!Number.isFinite(raw)) return null
-    if (Number.isInteger(raw) && raw >= 10000) return raw / 100
     return raw
   }
 
@@ -385,12 +587,58 @@ function parseKostenJaehrlich(raw) {
 
   if (!Number.isFinite(parsed)) return null
 
-  // Some FM imports deliver cents as whole integers (e.g. 129900 -> 1299.00).
-  if (/^\d+$/.test(text) && Number.isInteger(parsed) && parsed >= 10000) {
-    return parsed / 100
+  return parsed
+}
+
+function berechneKostenSummen(zeilen) {
+  let monat = 0
+  let jahr = 0
+
+  for (const v of zeilen || []) {
+    const jahrWert = parseKostenWert(v?.kosten_jaehrlich)
+    const monatWert = parseKostenWert(v?.kosten_monatlich)
+
+    if (jahrWert != null) jahr += jahrWert
+    if (monatWert != null) {
+      monat += monatWert
+    } else if (jahrWert != null) {
+      monat += jahrWert / 12
+    }
   }
 
-  return parsed
+  return { monat, jahr }
+}
+
+function Kostenwert({ value }) {
+  const parts = splitKostenTeile(value)
+  if (!parts) return <span>—</span>
+
+  return (
+    <span
+      style={{
+        display: 'inline-grid',
+        gridTemplateColumns: '10ch auto 2ch',
+        alignItems: 'baseline',
+        justifyContent: 'end',
+        fontVariantNumeric: 'tabular-nums',
+      }}
+    >
+      <span style={{ textAlign: 'right' }}>{parts.ganz}</span>
+      <span>,</span>
+      <span style={{ textAlign: 'left' }}>{parts.dez}</span>
+    </span>
+  )
+}
+
+function splitKostenTeile(text) {
+  if (!text || text === '—') return null
+  const cleaned = String(text).trim()
+  const idx = cleaned.lastIndexOf(',')
+  if (idx === -1) return { ganz: cleaned, dez: '00' }
+  return {
+    ganz: cleaned.slice(0, idx),
+    dez: cleaned.slice(idx + 1),
+  }
 }
 
 function LogoCell({ logo, firma }) {
@@ -462,6 +710,29 @@ function saveFilterState(key, state) {
       gruppeFilter: state.gruppeFilter ?? '__all__',
       sortierung: state.sortierung ?? 'firma_asc',
     }))
+  } catch {
+    // Ignore storage errors (private mode or quota exceeded).
+  }
+}
+
+function loadGruppenState(key) {
+  try {
+    const raw = window.localStorage.getItem(key)
+    if (!raw) return [...DEFAULT_GROUPEN]
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return [...DEFAULT_GROUPEN]
+    const list = parsed
+      .map(v => String(v ?? '').trim())
+      .filter(Boolean)
+    return list.length > 0 ? [...new Set(list)] : [...DEFAULT_GROUPEN]
+  } catch {
+    return [...DEFAULT_GROUPEN]
+  }
+}
+
+function saveGruppenState(key, gruppen) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(gruppen ?? []))
   } catch {
     // Ignore storage errors (private mode or quota exceeded).
   }

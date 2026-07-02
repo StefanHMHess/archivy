@@ -144,11 +144,31 @@ function ownerVarianten(ownerId) {
   const raw = String(ownerId ?? '').trim()
   if (!raw || raw === '__all__') return []
 
-  // Keep combined owners together: nicole-stefan <-> nicole+stefan
-  const plus = raw.replace(/-/g, '+')
-  const dash = raw.replace(/\+/g, '-')
+  const ids = new Set()
+  const addForms = (value) => {
+    const v = String(value ?? '').trim()
+    if (!v) return
+    ids.add(v)
+    ids.add(v.toLowerCase())
 
-  return [...new Set([raw, plus, dash])]
+    const plus = v.replace(/-/g, '+')
+    const dash = v.replace(/\+/g, '-')
+    ids.add(plus)
+    ids.add(dash)
+    ids.add(plus.toLowerCase())
+    ids.add(dash.toLowerCase())
+  }
+
+  addForms(raw)
+
+  const teile = raw.split(/[+-]/).map(v => v.trim()).filter(Boolean)
+  if (teile.length > 1) {
+    for (const teil of teile) addForms(teil)
+    addForms(teile.join('+'))
+    addForms(teile.join('-'))
+  }
+
+  return [...ids]
 }
 
 function fristFarbe(frist) {

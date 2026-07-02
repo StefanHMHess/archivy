@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Document, Page, pdfjs } from 'react-pdf'
 import { T } from '../tokens'
 import { supabase } from '../lib/supabase'
 import { getSignedUrl, optimizeImageUrl } from '../lib/storage'
 import PdfThumbnail from './PdfThumbnail'
+
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
 
 const FIXED_SECRET_MASK = '••••••••••'
 const DEFAULT_ZAHLUNGSWEISEN = ['Abbuchung', 'Amex', 'Dauerauftrag', 'Mastercard', 'Eingang', 'Überweisungen']
@@ -39,6 +42,22 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
   const [erstelltVertrag, setErstelltVertrag] = useState(false)
   const [zahlungsweisen, setZahlungsweisen] = useState(DEFAULT_ZAHLUNGSWEISEN)
   const [datumSortAsc, setDatumSortAsc] = useState(true)
+  const [lastChangedField, setLastChangedField] = useState(null)
+  const [pdfVollbildUrl, setPdfVollbildUrl] = useState(null)
+  const [pdfVollbild, setPdfVollbild] = useState(false)
+  const [pdfVollbildPages, setPdfVollbildPages] = useState(0)
+  const dirtyFields = useMemo(() => {
+    if (!vertrag || !entwurf) return new Set()
+    const vorher = buildVertragPayload(vertrag, owner)
+    const nachher = buildVertragPayload(entwurf, owner)
+    const keys = [...new Set([...Object.keys(vorher), ...Object.keys(nachher)])]
+    const dirty = new Set()
+    for (const key of keys) {
+      if (!sameDirtyValue(vorher[key], nachher[key])) dirty.add(key)
+    }
+    return dirty
+  }, [entwurf, vertrag, owner])
+  const hasUnsavedChanges = dirtyFields.size > 0
 
   useEffect(() => {
     const container = containerRef.current
@@ -104,6 +123,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
       } else {
         setVertrag(data)
         setEntwurf(data)
+        setLastChangedField(null)
         setSpeicherStatus(null)
 
         let q = supabase
@@ -186,12 +206,28 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
       setFehler('PDF-Link konnte nicht erstellt werden.')
       return
     }
-    window.open(signed, '_blank', 'noopener,noreferrer')
+
+    setPdfVollbildUrl(signed)
+    setPdfVollbildPages(0)
+    setPdfVollbild(true)
   }
 
   function setFeld(name, value) {
     setEntwurf(prev => ({ ...(prev ?? {}), [name]: value }))
     setSpeicherStatus(null)
+  }
+
+  function setFeldMitMarkierung(name, value) {
+    setFeld(name, value)
+    setLastChangedField(name)
+  }
+
+  function showSaveFor(fieldName) {
+    return hasUnsavedChanges && lastChangedField === fieldName
+  }
+
+  function isDirty(fieldName) {
+    return dirtyFields.has(fieldName)
   }
 
   async function speichereVertrag() {
@@ -237,6 +273,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
 
     setVertrag(data)
     setEntwurf(data)
+    setLastChangedField(null)
     setSpeicherStatus({ ok: true, text: 'Gespeichert' })
   }
 
@@ -420,12 +457,46 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
     setZahlungsweisen(liste)
 
     if (!liste.includes(daten.zahlungsweise || '')) {
-      setFeld('zahlungsweise', liste[0])
+      setFeldMitMarkierung('zahlungsweise', liste[0])
     }
   }
 
   return (
     <div ref={containerRef} style={{ width: '100%' }}>
+      {pdfVollbild && pdfVollbildUrl && (
+        <div
+          onClick={() => setPdfVollbild(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)',
+            zIndex: 1000, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'flex-start',
+            overflowY: 'auto', padding: '40px 16px',
+            cursor: 'zoom-out',
+          }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ cursor: 'default' }}>
+            <Document
+              file={pdfVollbildUrl}
+              onLoadSuccess={({ numPages }) => setPdfVollbildPages(numPages)}
+              loading={<p style={{ color: '#fff' }}>PDF wird geladen…</p>}
+              error={<p style={{ color: '#fca5a5' }}>PDF konnte nicht geladen werden</p>}
+            >
+              {Array.from({ length: pdfVollbildPages || 1 }, (_, i) => (
+                <Page key={i + 1} pageNumber={i + 1} width={Math.min(window.innerWidth - 40, 900)} renderTextLayer={false} />
+              ))}
+            </Document>
+          </div>
+          <button
+            onClick={() => setPdfVollbild(false)}
+            style={{
+              position: 'fixed', top: 16, right: 16, background: '#fff', border: 'none',
+              borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 16,
+            }}
+          >
+            ✕ Schließen
+          </button>
+        </div>
+      )}
       <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', marginBottom: T.sp2, position: 'sticky', top: 0, zIndex: 10, background: T.bg, paddingTop: 6, paddingBottom: 6, gap: isMobile ? T.sp2 : T.sp1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: T.sp2, flex: 1, minWidth: 0 }}>
           <LogoPreview vertrag={daten} logoFehler={logoFehler} setLogoFehler={setLogoFehler} />
@@ -533,29 +604,31 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
                 </button>
               </>
             )}
-            <button
-              type="button"
-              onClick={speichereVertrag}
-              disabled={speichert}
-              style={{
-                background: T.primary,
-                color: '#fff',
-                border: 'none',
-                borderRadius: T.r2,
-                padding: '6px 12px',
-                fontWeight: 700,
-                fontSize: 13,
-                cursor: speichert ? 'not-allowed' : 'pointer',
-                opacity: speichert ? 0.7 : 1,
-                whiteSpace: 'nowrap',
-                minHeight: 40,
-                display: 'flex',
-                alignItems: 'center',
-              }}
-              title="Änderungen speichern"
-            >
-              {speichert ? '…' : '✓'}
-            </button>
+            {hasUnsavedChanges ? (
+              <button
+                type="button"
+                onClick={speichereVertrag}
+                disabled={speichert}
+                style={{
+                  background: T.primary,
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: T.r2,
+                  padding: '6px 12px',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: speichert ? 'not-allowed' : 'pointer',
+                  opacity: speichert ? 0.7 : 1,
+                  whiteSpace: 'nowrap',
+                  minHeight: 40,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                title="Änderungen speichern"
+              >
+                {speichert ? '…' : '✓ Speichern'}
+              </button>
+            ) : null}
             <button
               onClick={onClose}
               style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: '6px 10px', cursor: 'pointer', fontWeight: 600, minHeight: 40, display: 'flex', alignItems: 'center', fontSize: 16 }}
@@ -580,19 +653,23 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
 
       <div className="vertrag-detail-dreispalten" style={{ gap: T.sp4, gridTemplateColumns: '1fr', alignItems: 'start' }}>
         <div className="vertrag-detail-karte" style={{ borderColor: T.border, borderRadius: T.r2, padding: T.sp3 }}>
-          <Field label="Firma" value={daten.firma} onChange={v => setFeld('firma', v)} />
-          <Field label="Vertragsnummer" value={daten.vertragsnummer} onChange={v => setFeld('vertragsnummer', v)} />
-          <Field label="Beschreibung" value={daten.beschreibung} multiline onChange={v => setFeld('beschreibung', v)} />
-          <DateField label="Vertragsdatum" value={daten.vertrags_datum} onChange={v => setFeld('vertrags_datum', v)} />
-          <DateField label="Beginn" value={daten.vertrags_beginn} onChange={v => setFeld('vertrags_beginn', v)} />
-          <DateField label="Ablauf" value={daten.vertrags_ablauf} onChange={v => setFeld('vertrags_ablauf', v)} />
+          <Field label="Firma" value={daten.firma} onChange={v => setFeldMitMarkierung('firma', v)} showInlineSave={showSaveFor('firma')} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty('firma')} />
+          <Field label="Vertragsnummer" value={daten.vertragsnummer} onChange={v => setFeldMitMarkierung('vertragsnummer', v)} showInlineSave={showSaveFor('vertragsnummer')} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty('vertragsnummer')} />
+          <Field label="Beschreibung" value={daten.beschreibung} multiline onChange={v => setFeldMitMarkierung('beschreibung', v)} showInlineSave={showSaveFor('beschreibung')} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty('beschreibung')} />
+          <DateField label="Vertragsdatum" value={daten.vertrags_datum} onChange={v => setFeldMitMarkierung('vertrags_datum', v)} showInlineSave={showSaveFor('vertrags_datum')} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty('vertrags_datum')} />
+          <DateField label="Beginn" value={daten.vertrags_beginn} onChange={v => setFeldMitMarkierung('vertrags_beginn', v)} showInlineSave={showSaveFor('vertrags_beginn')} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty('vertrags_beginn')} />
+          <DateField label="Ablauf" value={daten.vertrags_ablauf} onChange={v => setFeldMitMarkierung('vertrags_ablauf', v)} showInlineSave={showSaveFor('vertrags_ablauf')} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty('vertrags_ablauf')} />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: T.sp3 }}>
-            <Field label="Aktiv" value={Boolean(daten.aktiv)} type="checkbox" onChange={v => setFeld('aktiv', v)} />
+            <Field label="Aktiv" value={Boolean(daten.aktiv)} type="checkbox" onChange={v => setFeldMitMarkierung('aktiv', v)} showInlineSave={showSaveFor('aktiv')} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty('aktiv')} />
             <Field
               label={<LabelMitHinweis text="Diskret" hinweis="Zugangsdaten werden nicht von Filemaker übertragen." />}
               value={isDiskretValue(daten.diskret)}
               type="checkbox"
-              onChange={v => setFeld('diskret', v ? 'x' : null)}
+              onChange={v => setFeldMitMarkierung('diskret', v ? 'x' : null)}
+              showInlineSave={showSaveFor('diskret')}
+              onInlineSave={speichereVertrag}
+              inlineSaving={speichert}
+              isDirty={isDirty('diskret')}
             />
           </div>
         </div>
@@ -660,17 +737,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
                     </td>
                     <td style={{ padding: `${T.sp2} ${T.sp3}`, minWidth: 72 }}>
                       {v.datei_pfad ? (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            oeffnePdfSofort(v.datei_pfad)
-                          }}
-                          style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}
-                          title="PDF direkt öffnen"
-                        >
-                          <PdfThumbnail pfad={v.datei_pfad} width={56} />
-                        </button>
+                        <PdfThumbnail pfad={v.datei_pfad} width={56} onClick={() => oeffnePdfSofort(v.datei_pfad)} />
                       ) : (
                         <span style={{ color: T.textMuted, fontSize: 12 }}>—</span>
                       )}
@@ -685,29 +752,41 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, onNav
 
       <div style={{ marginTop: T.sp4 }}>
         <div className="vertrag-detail-karte" style={{ borderColor: T.border, borderRadius: T.r2, padding: T.sp3, marginBottom: T.sp4 }}>
-          <KontaktAktionen vertrag={daten} onChange={setFeld} />
+          <KontaktAktionen vertrag={daten} onChange={setFeldMitMarkierung} showSaveFor={showSaveFor} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty} />
         </div>
 
         <div className="vertrag-detail-karte" style={{ borderColor: T.border, borderRadius: T.r2, padding: T.sp3 }}>
           <Field
             label="IBAN"
             value={daten.iban}
-            onChange={v => setFeld('iban', v)}
+            onChange={v => setFeldMitMarkierung('iban', v)}
+            showInlineSave={showSaveFor('iban')}
+            onInlineSave={speichereVertrag}
+            inlineSaving={speichert}
+            isDirty={isDirty('iban')}
             inputStyle={{ fontSize: 13, letterSpacing: 0.2 }}
           />
-          <Field label="BIC" value={daten.bic} onChange={v => setFeld('bic', v)} />
-          <Field label="Bank" value={daten.bank} onChange={v => setFeld('bank', v)} />
+          <Field label="BIC" value={daten.bic} onChange={v => setFeldMitMarkierung('bic', v)} showInlineSave={showSaveFor('bic')} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty('bic')} />
+          <Field label="Bank" value={daten.bank} onChange={v => setFeldMitMarkierung('bank', v)} showInlineSave={showSaveFor('bank')} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty('bank')} />
           <ZahlungsweiseFeld
             value={daten.zahlungsweise}
             options={zahlungsweisen}
-            onChange={v => setFeld('zahlungsweise', v)}
+            onChange={v => setFeldMitMarkierung('zahlungsweise', v)}
             onEditOptions={bearbeiteZahlungsweisen}
+            showInlineSave={showSaveFor('zahlungsweise')}
+            onInlineSave={speichereVertrag}
+            inlineSaving={speichert}
+            isDirty={isDirty('zahlungsweise')}
           />
-          <KostenBlock daten={daten} onChange={setFeld} />
+          <KostenBlock daten={daten} onChange={setFeldMitMarkierung} onDerivedChange={setFeld} showSaveFor={showSaveFor} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty} />
           <Field
             label="Logo"
             value={daten.datei_pfad_2}
-            onChange={v => setFeld('datei_pfad_2', v)}
+            onChange={v => setFeldMitMarkierung('datei_pfad_2', v)}
+            showInlineSave={showSaveFor('datei_pfad_2')}
+            onInlineSave={speichereVertrag}
+            inlineSaving={speichert}
+            isDirty={isDirty('datei_pfad_2')}
             inputStyle={{ fontSize: 12, color: T.textMuted, opacity: 0.85 }}
           />
         </div>
@@ -766,25 +845,70 @@ function parseDateLike(value) {
   return Number.isNaN(t) ? null : t
 }
 
-function Field({ label, value, multiline, onChange, type = 'text', inputStyle }) {
+function InlineSaveButton({ visible, onSave, saving }) {
+  if (!visible) return null
+  return (
+    <div style={{ marginTop: 6 }}>
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={saving}
+        style={{
+          border: 'none',
+          borderRadius: 8,
+          padding: '3px 10px',
+          background: T.primary,
+          color: '#fff',
+          cursor: saving ? 'not-allowed' : 'pointer',
+          fontSize: 12,
+          fontWeight: 700,
+          opacity: saving ? 0.7 : 1,
+        }}
+      >
+        {saving ? 'Speichert…' : 'Speichern'}
+      </button>
+    </div>
+  )
+}
+
+function DirtyBadge({ visible }) {
+  if (!visible) return null
+  return (
+    <span style={{ fontSize: 11, color: '#166534', background: '#dcfce7', border: '1px solid #86efac', borderRadius: 999, padding: '1px 6px', fontWeight: 700 }}>
+      geändert
+    </span>
+  )
+}
+
+function LabelRow({ label, isDirty }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <div style={{ fontSize: 12, color: T.textMuted, fontWeight: 600 }}>{label}</div>
+      <DirtyBadge visible={isDirty} />
+    </div>
+  )
+}
+
+function Field({ label, value, multiline, onChange, type = 'text', inputStyle, showInlineSave = false, onInlineSave, inlineSaving = false, isDirty = false }) {
   const anzeige = multiline ? normalisiereMehrzeilig(value) : value
   const isEditable = typeof onChange === 'function'
 
   if (isEditable && type === 'checkbox') {
     return (
       <div style={{ marginBottom: T.sp3 }}>
-        <div style={{ fontSize: 12, color: T.textMuted, fontWeight: 600 }}>{label}</div>
+        <LabelRow label={label} isDirty={isDirty} />
         <label style={{ marginTop: T.sp1, display: 'inline-flex', alignItems: 'center', gap: T.sp2 }}>
           <input type="checkbox" checked={Boolean(value)} onChange={e => onChange(e.target.checked)} />
           <span>{Boolean(value) ? 'Ja' : 'Nein'}</span>
         </label>
+        <InlineSaveButton visible={showInlineSave} onSave={onInlineSave} saving={inlineSaving} />
       </div>
     )
   }
 
   return (
     <div style={{ marginBottom: T.sp3 }}>
-      <div style={{ fontSize: 12, color: T.textMuted, fontWeight: 600 }}>{label}</div>
+      <LabelRow label={label} isDirty={isDirty} />
       {isEditable ? (
         multiline ? (
           <textarea
@@ -804,6 +928,7 @@ function Field({ label, value, multiline, onChange, type = 'text', inputStyle })
       ) : (
         <div style={{ marginTop: T.sp1, whiteSpace: multiline ? 'pre-wrap' : 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.35 }}>{anzeige ?? '—'}</div>
       )}
+      <InlineSaveButton visible={showInlineSave} onSave={onInlineSave} saving={inlineSaving} />
     </div>
   )
 }
@@ -835,7 +960,7 @@ function LabelMitHinweis({ text, hinweis }) {
   )
 }
 
-function DateField({ label, value, onChange }) {
+function DateField({ label, value, onChange, showInlineSave = false, onInlineSave, inlineSaving = false, isDirty = false }) {
   const containerRef = useRef(null)
   const [open, setOpen] = useState(false)
   const selectedIso = cleanDate(value)
@@ -870,7 +995,7 @@ function DateField({ label, value, onChange }) {
 
   return (
     <div style={{ marginBottom: T.sp3, position: 'relative' }} ref={containerRef}>
-      <div style={{ fontSize: 12, color: T.textMuted, fontWeight: 600 }}>{label}</div>
+      <LabelRow label={label} isDirty={isDirty} />
       <div style={{ marginTop: T.sp1, display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'end', gap: T.sp2 }}>
         <input
           type="text"
@@ -906,15 +1031,16 @@ function DateField({ label, value, onChange }) {
           onSelectDay={waehleTag}
         />
       ) : null}
+      <InlineSaveButton visible={showInlineSave} onSave={onInlineSave} saving={inlineSaving} />
     </div>
   )
 }
 
-function ZahlungsweiseFeld({ value, options, onChange, onEditOptions }) {
+function ZahlungsweiseFeld({ value, options, onChange, onEditOptions, showInlineSave = false, onInlineSave, inlineSaving = false, isDirty = false }) {
   const optionen = [...new Set([...(options || []), ...(value ? [value] : [])].filter(Boolean))]
   return (
     <div style={{ marginBottom: T.sp3 }}>
-      <div style={{ fontSize: 12, color: T.textMuted, fontWeight: 600 }}>Zahlungsweise</div>
+      <LabelRow label="Zahlungsweise" isDirty={isDirty} />
       <div style={{ marginTop: T.sp1, display: 'grid', gridTemplateColumns: '1fr auto', gap: T.sp2, alignItems: 'end' }}>
         <select
           value={value || ''}
@@ -934,6 +1060,7 @@ function ZahlungsweiseFeld({ value, options, onChange, onEditOptions }) {
           Liste
         </button>
       </div>
+      <InlineSaveButton visible={showInlineSave} onSave={onInlineSave} saving={inlineSaving} />
     </div>
   )
 }
@@ -1013,7 +1140,7 @@ const kalNavBtnStyle = {
   fontWeight: 700,
 }
 
-function KostenBlock({ daten, onChange }) {
+function KostenBlock({ daten, onChange, onDerivedChange, showSaveFor, onInlineSave, inlineSaving, isDirty }) {
   const ratenProJahr = cleanNumber(daten.jahresraten ?? daten.raten_pro_jahr)
   const kostenRate = cleanNumber(daten.kosten_pro_rate)
   const kostenJahr = berechneKostenJahr(ratenProJahr, kostenRate)
@@ -1022,20 +1149,20 @@ function KostenBlock({ daten, onChange }) {
   function setzeRatenJahr(v) {
     onChange('jahresraten', v)
     const neu = berechneKostenJahr(cleanNumber(v), kostenRate)
-    onChange('kosten_jaehrlich', neu ?? '')
+    onDerivedChange('kosten_jaehrlich', neu ?? '')
   }
 
   function setzeKostenRate(v) {
     onChange('kosten_pro_rate', v)
     const neu = berechneKostenJahr(ratenProJahr, cleanNumber(v))
-    onChange('kosten_jaehrlich', neu ?? '')
+    onDerivedChange('kosten_jaehrlich', neu ?? '')
   }
 
   return (
     <div style={{ marginBottom: T.sp3 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: T.sp3 }}>
-        <Field label="Raten/Jahr" value={daten.jahresraten ?? daten.raten_pro_jahr} onChange={setzeRatenJahr} />
-        <WaehrungFeld label="Kosten/Rate" value={daten.kosten_pro_rate} onChange={setzeKostenRate} />
+        <Field label="Raten/Jahr" value={daten.jahresraten ?? daten.raten_pro_jahr} onChange={setzeRatenJahr} showInlineSave={showSaveFor?.('jahresraten')} onInlineSave={onInlineSave} inlineSaving={inlineSaving} isDirty={isDirty?.('jahresraten')} />
+        <WaehrungFeld label="Kosten/Rate" value={daten.kosten_pro_rate} onChange={setzeKostenRate} showInlineSave={showSaveFor?.('kosten_pro_rate')} onInlineSave={onInlineSave} inlineSaving={inlineSaving} isDirty={isDirty?.('kosten_pro_rate')} />
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: T.sp3 }}>
         <AnzeigeFeld label="Kosten/Monat" value={formatCurrencyDisplay(kostenMonat)} />
@@ -1045,7 +1172,7 @@ function KostenBlock({ daten, onChange }) {
   )
 }
 
-function WaehrungFeld({ label, value, onChange }) {
+function WaehrungFeld({ label, value, onChange, showInlineSave = false, onInlineSave, inlineSaving = false, isDirty = false }) {
   const [text, setText] = useState(formatCurrencyInput(value))
 
   useEffect(() => {
@@ -1065,13 +1192,14 @@ function WaehrungFeld({ label, value, onChange }) {
 
   return (
     <div style={{ marginBottom: T.sp3 }}>
-      <div style={{ fontSize: 12, color: T.textMuted, fontWeight: 600 }}>{label}</div>
+      <LabelRow label={label} isDirty={isDirty} />
       <input
         value={text}
         onChange={e => setText(e.target.value)}
         onBlur={handleBlur}
         style={{ width: '100%', marginTop: T.sp1, padding: '2px 0', border: 'none', borderBottom: `1px solid ${T.border}`, background: 'transparent', outline: 'none', borderRadius: 0 }}
       />
+      <InlineSaveButton visible={showInlineSave} onSave={onInlineSave} saving={inlineSaving} />
     </div>
   )
 }
@@ -1093,10 +1221,10 @@ function normalisiereMehrzeilig(value) {
     .replace(/\r/g, '\n')
 }
 
-function AktionZeile({ label, value, href, actionLabel, onChange }) {
+function AktionZeile({ label, value, href, actionLabel, onChange, showInlineSave = false, onInlineSave, inlineSaving = false, isDirty = false }) {
   return (
     <div style={{ marginBottom: T.sp2 }}>
-      <div style={{ fontSize: 12, color: T.textMuted, fontWeight: 600 }}>{label}</div>
+      <LabelRow label={label} isDirty={isDirty} />
       <div style={{ marginTop: T.sp1, display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'end', gap: T.sp2 }}>
         <input
           value={value ?? ''}
@@ -1125,11 +1253,12 @@ function AktionZeile({ label, value, href, actionLabel, onChange }) {
           </a>
         )}
       </div>
+      <InlineSaveButton visible={showInlineSave} onSave={onInlineSave} saving={inlineSaving} />
     </div>
   )
 }
 
-function KontaktAktionen({ vertrag, onChange }) {
+function KontaktAktionen({ vertrag, onChange, showSaveFor, onInlineSave, inlineSaving, isDirty }) {
   const [copyStatus, setCopyStatus] = useState(null)
   const [entsperrtBis, setEntsperrtBis] = useState(() => Number(sessionStorage.getItem('archivy_secret_unlock_until_v2') || 0))
   const telefon = ersterWert(vertrag.telefon, vertrag.Telefon)
@@ -1205,12 +1334,12 @@ function KontaktAktionen({ vertrag, onChange }) {
 
   return (
     <div style={{ marginBottom: T.sp3 }}>
-      <Field label="Adresse" value={ersterWert(vertrag.kontakt, vertrag.Kontakt)} multiline onChange={v => onChange('kontakt', v)} />
-      <AktionZeile label="Telefon" value={telefon} href={telefonHref(telefon)} actionLabel="Anrufen" onChange={v => onChange('telefon', v)} />
-      <AktionZeile label="Mobil" value={mobil} href={telefonHref(mobil)} actionLabel="Anrufen" onChange={v => onChange('mobil', v)} />
-      <AktionZeile label="Fax" value={fax} href={faxHref(fax)} actionLabel="Faxen" onChange={v => onChange('fax', v)} />
-      <AktionZeile label="E-Mail" value={email} href={mailHref(email)} actionLabel="E-Mail" onChange={v => onChange('email', v)} />
-      <AktionZeile label="Webseite" value={webseite} href={webHref(webseite)} actionLabel="Öffnen" onChange={v => onChange('webseite', v)} />
+      <Field label="Adresse" value={ersterWert(vertrag.kontakt, vertrag.Kontakt)} multiline onChange={v => onChange('kontakt', v)} showInlineSave={showSaveFor?.('kontakt')} onInlineSave={onInlineSave} inlineSaving={inlineSaving} isDirty={isDirty?.('kontakt')} />
+      <AktionZeile label="Telefon" value={telefon} href={telefonHref(telefon)} actionLabel="Anrufen" onChange={v => onChange('telefon', v)} showInlineSave={showSaveFor?.('telefon')} onInlineSave={onInlineSave} inlineSaving={inlineSaving} isDirty={isDirty?.('telefon')} />
+      <AktionZeile label="Mobil" value={mobil} href={telefonHref(mobil)} actionLabel="Anrufen" onChange={v => onChange('mobil', v)} showInlineSave={showSaveFor?.('mobil')} onInlineSave={onInlineSave} inlineSaving={inlineSaving} isDirty={isDirty?.('mobil')} />
+      <AktionZeile label="Fax" value={fax} href={faxHref(fax)} actionLabel="Faxen" onChange={v => onChange('fax', v)} showInlineSave={showSaveFor?.('fax')} onInlineSave={onInlineSave} inlineSaving={inlineSaving} isDirty={isDirty?.('fax')} />
+      <AktionZeile label="E-Mail" value={email} href={mailHref(email)} actionLabel="E-Mail" onChange={v => onChange('email', v)} showInlineSave={showSaveFor?.('email')} onInlineSave={onInlineSave} inlineSaving={inlineSaving} isDirty={isDirty?.('email')} />
+      <AktionZeile label="Webseite" value={webseite} href={webHref(webseite)} actionLabel="Öffnen" onChange={v => onChange('webseite', v)} showInlineSave={showSaveFor?.('webseite')} onInlineSave={onInlineSave} inlineSaving={inlineSaving} isDirty={isDirty?.('webseite')} />
       <div style={{ marginBottom: T.sp2, display: 'flex', justifyContent: 'flex-end' }}>
         <button
           type="button"
@@ -1227,6 +1356,10 @@ function KontaktAktionen({ vertrag, onChange }) {
         onChange={v => onChange('zugang', v)}
         onCopy={() => merkeWert('zugang', zugang)}
         status={copyStatus?.key === 'zugang' ? copyStatus : null}
+        showInlineSave={showSaveFor?.('zugang')}
+        onInlineSave={onInlineSave}
+        inlineSaving={inlineSaving}
+        isDirty={isDirty?.('zugang')}
       />
       <SecretZeile
         label="Passwort"
@@ -1235,12 +1368,16 @@ function KontaktAktionen({ vertrag, onChange }) {
         onChange={v => onChange('passwort', v)}
         onCopy={() => merkeWert('passwort', passwort)}
         status={copyStatus?.key === 'passwort' ? copyStatus : null}
+        showInlineSave={showSaveFor?.('passwort')}
+        onInlineSave={onInlineSave}
+        inlineSaving={inlineSaving}
+        isDirty={isDirty?.('passwort')}
       />
     </div>
   )
 }
 
-function SecretZeile({ label, rawValue, onChange, onCopy, status, type = 'text' }) {
+function SecretZeile({ label, rawValue, onChange, onCopy, status, type = 'text', showInlineSave = false, onInlineSave, inlineSaving = false, isDirty = false }) {
   const [revealed, setRevealed] = useState(false)
   const hasValue = String(rawValue ?? '').trim() !== ''
 
@@ -1252,24 +1389,15 @@ function SecretZeile({ label, rawValue, onChange, onCopy, status, type = 'text' 
 
   return (
     <div style={{ marginBottom: T.sp2 }}>
-      <div style={{ fontSize: 12, color: T.textMuted, fontWeight: 600 }}>{label}</div>
+      <LabelRow label={label} isDirty={isDirty} />
       <div style={{ marginTop: T.sp1, display: 'grid', gridTemplateColumns: '1fr auto auto auto', alignItems: 'end', gap: T.sp2 }}>
-        {revealed ? (
-          <div
-            key="revealed"
-            style={{ width: '100%', minWidth: 0, padding: '2px 0', borderBottom: `1px solid ${T.border}`, color: T.textMain, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
-          >
-            {rawValue || '—'}
-          </div>
-        ) : (
-          <input
-            key="masked"
-            type="password"
-            value={String(rawValue ?? '')}
-            onChange={e => onChange(e.target.value)}
-            style={{ width: '100%', minWidth: 0, padding: '2px 0', border: 'none', borderBottom: `1px solid ${T.border}`, background: 'transparent', outline: 'none', borderRadius: 0 }}
-          />
-        )}
+        <input
+          key={revealed ? 'revealed' : 'masked'}
+          type={revealed ? 'text' : type}
+          value={String(rawValue ?? '')}
+          onChange={e => onChange(e.target.value)}
+          style={{ width: '100%', minWidth: 0, padding: '2px 0', border: 'none', borderBottom: `1px solid ${T.border}`, background: 'transparent', outline: 'none', borderRadius: 0 }}
+        />
         {hasValue ? (
           <button
             type="button"
@@ -1322,6 +1450,7 @@ function SecretZeile({ label, rawValue, onChange, onCopy, status, type = 'text' 
           </span>
         ) : null}
       </div>
+      <InlineSaveButton visible={showInlineSave} onSave={onInlineSave} saving={inlineSaving} />
     </div>
   )
 }
@@ -1388,11 +1517,31 @@ function ownerVarianten(ownerId) {
   const raw = String(ownerId ?? '').trim()
   if (!raw || raw === '__all__') return []
 
-  // Keep combined owners together: nicole-stefan <-> nicole+stefan
-  const plus = raw.replace(/-/g, '+')
-  const dash = raw.replace(/\+/g, '-')
+  const ids = new Set()
+  const addForms = (value) => {
+    const v = String(value ?? '').trim()
+    if (!v) return
+    ids.add(v)
+    ids.add(v.toLowerCase())
 
-  return [...new Set([raw, plus, dash])]
+    const plus = v.replace(/-/g, '+')
+    const dash = v.replace(/\+/g, '-')
+    ids.add(plus)
+    ids.add(dash)
+    ids.add(plus.toLowerCase())
+    ids.add(dash.toLowerCase())
+  }
+
+  addForms(raw)
+
+  const teile = raw.split(/[+-]/).map(v => v.trim()).filter(Boolean)
+  if (teile.length > 1) {
+    for (const teil of teile) addForms(teil)
+    addForms(teile.join('+'))
+    addForms(teile.join('-'))
+  }
+
+  return [...ids]
 }
 
 function LogoPreview({ vertrag, logoFehler, setLogoFehler }) {
@@ -1485,6 +1634,16 @@ function cleanText(value) {
   return text === '' ? null : text
 }
 
+function sameDirtyValue(a, b) {
+  if (a == null && b == null) return true
+  if (typeof a === 'number' || typeof b === 'number') {
+    const na = Number(a)
+    const nb = Number(b)
+    if (Number.isFinite(na) && Number.isFinite(nb)) return na === nb
+  }
+  return String(a ?? '') === String(b ?? '')
+}
+
 function cleanNumber(value) {
   if (value == null || value === '') return null
   const text = String(value).trim()
@@ -1492,7 +1651,6 @@ function cleanNumber(value) {
   if (!normalized) return null
   const num = Number(normalized)
   if (!Number.isFinite(num)) return null
-  if (Number.isInteger(num) && num >= 10000) return num / 100
   return num
 }
 
@@ -1555,7 +1713,7 @@ function formatDateHuman(value) {
 
 function formatCurrencyDisplay(value) {
   if (value == null || Number.isNaN(Number(value))) return '—'
-  return Number(value).toLocaleString('de-AT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return Number(value).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 function berechneKostenJahr(ratenProJahr, kostenRate) {
@@ -1568,7 +1726,7 @@ function berechneKostenJahr(ratenProJahr, kostenRate) {
 function formatCurrencyInput(value) {
   const num = cleanNumber(value)
   if (num == null) return ''
-  return Number(num).toLocaleString('de-AT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return Number(num).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 function parseCurrencyInput(value) {
