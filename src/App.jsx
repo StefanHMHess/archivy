@@ -35,6 +35,7 @@ export default function App() {
   const headerRef = useRef(null)
   const navRef = useRef(null)
   const [stickyOffsets, setStickyOffsets] = useState({ header: 0, nav: 0 })
+  const mainTopPadding = aktiv === 'vertraege' ? '6px' : 'clamp(12px, 3vw, 24px)'
 
   function openVorgang(id, ids = []) {
     if (!id) return
@@ -157,7 +158,9 @@ export default function App() {
         color: T.textOnTeal,
         padding: `clamp(8px, 2vw, ${T.sp3}) clamp(10px, 3vw, ${T.sp5})`,
         paddingTop: `calc(clamp(8px, 2vw, ${T.sp3}) + env(safe-area-inset-top))`,
-        position: 'sticky',
+        position: 'fixed',
+        left: 0,
+        right: 0,
         top: 0,
         zIndex: 80,
         display: 'flex',
@@ -255,7 +258,9 @@ export default function App() {
 
       <nav ref={navRef} style={{
         background: T.surface,
-        position: 'sticky',
+        position: 'fixed',
+        left: 0,
+        right: 0,
         top: stickyOffsets.header,
         zIndex: 70,
         display: 'flex',
@@ -284,7 +289,9 @@ export default function App() {
         ))}
       </nav>
 
-      <main style={{ flex: 1, padding: 'clamp(12px, 3vw, 24px)', maxWidth: 1200, margin: '0 auto', width: '100%' }}>
+      <div style={{ height: stickyOffsets.header + stickyOffsets.nav }} />
+
+      <main style={{ flex: 1, padding: `${mainTopPadding} clamp(12px, 3vw, 24px) clamp(12px, 3vw, 24px)`, maxWidth: 1200, margin: '0 auto', width: '100%' }}>
         {selectedVorgangId ? (
           <VorgangDetail
             vorgang_id={selectedVorgangId}
