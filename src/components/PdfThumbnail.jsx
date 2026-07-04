@@ -6,7 +6,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.vers
 
 const BUCKET = 'archivy-dokumente'
 
-export default function PdfThumbnail({ pfad, width = 60 }) {
+export default function PdfThumbnail({ pfad, width = 60, onClick }) {
   const [url, setUrl] = useState(null)
   const [fehler, setFehler] = useState(false)
   const [sichtbar, setSichtbar] = useState(false)
@@ -34,8 +34,17 @@ export default function PdfThumbnail({ pfad, width = 60 }) {
   const h = Math.round(width * 1.414)
 
   return (
-    <div
+    <button
+      type="button"
       ref={ref}
+      onClick={e => {
+        e.stopPropagation()
+        if (typeof onClick !== 'function') {
+          e.preventDefault()
+          return
+        }
+        onClick(url || pfad)
+      }}
       style={{
         width,
         height: h,
@@ -46,27 +55,36 @@ export default function PdfThumbnail({ pfad, width = 60 }) {
         display: 'grid',
         placeItems: 'center',
         flexShrink: 0,
+        position: 'relative',
+        cursor: url ? 'zoom-in' : 'default',
+        touchAction: 'manipulation',
+        padding: 0,
       }}
+      aria-label="PDF vergrößern"
+      title={url ? 'Klicken für Vollansicht' : 'PDF wird geladen'}
     >
       {!pfad || fehler ? (
         <span style={{ fontSize: 20, opacity: 0.4 }}>📄</span>
       ) : !url ? (
         <span style={{ fontSize: 11, color: '#94a3b8' }}>…</span>
       ) : (
-        <Document
-          file={url}
-          loading={<span style={{ fontSize: 11, color: '#94a3b8' }}>…</span>}
-          error={<span style={{ fontSize: 20, opacity: 0.4 }}>📄</span>}
-          onLoadError={() => setFehler(true)}
-        >
-          <Page
-            pageNumber={1}
-            width={width}
-            renderTextLayer={false}
-            renderAnnotationLayer={false}
-          />
-        </Document>
+        <>
+          <Document
+            file={url}
+            loading={<span style={{ fontSize: 11, color: '#94a3b8' }}>…</span>}
+            error={<span style={{ fontSize: 20, opacity: 0.4 }}>📄</span>}
+            onLoadError={() => setFehler(true)}
+          >
+            <Page
+              pageNumber={1}
+              width={width}
+              renderTextLayer={false}
+              renderAnnotationLayer={false}
+            />
+          </Document>
+          <span style={{ position: 'absolute', right: 6, bottom: 6, background: 'rgba(15, 23, 42, 0.72)', color: '#fff', borderRadius: 999, padding: '2px 6px', fontSize: 11, fontWeight: 700, pointerEvents: 'none' }}>🔍</span>
+        </>
       )}
-    </div>
+    </button>
   )
 }

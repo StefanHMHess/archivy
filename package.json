@@ -1,7 +1,7 @@
 {
   "name": "archivy",
   "private": true,
-  "version": "0.1.1",
+  "version": "1.33",
   "type": "module",
   "scripts": {
     "dev": "vite",

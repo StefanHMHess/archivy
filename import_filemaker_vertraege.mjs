@@ -165,7 +165,8 @@ function toNumeric(value) {
   const normalized = String(value).replace(/\./g, '').replace(',', '.').replace(/[^0-9.-]/g, '')
   if (!normalized) return null
   const num = Number(normalized)
-  return Number.isFinite(num) ? num : null
+  if (!Number.isFinite(num)) return null
+  return num
 }
 
 function toDate(value) {

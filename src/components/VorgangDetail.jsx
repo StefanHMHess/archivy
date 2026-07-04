@@ -23,7 +23,7 @@ function useIsMobile() {
   return isMobile
 }
 
-export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate, onClose }) {
+export default function VorgangDetail({ vorgang_id, vorgangIds = [], stickyTop = 0, onNavigate, onClose }) {
   const containerRef = useRef(null)
   const touchStartX = useRef(0)
   const isMobile = useIsMobile()
@@ -42,6 +42,7 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
   const [dateiUrl, setDateiUrl] = useState(null)
   const [fotoUrl, setFotoUrl] = useState(null)
   const [pdfVollbild, setPdfVollbild] = useState(false)
+  const [fotoVollbild, setFotoVollbild] = useState(false)
   const [pdfRotation, setPdfRotation] = useState(0)
 
   useEffect(() => {
@@ -215,6 +216,31 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
     }
   }
 
+  async function handleFotoLoeschen() {
+    if (!vorgang?.foto_pfad) return
+    const ok = window.confirm('Foto wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')
+    if (!ok) return
+
+    setUploading(true)
+    try {
+      await deleteFile(BUCKET, vorgang.foto_pfad)
+      const { error } = await supabase
+        .from('vorgaenge')
+        .update({ foto_pfad: null, app_modified_at: new Date().toISOString(), sync_state: 'geaendert' })
+        .eq('vorgang_id', vorgang_id)
+
+      if (error) throw error
+      setVorgang(prev => ({ ...prev, foto_pfad: null }))
+      setEntwurf(prev => ({ ...prev, foto_pfad: null }))
+      setFotoUrl(null)
+      setFotoVollbild(false)
+    } catch (err) {
+      setFehler(err.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
   async function handleDateiLoeschen() {
     if (!vorgang?.datei_pfad) return
     const ok = window.confirm('PDF wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')
@@ -327,6 +353,11 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
     window.open(dateiUrl, '_blank', 'noopener,noreferrer')
   }
 
+  function oeffneFotoVollbild() {
+    if (!fotoUrl) return
+    setFotoVollbild(true)
+  }
+
   return (
     <div ref={containerRef} style={{ maxWidth: 1000, margin: '0 auto' }}>
       {/* PDF Vollbild-Overlay */}
@@ -363,8 +394,37 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
           </button>
         </div>
       )}
+      {fotoVollbild && fotoUrl && (
+        <div
+          onClick={() => setFotoVollbild(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)',
+            zIndex: 1000, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            overflow: 'auto', padding: '24px 16px',
+            cursor: 'zoom-out',
+          }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ cursor: 'default', maxWidth: '100%', maxHeight: '100%' }}>
+            <img
+              src={fotoUrl}
+              alt="Foto in Vollansicht"
+              style={{ maxWidth: 'min(94vw, 1200px)', maxHeight: '88vh', objectFit: 'contain', display: 'block', borderRadius: 12, boxShadow: '0 24px 80px rgba(0,0,0,0.35)' }}
+            />
+          </div>
+          <button
+            onClick={() => setFotoVollbild(false)}
+            style={{
+              position: 'fixed', top: 16, right: 16, background: '#fff', border: 'none',
+              borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 16,
+            }}
+          >
+            ✕ Schließen
+          </button>
+        </div>
+      )}
       {/* Header */}
-      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', marginBottom: T.sp2, position: 'sticky', top: 0, zIndex: 10, background: T.bg, paddingTop: 6, paddingBottom: 6, gap: isMobile ? T.sp2 : T.sp1 }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', marginBottom: T.sp2, position: 'sticky', top: stickyTop, zIndex: 65, background: T.bg, paddingTop: 6, paddingBottom: 6, gap: isMobile ? T.sp2 : T.sp1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: T.sp2, flex: 1, minWidth: 0 }}>
           {logoSrc ? (
             <img
@@ -481,7 +541,7 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
               style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: '6px 10px', cursor: 'pointer', fontWeight: 600, minHeight: 40, display: 'flex', alignItems: 'center', fontSize: 16 }}
               title="Zurück"
             >
-              ✕
+              ← Zurück
             </button>
         </div>
       </div>
@@ -615,7 +675,25 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
               }}
             >
               {fotoUrl ? (
-                <img src={fotoUrl} alt="Foto" style={{ maxWidth: '100%', maxHeight: 300, borderRadius: T.r2 }} />
+                <button
+                  type="button"
+                  onClick={oeffneFotoVollbild}
+                  style={{
+                    position: 'relative',
+                    border: 'none',
+                    background: 'transparent',
+                    padding: 0,
+                    cursor: 'zoom-in',
+                    display: 'inline-block',
+                    maxWidth: '100%',
+                  }}
+                  title="Klicken für Vollansicht"
+                >
+                  <img src={fotoUrl} alt="Foto" style={{ maxWidth: '100%', maxHeight: 300, borderRadius: T.r2, display: 'block' }} />
+                  <span style={{ position: 'absolute', right: 8, bottom: 8, background: 'rgba(15, 23, 42, 0.72)', color: '#fff', borderRadius: 999, padding: '4px 8px', fontSize: 12, fontWeight: 700, pointerEvents: 'none' }}>
+                    🔍
+                  </span>
+                </button>
               ) : (
                 <p style={{ color: T.textMuted, textAlign: 'center' }}>Kein Foto hochgeladen</p>
               )}
@@ -631,6 +709,26 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], onNavigate,
               {uploading ? 'Wird hochgeladen…' : '📸 Foto hochladen'}
               <input type="file" accept="image/*" capture="environment" onChange={handleFotoUpload} disabled={uploading} style={{ display: 'none' }} />
             </label>
+            {daten.foto_pfad && (
+              <button
+                onClick={handleFotoLoeschen}
+                disabled={uploading}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  marginTop: T.sp2,
+                  padding: `${T.sp2} ${T.sp3}`,
+                  background: '#fff1f2',
+                  color: '#b91c1c',
+                  border: `1px solid ${T.border}`,
+                  borderRadius: T.r2,
+                  cursor: uploading ? 'not-allowed' : 'pointer',
+                  fontWeight: 600,
+                }}
+              >
+                Foto löschen
+              </button>
+            )}
           </div>
         </div>
       </div>

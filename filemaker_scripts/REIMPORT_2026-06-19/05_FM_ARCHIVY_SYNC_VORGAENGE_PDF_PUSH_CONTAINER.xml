@@ -26,7 +26,7 @@
 <Name>$upsert_url</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA["05-2026-06-27.26-jsonguard"]]></Calculation></Value>
+<Value><Calculation><![CDATA["05-2026-07-02.25-owner-fallback"]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$script_version</Name>
 </Step>
@@ -657,7 +657,27 @@ Let([
 <Name>$owner_rel</Name>
 </Step>
 <Step enable="True" id="141" name="Set Variable">
-<Value><Calculation><![CDATA[Lower ( TrimAll ( Substitute ( GetAsText ( $owner_from_contract ) ; Char ( 0 ) ; "" ) ; 1 ; 1 ) )]]></Calculation></Value>
+<Value><Calculation><![CDATA[
+Let([
+	odb = Lower ( TrimAll ( Substitute ( GetAsText ( $owner_from_db ) ; Char ( 0 ) ; "" ) ; 1 ; 1 ) ) ;
+	ofm = Lower ( TrimAll ( Substitute ( GetAsText ( $owner_from_contract ) ; Char ( 0 ) ; "" ) ; 1 ; 1 ) ) ;
+	osbv = Lower ( TrimAll ( Substitute ( GetAsText ( $owner_from_vertrag_api ) ; Char ( 0 ) ; "" ) ; 1 ; 1 ) ) ;
+	oall = Lower ( TrimAll ( Substitute ( GetAsText ( $owner_from_contracts_all ) ; Char ( 0 ) ; "" ) ; 1 ; 1 ) ) ;
+	omk = Lower ( TrimAll ( Substitute ( GetAsText ( $owner_from_marked ) ; Char ( 0 ) ; "" ) ; 1 ; 1 ) ) ;
+	ocfg0 = Lower ( TrimAll ( Substitute ( GetAsText ( $owner_id ) ; Char ( 0 ) ; "" ) ; 1 ; 1 ) ) ;
+	ocfg = Case ( ocfg0 = "unbekannt" or Left ( ocfg0 ; 1 ) = "*" or Left ( ocfg0 ; 1 ) = "?" or ocfg0 = "null" ; "" ; ocfg0 )
+] ;
+	Case (
+		not IsEmpty ( odb ) and odb <> "null" and Left ( odb ; 1 ) <> "*" and Left ( odb ; 1 ) <> "?" ; odb ;
+		not IsEmpty ( ofm ) and ofm <> "null" and Left ( ofm ; 1 ) <> "*" and Left ( ofm ; 1 ) <> "?" ; ofm ;
+		not IsEmpty ( osbv ) and osbv <> "null" and Left ( osbv ; 1 ) <> "*" and Left ( osbv ; 1 ) <> "?" ; osbv ;
+		not IsEmpty ( oall ) and oall <> "null" and Left ( oall ; 1 ) <> "*" and Left ( oall ; 1 ) <> "?" ; oall ;
+		not IsEmpty ( omk ) and omk <> "null" and Left ( omk ; 1 ) <> "*" and Left ( omk ; 1 ) <> "?" ; omk ;
+		not IsEmpty ( ocfg ) ; ocfg ;
+		""
+	)
+)
+]]></Calculation></Value>
 <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
 <Name>$owner_for_row</Name>
 </Step>
@@ -861,12 +881,9 @@ PatternCount(d; "/") = 2; Let([
 JSONSetElement ( "{}" ;
 [ "vorgang_id" ; $vorgang_id ; JSONString ] ;
 [ "vertragsbesitzer_id" ; $owner_for_row ; JSONString ] ;
-[ "vertrag" ; Case ( PatternCount ( "¶" & $marked_list & "¶" ; "¶" & $vertrag_key & "¶" ) > 0 ; $vertrag_raw ; "" ) ; JSONString ] ;
-[ "vorgang_art" ; $art ; JSONString ] ;
-[ "kurzbeschreibung" ; $art ; JSONString ] ;
-[ "datum" ; $datum_iso ; If ( IsEmpty ( $datum_iso ) ; JSONNull ; JSONString ) ] ;
-[ "frist" ; $frist_iso ; If ( IsEmpty ( $frist_iso ) ; JSONNull ; JSONString ) ] ;
+[ "vertrag" ; $vertrag_raw ; JSONString ] ;
 [ "datei_pfad" ; $storage_path ; JSONString ] ;
+[ "app_modified_at" ; $ts_iso ; JSONString ] ;
 [ "sync_state" ; "geaendert" ; JSONString ]
 )
 ]]></Calculation></Value>

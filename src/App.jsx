@@ -296,6 +296,7 @@ export default function App() {
           <VorgangDetail
             vorgang_id={selectedVorgangId}
             vorgangIds={vorgangIds}
+            stickyTop={stickyOffsets.header + stickyOffsets.nav}
             onNavigate={(id) => setSelectedVorgangId(id)}
             onClose={() => setSelectedVorgangId(null)}
           />

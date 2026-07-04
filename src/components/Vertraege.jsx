@@ -8,6 +8,7 @@ const LIST_CACHE = new Map()
 const LOGO_CACHE = new Map()
 const FILTERS_STORAGE_PREFIX = 'archivy.vertraege.filters.v1'
 const GROUPEN_STORAGE_PREFIX = 'archivy.vertraege.gruppen.v1'
+const UNTERGRUPPEN_STORAGE_PREFIX = 'archivy.vertraege.untergruppen.v1'
 const DEFAULT_GROUPEN = [
   'Abo',
   'Betreuung',
@@ -42,9 +43,11 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
   const ownerIds = useMemo(() => ownerVarianten(owner?.id), [owner?.id])
   const filterStorageKey = useMemo(() => `${FILTERS_STORAGE_PREFIX}:${owner?.id ?? '__all__'}`, [owner?.id])
   const gruppenStorageKey = useMemo(() => `${GROUPEN_STORAGE_PREFIX}:${owner?.id ?? '__all__'}`, [owner?.id])
+  const untergruppenStorageKey = useMemo(() => `${UNTERGRUPPEN_STORAGE_PREFIX}:${owner?.id ?? '__all__'}`, [owner?.id])
   const [zeilen, setZeilen] = useState([])
   const [suche, setSuche] = useState('')
   const [gruppen, setGruppen] = useState([])
+  const [untergruppen, setUntergruppen] = useState([])
   const [gruppeFilter, setGruppeFilter] = useState('__all__')
   const [sortierung, setSortierung] = useState('firma_asc')
   const [laden, setLaden] = useState(true)
@@ -54,6 +57,12 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
   const [reloadToken, setReloadToken] = useState(0)
   const [gruppenEditorOpen, setGruppenEditorOpen] = useState(false)
   const [gruppenEditorText, setGruppenEditorText] = useState('')
+  const [untergruppenEditorOpen, setUntergruppenEditorOpen] = useState(false)
+  const [untergruppenEditorText, setUntergruppenEditorText] = useState('')
+  const [neuVertragOpen, setNeuVertragOpen] = useState(false)
+  const [neuFirma, setNeuFirma] = useState('Neuer Vertrag')
+  const [neuGruppe, setNeuGruppe] = useState('')
+  const [neuUntergruppe, setNeuUntergruppe] = useState('')
   const [filtersHydrated, setFiltersHydrated] = useState(false)
   const [hydratedFilterKey, setHydratedFilterKey] = useState(null)
   const toolbarRef = useRef(null)
@@ -68,7 +77,7 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
     updateToolbarHeight()
     window.addEventListener('resize', updateToolbarHeight)
     return () => window.removeEventListener('resize', updateToolbarHeight)
-  }, [suche, gruppeFilter, sortierung, gruppen.length, busy])
+  }, [suche, gruppeFilter, sortierung, gruppen.length, untergruppen.length, busy])
 
   useEffect(() => {
     if (!owner) return
@@ -109,8 +118,18 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
 
   useEffect(() => {
     if (!owner) return
+    setUntergruppen(loadUntergruppenState(untergruppenStorageKey))
+  }, [owner, untergruppenStorageKey])
+
+  useEffect(() => {
+    if (!owner) return
     saveGruppenState(gruppenStorageKey, gruppen)
   }, [owner, gruppenStorageKey, gruppen])
+
+  useEffect(() => {
+    if (!owner) return
+    saveUntergruppenState(untergruppenStorageKey, untergruppen)
+  }, [owner, untergruppenStorageKey, untergruppen])
 
   useEffect(() => {
     if (!owner || !filtersHydrated || hydratedFilterKey !== filterStorageKey) return
@@ -130,7 +149,7 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
       const sortDef = SORTIERUNGEN[sortierung] || SORTIERUNGEN.firma_asc
       let query = supabase
         .from('vertraege')
-        .select('id, vertrag_id, gruppe, firma, beschreibung, vertragsnummer, kosten_monatlich, kosten_jaehrlich, vertrags_ablauf, aktiv')
+        .select('id, vertrag_id, gruppe, untergruppe, firma, beschreibung, vertragsnummer, kosten_monatlich, kosten_jaehrlich, vertrags_ablauf, aktiv')
         .order(sortDef.column, { ascending: sortDef.ascending })
         .limit(PAGE)
 
@@ -242,6 +261,11 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
     setGruppenEditorOpen(true)
   }
 
+  function bearbeiteUntergruppen() {
+    setUntergruppenEditorText((untergruppen ?? []).join('\n'))
+    setUntergruppenEditorOpen(true)
+  }
+
   function resetFilter() {
     setSuche('')
     setGruppeFilter('__all__')
@@ -268,11 +292,41 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
     setGruppenEditorOpen(false)
   }
 
-  async function neuVertrag() {
+  function speichereUntergruppen() {
+    const liste = [...new Set(
+      String(untergruppenEditorText)
+        .split(/\r?\n/)
+        .map(v => v.trim())
+        .filter(Boolean)
+    )]
+
+    setUntergruppen(liste)
+    setUntergruppenEditorOpen(false)
+  }
+
+  function neuVertrag() {
     if (!owner || owner.id === '__all__') {
       alert('Bitte einen konkreten Inhaber wählen, um einen Vertrag anzulegen.')
       return
     }
+
+    setNeuFirma('Neuer Vertrag')
+    const standardGruppe = gruppeFilter !== '__all__' ? gruppeFilter : (gruppen[0] || '')
+    setNeuGruppe(standardGruppe)
+    setNeuUntergruppe('')
+    setNeuVertragOpen(true)
+  }
+
+  async function bestaetigeNeuVertrag() {
+    if (!owner || owner.id === '__all__') {
+      alert('Bitte einen konkreten Inhaber wählen, um einen Vertrag anzulegen.')
+      return
+    }
+
+    const firma = String(neuFirma || '').trim() || 'Neuer Vertrag'
+    const gruppe = String(neuGruppe || '').trim()
+    const untergruppe = String(neuUntergruppe || '').trim()
+
     setBusy(true)
     const now = new Date().toISOString()
     const vertrag_id = `archivy-${Date.now()}`
@@ -282,7 +336,9 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
       .insert({
         vertrag_id,
         vertragsbesitzer_id: owner.id,
-        firma: 'Neuer Vertrag',
+        firma,
+        gruppe: gruppe || null,
+        untergruppe: untergruppe || null,
         aktiv: true,
         modified_by: 'archivy',
         sync_state: 'geaendert',
@@ -296,6 +352,12 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
       alert(`Vertrag konnte nicht angelegt werden: ${error.message}`)
       return
     }
+
+    if (untergruppe && !untergruppen.includes(untergruppe)) {
+      setUntergruppen(prev => [...prev, untergruppe])
+    }
+
+    setNeuVertragOpen(false)
 
     setReloadToken(t => t + 1)
     LIST_CACHE.clear()
@@ -365,75 +427,89 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
       <div
         ref={toolbarRef}
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: T.sp2,
           position: 'fixed',
           top: stickyTop,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 'min(1200px, calc(100vw - 24px))',
+          left: 0,
+          right: 0,
           zIndex: 65,
           background: T.bg,
-          paddingLeft: T.sp3,
-          paddingRight: T.sp3,
-          boxSizing: 'border-box',
-          paddingTop: 2,
-          paddingBottom: 2,
         }}
       >
-        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, lineHeight: 1.1 }}>Verträge</h1>
-        <input
-          value={suche}
-          onChange={e => setSuche(e.target.value)}
-          placeholder="Firma, Beschreibung, Nr…"
+        <div
           style={{
-            flex: '1 1 220px', maxWidth: 260,
-            border: `1px solid ${T.border}`, borderRadius: T.r2,
-            padding: `${T.sp2} ${T.sp3}`, outline: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: T.sp2,
+            width: '100%',
+            maxWidth: 1200,
+            margin: '0 auto',
+            paddingLeft: 'clamp(12px, 3vw, 24px)',
+            paddingRight: 'clamp(12px, 3vw, 24px)',
+            boxSizing: 'border-box',
+            paddingTop: 2,
+            paddingBottom: 2,
           }}
-        />
-        <select
-          value={gruppeFilter}
-          onChange={e => setGruppeFilter(e.target.value)}
-          style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, maxWidth: 170 }}
         >
-          <option value="__all__">Alle Gruppen</option>
-          {gruppen.map(g => <option key={g} value={g}>{g}</option>)}
-        </select>
-        <button
-          type="button"
-          onClick={bearbeiteGruppen}
-          style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: 'pointer', whiteSpace: 'nowrap' }}
-        >
-          Gruppen bearbeiten
-        </button>
-        <button
-          type="button"
-          onClick={resetFilter}
-          style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: 'pointer', whiteSpace: 'nowrap' }}
-          title="Suche, Gruppenfilter und Sortierung zurücksetzen"
-        >
-          Filter zurücksetzen
-        </button>
-        <select
-          value={sortierung}
-          onChange={e => setSortierung(e.target.value)}
-          style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, maxWidth: 190 }}
-        >
-          {Object.entries(SORTIERUNGEN).map(([key, def]) => (
-            <option key={key} value={key}>{def.label}</option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={neuVertrag}
-          disabled={busy}
-          style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: busy ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
-        >
-          + Neuer Vertrag
-        </button>
+          <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, marginLeft: 3, lineHeight: 1.1 }}>Verträge</h1>
+          <input
+            value={suche}
+            onChange={e => setSuche(e.target.value)}
+            placeholder="Firma, Beschreibung, Nr…"
+            style={{
+              flex: '1 1 220px', maxWidth: 260,
+              border: `1px solid ${T.border}`, borderRadius: T.r2,
+              padding: `${T.sp2} ${T.sp3}`, outline: 'none',
+            }}
+          />
+          <select
+            value={gruppeFilter}
+            onChange={e => setGruppeFilter(e.target.value)}
+            style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, maxWidth: 170 }}
+          >
+            <option value="__all__">Alle Gruppen</option>
+            {gruppen.map(g => <option key={g} value={g}>{g}</option>)}
+          </select>
+          <button
+            type="button"
+            onClick={bearbeiteGruppen}
+            style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >
+            Gruppen bearbeiten
+          </button>
+          <button
+            type="button"
+            onClick={bearbeiteUntergruppen}
+            style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >
+            Untergruppen bearbeiten
+          </button>
+          <button
+            type="button"
+            onClick={resetFilter}
+            style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: 'pointer', whiteSpace: 'nowrap' }}
+            title="Suche, Gruppenfilter und Sortierung zurücksetzen"
+          >
+            Filter zurücksetzen
+          </button>
+          <select
+            value={sortierung}
+            onChange={e => setSortierung(e.target.value)}
+            style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, maxWidth: 190 }}
+          >
+            {Object.entries(SORTIERUNGEN).map(([key, def]) => (
+              <option key={key} value={key}>{def.label}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={neuVertrag}
+            disabled={busy}
+            style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: busy ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+          >
+            + Neuer Vertrag
+          </button>
+        </div>
       </div>
 
       <div style={{ height: toolbarHeight + 8 }} />
@@ -483,7 +559,14 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
                   onClick={() => onSelectContract(v.vertrag_id, zeilen.map(z => z.vertrag_id))}
                   onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
                   onMouseLeave={e => e.currentTarget.style.background = ''}>
-                  <td className="vt-col-gruppe" style={{ padding: `${T.sp2} ${T.sp3}`, verticalAlign: 'top', whiteSpace: 'pre-line' }}>{normalizeGruppe(v.gruppe) ?? '—'}</td>
+                  <td className="vt-col-gruppe" style={{ padding: `${T.sp2} ${T.sp3}`, verticalAlign: 'top', whiteSpace: 'normal' }}>
+                    <div>{normalizeGruppe(v.gruppe) ?? '—'}</div>
+                    {cleanText(v.untergruppe) ? (
+                      <div style={{ marginTop: 2, fontSize: 12, color: T.textMuted, lineHeight: 1.25 }}>
+                        {cleanText(v.untergruppe)}
+                      </div>
+                    ) : null}
+                  </td>
                   <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap' }}>
                     <LogoCell logo={logoMap[normalisiereVertragId(v.vertrag_id)]} firma={v.firma} />
                   </td>
@@ -528,7 +611,7 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
             </tbody>
             <tfoot>
               <tr style={{ borderTop: `2px solid ${T.border}`, background: T.bgCard }}>
-                <td colSpan={5} style={{ padding: `${T.sp2} ${T.sp3}`, color: T.textMuted, fontWeight: 700, textAlign: 'right' }}>
+                <td colSpan={4} style={{ padding: `${T.sp2} ${T.sp3}`, color: T.textMuted, fontWeight: 700, textAlign: 'right' }}>
                   Summe
                 </td>
                 <td className="vt-col-kosten" style={{ padding: `${T.sp2} ${T.sp3}`, textAlign: 'right' }}>
@@ -610,6 +693,154 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
                 style={{ border: 'none', borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.primary, color: T.textOnTeal, cursor: 'pointer', fontWeight: 700 }}
               >
                 Speichern
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {untergruppenEditorOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.45)',
+            display: 'grid',
+            placeItems: 'center',
+            padding: T.sp4,
+            zIndex: 101,
+          }}
+          onClick={() => setUntergruppenEditorOpen(false)}
+        >
+          <div
+            style={{
+              width: 'min(680px, 100%)',
+              background: T.bgCard,
+              border: `1px solid ${T.border}`,
+              borderRadius: 12,
+              padding: T.sp4,
+              boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 style={{ marginTop: 0, marginBottom: T.sp2, fontSize: 18 }}>Untergruppen bearbeiten</h2>
+            <p style={{ marginTop: 0, marginBottom: T.sp3, color: T.textMuted }}>
+              Eine Untergruppe pro Zeile. Diese Liste gilt nur für den aktuellen Benutzer/Inhaber.
+            </p>
+            <textarea
+              value={untergruppenEditorText}
+              onChange={e => setUntergruppenEditorText(e.target.value)}
+              rows={18}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                border: `1px solid ${T.border}`,
+                borderRadius: T.r2,
+                padding: T.sp3,
+                font: 'inherit',
+                resize: 'vertical',
+                minHeight: 280,
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: T.sp2, marginTop: T.sp3, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setUntergruppenEditorOpen(false)}
+                style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: 'pointer' }}
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={speichereUntergruppen}
+                style={{ border: 'none', borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.primary, color: T.textOnTeal, cursor: 'pointer', fontWeight: 700 }}
+              >
+                Speichern
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {neuVertragOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.45)',
+            display: 'grid',
+            placeItems: 'center',
+            padding: T.sp4,
+            zIndex: 102,
+          }}
+          onClick={() => !busy && setNeuVertragOpen(false)}
+        >
+          <div
+            style={{
+              width: 'min(640px, 100%)',
+              background: T.bgCard,
+              border: `1px solid ${T.border}`,
+              borderRadius: 12,
+              padding: T.sp4,
+              boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 style={{ marginTop: 0, marginBottom: T.sp3, fontSize: 18 }}>Neuen Vertrag anlegen</h2>
+            <div style={{ display: 'grid', gap: T.sp3 }}>
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span style={{ fontSize: 12, color: T.textMuted, fontWeight: 600 }}>Firma</span>
+                <input
+                  value={neuFirma}
+                  onChange={e => setNeuFirma(e.target.value)}
+                  style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, outline: 'none' }}
+                />
+              </label>
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span style={{ fontSize: 12, color: T.textMuted, fontWeight: 600 }}>Gruppe</span>
+                <select
+                  value={neuGruppe}
+                  onChange={e => setNeuGruppe(e.target.value)}
+                  style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, outline: 'none' }}
+                >
+                  <option value="">—</option>
+                  {gruppen.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </label>
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span style={{ fontSize: 12, color: T.textMuted, fontWeight: 600 }}>Untergruppe</span>
+                <input
+                  value={neuUntergruppe}
+                  onChange={e => setNeuUntergruppe(e.target.value)}
+                  list="archivy-untergruppen-liste"
+                  placeholder="frei eingeben oder auswählen"
+                  style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, outline: 'none' }}
+                />
+                <datalist id="archivy-untergruppen-liste">
+                  {untergruppen.map(u => <option key={u} value={u} />)}
+                </datalist>
+              </label>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: T.sp2, marginTop: T.sp4, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setNeuVertragOpen(false)}
+                disabled={busy}
+                style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: busy ? 'not-allowed' : 'pointer' }}
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={bestaetigeNeuVertrag}
+                disabled={busy}
+                style={{ border: 'none', borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.primary, color: T.textOnTeal, cursor: busy ? 'not-allowed' : 'pointer', fontWeight: 700, opacity: busy ? 0.7 : 1 }}
+              >
+                {busy ? 'Anlegen…' : 'Anlegen'}
               </button>
             </div>
           </div>
@@ -894,5 +1125,27 @@ function saveGruppenState(key, gruppen) {
     window.localStorage.setItem(key, JSON.stringify(gruppen ?? []))
   } catch {
     // Ignore storage errors (private mode or quota exceeded).
+  }
+}
+
+function loadUntergruppenState(key) {
+  try {
+    const raw = window.localStorage.getItem(key)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    const liste = [...new Set(parsed.map(v => String(v ?? '').trim()).filter(Boolean))]
+    return liste
+  } catch {
+    return []
+  }
+}
+
+function saveUntergruppenState(key, untergruppen) {
+  try {
+    const liste = [...new Set((untergruppen ?? []).map(v => String(v ?? '').trim()).filter(Boolean))]
+    window.localStorage.setItem(key, JSON.stringify(liste))
+  } catch {
+    // ignore localStorage write failures
   }
 }

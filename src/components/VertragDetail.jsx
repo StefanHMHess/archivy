@@ -10,6 +10,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.vers
 const FIXED_SECRET_MASK = '••••••••••'
 const DEFAULT_ZAHLUNGSWEISEN = ['Abbuchung', 'Amex', 'Dauerauftrag', 'Mastercard', 'Eingang', 'Überweisungen']
 const DOKU_BUCKET = 'archivy-dokumente'
+const GROUPEN_STORAGE_PREFIX = 'archivy.vertraege.gruppen.v1'
 
 // Hook für responsive Design
 function useIsMobile() {
@@ -48,6 +49,8 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
   const [pdfVollbild, setPdfVollbild] = useState(false)
   const [pdfVollbildPages, setPdfVollbildPages] = useState(0)
   const [toolbarHeight, setToolbarHeight] = useState(0)
+  const [gruppenOptionen, setGruppenOptionen] = useState([])
+  const [untergruppenOptionen, setUntergruppenOptionen] = useState([])
   const dirtyFields = useMemo(() => {
     if (!vertrag || !entwurf) return new Set()
     const vorher = buildVertragPayload(vertrag, owner)
@@ -60,16 +63,37 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
     return dirty
   }, [entwurf, vertrag, owner])
   const hasUnsavedChanges = dirtyFields.size > 0
+  const zahlungsweisenOwnerId = useMemo(() => {
+    const contractOwner = cleanText(entwurf?.vertragsbesitzer_id ?? vertrag?.vertragsbesitzer_id)
+    if (contractOwner) return contractOwner
+
+    const selectedOwner = cleanText(owner?.id)
+    if (!selectedOwner || selectedOwner === '__all__' || /[+-]/.test(selectedOwner)) return null
+    return selectedOwner
+  }, [entwurf?.vertragsbesitzer_id, vertrag?.vertragsbesitzer_id, owner?.id])
+  const gruppenStorageKey = useMemo(() => {
+    if (!zahlungsweisenOwnerId) return null
+    return `${GROUPEN_STORAGE_PREFIX}:${zahlungsweisenOwnerId}`
+  }, [zahlungsweisenOwnerId])
+  const aktiveGruppe = useMemo(() => cleanText(entwurf?.gruppe), [entwurf?.gruppe])
 
   useEffect(() => {
+    const node = toolbarRef.current
+    if (!node) return
+
     const updateToolbarHeight = () => {
-      setToolbarHeight(toolbarRef.current?.offsetHeight ?? 0)
+      setToolbarHeight(node.offsetHeight ?? 0)
     }
 
     updateToolbarHeight()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateToolbarHeight) : null
+    ro?.observe(node)
     window.addEventListener('resize', updateToolbarHeight)
-    return () => window.removeEventListener('resize', updateToolbarHeight)
-  }, [isMobile, vertragId, vertrag?.firma, entwurf?.firma, vertragIds.length])
+    return () => {
+      ro?.disconnect()
+      window.removeEventListener('resize', updateToolbarHeight)
+    }
+  }, [stickyTop, isMobile, vertragId])
 
   useEffect(() => {
     const container = containerRef.current
@@ -97,7 +121,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
 
   useEffect(() => {
     async function ladeZahlungsweisen() {
-      if (!owner || owner.id === '__all__') {
+      if (!zahlungsweisenOwnerId) {
         setZahlungsweisen(DEFAULT_ZAHLUNGSWEISEN)
         return
       }
@@ -105,7 +129,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
       const { data, error } = await supabase
         .from('zahlungsweisen')
         .select('bezeichnung, sort_order, aktiv, vertragsbesitzer_id')
-        .eq('vertragsbesitzer_id', owner.id)
+        .eq('vertragsbesitzer_id', zahlungsweisenOwnerId)
         .eq('aktiv', true)
         .order('sort_order', { ascending: true })
         .order('bezeichnung', { ascending: true })
@@ -119,7 +143,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
     }
 
     ladeZahlungsweisen()
-  }, [owner?.id])
+  }, [zahlungsweisenOwnerId])
 
   useEffect(() => {
     async function ladenVertrag() {
@@ -200,6 +224,43 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
     }
     ladenVertrag()
   }, [vertragId, owner, owner?.id])
+
+  useEffect(() => {
+    const saved = loadGruppenOptionen(gruppenStorageKey)
+    const current = cleanText(entwurf?.gruppe)
+    const unique = [...new Set([...saved, ...(current ? [current] : [])])]
+    setGruppenOptionen(unique)
+  }, [gruppenStorageKey, entwurf?.gruppe])
+
+  useEffect(() => {
+    async function ladeUntergruppenOptionen() {
+      const gruppe = cleanText(aktiveGruppe)
+      if (!gruppe) {
+        setUntergruppenOptionen([])
+        return
+      }
+
+      let query = supabase
+        .from('vertraege')
+        .select('untergruppe')
+        .eq('gruppe', gruppe)
+        .not('untergruppe', 'is', null)
+        .order('untergruppe', { ascending: true })
+        .limit(500)
+
+      if (zahlungsweisenOwnerId) {
+        query = query.eq('vertragsbesitzer_id', zahlungsweisenOwnerId)
+      }
+
+      const { data } = await query
+      const current = cleanText(entwurf?.untergruppe)
+      const liste = [...new Set((data ?? []).map(r => cleanText(r.untergruppe)).filter(Boolean))]
+      const unique = [...new Set([...liste, ...(current ? [current] : [])])]
+      setUntergruppenOptionen(unique)
+    }
+
+    ladeUntergruppenOptionen()
+  }, [aktiveGruppe, zahlungsweisenOwnerId, entwurf?.untergruppe])
 
   if (laden) return <p style={{ color: T.textMuted }}>Lädt Vertrag…</p>
   if (!vertrag) return <p style={{ color: T.danger }}>Vertrag nicht gefunden</p>
@@ -419,7 +480,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
   }
 
   async function bearbeiteZahlungsweisen() {
-    if (!owner || owner.id === '__all__') {
+    if (!zahlungsweisenOwnerId) {
       alert('Bitte einen konkreten Inhaber wählen, um die Liste zu bearbeiten.')
       return
     }
@@ -441,7 +502,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
     }
 
     const payload = liste.map((bezeichnung, idx) => ({
-      vertragsbesitzer_id: owner.id,
+      vertragsbesitzer_id: zahlungsweisenOwnerId,
       bezeichnung,
       sort_order: idx + 1,
       aktiv: true,
@@ -450,7 +511,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
     const { error: delError } = await supabase
       .from('zahlungsweisen')
       .delete()
-      .eq('vertragsbesitzer_id', owner.id)
+      .eq('vertragsbesitzer_id', zahlungsweisenOwnerId)
 
     if (delError) {
       alert(`Zahlungsweisen konnten nicht zentral gespeichert werden: ${delError.message}`)
@@ -512,41 +573,32 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
       <div
         ref={toolbarRef}
         style={{
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          alignItems: isMobile ? 'stretch' : 'center',
-          justifyContent: 'space-between',
-          marginBottom: T.sp2,
           position: 'fixed',
           top: stickyTop,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 'min(1200px, calc(100vw - 24px))',
+          left: 0,
+          right: 0,
           zIndex: 65,
           background: T.bg,
-          paddingTop: 6,
-          paddingBottom: 6,
-          paddingLeft: T.sp3,
-          paddingRight: T.sp3,
-          boxSizing: 'border-box',
-          gap: isMobile ? T.sp2 : T.sp1,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: T.sp2, flex: 1, minWidth: 0 }}>
-          <LogoPreview vertrag={daten} logoFehler={logoFehler} setLogoFehler={setLogoFehler} />
-          {/* Title Column */}
-          <div style={{ minWidth: 0 }}>
-            <span style={{ display: 'block', marginBottom: 1, background: 'transparent', color: T.text, padding: 0, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
-              Vertrag · ID {daten?.vertrag_id || vertragId}
-            </span>
-            <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{daten.firma || 'Vertrag'}</h1>
-            <p style={{ margin: 0, marginTop: 2, color: T.textMuted, fontSize: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span>{daten.gruppe || 'Keine Gruppe'}</span>
-              <span style={{ fontSize: 11, background: T.bg, padding: 0 }}>{quelle}</span>
-            </p>
+        <div style={{ width: '100%', maxWidth: 1200, margin: '0 auto', paddingTop: 13, paddingBottom: 6, paddingLeft: 'clamp(12px, 3vw, 24px)', paddingRight: 'clamp(12px, 3vw, 24px)', boxSizing: 'border-box', display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', gap: isMobile ? T.sp2 : T.sp1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: T.sp2, flex: 1, minWidth: 0 }}>
+            <LogoPreview vertrag={daten} logoFehler={logoFehler} setLogoFehler={setLogoFehler} />
+            {/* Title Column */}
+            <div style={{ minWidth: 0 }}>
+              <span style={{ display: 'block', marginBottom: 1, background: 'transparent', color: T.text, padding: 0, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                Vertrag · ID {daten?.vertrag_id || vertragId}
+              </span>
+              <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{daten.firma || 'Vertrag'}</h1>
+              <p style={{ margin: 0, marginTop: 2, color: T.textMuted, fontSize: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>{daten.gruppe || 'Keine Gruppe'}</span>
+                {cleanText(daten.untergruppe) ? <span style={{ opacity: 0.8 }}>·</span> : null}
+                {cleanText(daten.untergruppe) ? <span>{cleanText(daten.untergruppe)}</span> : null}
+                <span style={{ fontSize: 11, background: T.bg, padding: 0 }}>{quelle}</span>
+              </p>
+            </div>
           </div>
-        </div>
-        <div style={{ display: 'flex', gap: T.sp1, flexWrap: 'wrap', justifyContent: isMobile ? 'flex-start' : 'flex-end', alignItems: 'center', flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: T.sp1, flexWrap: 'wrap', justifyContent: isMobile ? 'flex-start' : 'flex-end', alignItems: 'center', flexShrink: 0 }}>
             <button
               type="button"
               onClick={neuVertrag}
@@ -663,16 +715,17 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
                 {speichert ? '…' : '✓ Speichern'}
               </button>
             ) : null}
-            <button
-              onClick={onClose}
-              style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: '6px 10px', cursor: 'pointer', fontWeight: 600, minHeight: 40, display: 'flex', alignItems: 'center', fontSize: 16 }}
-              title="Zurück"
-            >
-              ← Zurück
-            </button>
+              <button
+                onClick={onClose}
+                style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: '6px 10px', cursor: 'pointer', fontWeight: 600, minHeight: 40, display: 'flex', alignItems: 'center', fontSize: 16, marginLeft: isMobile ? 0 : 'auto' }}
+                title="Zurück"
+              >
+                ← Zurück
+              </button>
+          </div>
         </div>
       </div>
-      <div style={{ height: toolbarHeight + 8 }} />
+      <div style={{ height: toolbarHeight + 83 }} />
 
       {fehler && (
         <div style={{ background: '#fee', color: T.danger, padding: T.sp3, borderRadius: T.r2, marginBottom: T.sp4 }}>
@@ -686,9 +739,36 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
         </div>
       )}
 
-      <div className="vertrag-detail-dreispalten" style={{ gap: T.sp4, gridTemplateColumns: '1fr', alignItems: 'start' }}>
+      <div className="vertrag-detail-dreispalten" style={{ gap: T.sp4, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', alignItems: 'start', marginTop: 6 }}>
         <div className="vertrag-detail-karte" style={{ borderColor: T.border, borderRadius: T.r2, padding: T.sp3 }}>
           <Field label="Firma" value={daten.firma} onChange={v => setFeldMitMarkierung('firma', v)} showInlineSave={showSaveFor('firma')} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty('firma')} />
+          <SelectField
+            label="Gruppe"
+            value={daten.gruppe}
+            options={gruppenOptionen}
+            onChange={v => {
+              const vor = cleanText(daten.gruppe)
+              setFeldMitMarkierung('gruppe', v)
+              if (cleanText(v) !== vor) {
+                setFeld('untergruppe', '')
+                setLastChangedField('gruppe')
+              }
+            }}
+            showInlineSave={showSaveFor('gruppe')}
+            onInlineSave={speichereVertrag}
+            inlineSaving={speichert}
+            isDirty={isDirty('gruppe')}
+          />
+          <SelectField
+            label="Untergruppe"
+            value={daten.untergruppe}
+            options={untergruppenOptionen}
+            onChange={v => setFeldMitMarkierung('untergruppe', v)}
+            showInlineSave={showSaveFor('untergruppe')}
+            onInlineSave={speichereVertrag}
+            inlineSaving={speichert}
+            isDirty={isDirty('untergruppe')}
+          />
           <Field label="Vertragsnummer" value={daten.vertragsnummer} onChange={v => setFeldMitMarkierung('vertragsnummer', v)} showInlineSave={showSaveFor('vertragsnummer')} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty('vertragsnummer')} />
           <Field label="Beschreibung" value={daten.beschreibung} multiline onChange={v => setFeldMitMarkierung('beschreibung', v)} showInlineSave={showSaveFor('beschreibung')} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty('beschreibung')} />
           <DateField label="Vertragsdatum" value={daten.vertrags_datum} onChange={v => setFeldMitMarkierung('vertrags_datum', v)} showInlineSave={showSaveFor('vertrags_datum')} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty('vertrags_datum')} />
@@ -708,6 +788,11 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
             />
           </div>
         </div>
+        {!isMobile ? (
+          <div className="vertrag-detail-karte" style={{ borderColor: T.border, borderRadius: T.r2, padding: T.sp3 }}>
+            <KontaktAktionen vertrag={daten} onChange={setFeldMitMarkierung} showSaveFor={showSaveFor} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty} />
+          </div>
+        ) : null}
       </div>
 
       <div style={{ marginTop: T.sp4, background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.r2, overflow: 'hidden' }}>
@@ -786,10 +871,6 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
       </div>
 
       <div style={{ marginTop: T.sp4 }}>
-        <div className="vertrag-detail-karte" style={{ borderColor: T.border, borderRadius: T.r2, padding: T.sp3, marginBottom: T.sp4 }}>
-          <KontaktAktionen vertrag={daten} onChange={setFeldMitMarkierung} showSaveFor={showSaveFor} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty} />
-        </div>
-
         <div className="vertrag-detail-karte" style={{ borderColor: T.border, borderRadius: T.r2, padding: T.sp3 }}>
           <Field
             label="IBAN"
@@ -825,6 +906,12 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
             inputStyle={{ fontSize: 12, color: T.textMuted, opacity: 0.85 }}
           />
         </div>
+
+        {isMobile ? (
+          <div className="vertrag-detail-karte" style={{ borderColor: T.border, borderRadius: T.r2, padding: T.sp3, marginTop: T.sp4 }}>
+            <KontaktAktionen vertrag={daten} onChange={setFeldMitMarkierung} showSaveFor={showSaveFor} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty} />
+          </div>
+        ) : null}
       </div>
     </div>
   )
@@ -963,6 +1050,28 @@ function Field({ label, value, multiline, onChange, type = 'text', inputStyle, s
       ) : (
         <div style={{ marginTop: T.sp1, whiteSpace: multiline ? 'pre-wrap' : 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.35 }}>{anzeige ?? '—'}</div>
       )}
+      <InlineSaveButton visible={showInlineSave} onSave={onInlineSave} saving={inlineSaving} />
+    </div>
+  )
+}
+
+function SelectField({ label, value, options = [], onChange, showInlineSave = false, onInlineSave, inlineSaving = false, isDirty = false }) {
+  const normalizedValue = String(value ?? '').trim()
+  const uniqueOptions = [...new Set((options ?? []).map(v => String(v ?? '').trim()).filter(Boolean))]
+
+  return (
+    <div style={{ marginBottom: T.sp3 }}>
+      <LabelRow label={label} isDirty={isDirty} />
+      <select
+        value={normalizedValue}
+        onChange={e => onChange(e.target.value)}
+        style={{ width: '100%', marginTop: T.sp1, padding: '2px 0', border: 'none', borderBottom: `1px solid ${T.border}`, background: 'transparent', outline: 'none', borderRadius: 0 }}
+      >
+        <option value="">—</option>
+        {uniqueOptions.map(opt => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
       <InlineSaveButton visible={showInlineSave} onSave={onInlineSave} saving={inlineSaving} />
     </div>
   )
@@ -1668,9 +1777,32 @@ function sameDirtyValue(a, b) {
 
 function cleanNumber(value) {
   if (value == null || value === '') return null
-  const text = String(value).trim()
-  const normalized = text.replace(/\s/g, '').replace(',', '.')
-  if (!normalized) return null
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null
+  }
+
+  let text = String(value).trim()
+  if (!text) return null
+
+  text = text.replace(/\s|€|EUR/gi, '')
+  const hasComma = text.includes(',')
+  const hasDot = text.includes('.')
+
+  if (hasComma && hasDot) {
+    if (text.lastIndexOf(',') > text.lastIndexOf('.')) {
+      text = text.replace(/\./g, '').replace(',', '.')
+    } else {
+      text = text.replace(/,/g, '')
+    }
+  } else if (hasComma) {
+    text = text.replace(',', '.')
+  } else if (hasDot && /^\d{1,3}(?:\.\d{3})+$/.test(text)) {
+    text = text.replace(/\./g, '')
+  }
+
+  const normalized = text.replace(/[^0-9.+-]/g, '')
+  if (!normalized || normalized === '-' || normalized === '+' || normalized === '.') return null
+
   const num = Number(normalized)
   if (!Number.isFinite(num)) return null
   return num
@@ -1779,6 +1911,20 @@ function ersterWert(...werte) {
     return wert
   }
   return null
+}
+
+function loadGruppenOptionen(storageKey) {
+  if (!storageKey) return []
+
+  try {
+    const raw = window.localStorage.getItem(storageKey)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return [...new Set(parsed.map(v => String(v ?? '').trim()).filter(Boolean))]
+  } catch {
+    return []
+  }
 }
 
 function quelleText(modifiedBy) {

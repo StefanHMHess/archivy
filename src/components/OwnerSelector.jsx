@@ -78,7 +78,9 @@ export default function OwnerSelector({ user, onSelectOwner }) {
           Wähle deinen Bereich und starte direkt in deine Vertragsübersicht.
         </p>
         <p style={{ marginTop: 0, marginBottom: T.sp4, color: T.textMuted, fontSize: 13, lineHeight: 1.45 }}>
-          Archivy ist ein Produkt entwickelt von Wohnbau Hess.
+          Archivy wurde entwickelt von Stefan Heß, Wohnbau Hess.
+          <br />
+          Es soll Dir beim Ordnen und Verwalten Deiner Verträge und Unterlagen helfen und Dir Dein Leben vereinfachen.
         </p>
 
         {fehler && <div style={{ marginTop: T.sp4, color: T.danger }}>{fehler}</div>}
