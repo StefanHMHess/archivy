@@ -1370,8 +1370,8 @@ function LogoCell({ logo, firma }) {
   const [error, setError] = useState(false)
   const src = normalisiereLogoQuelle(logo)
   const boxStyle = {
-    width: 36,
-    height: 36,
+    width: 48,
+    height: 48,
     borderRadius: 8,
     border: 'none',
     background: 'transparent',
@@ -1404,11 +1404,11 @@ function normalisiereLogoQuelle(value) {
   if (!value || typeof value !== 'string') return null
   const v = value.trim()
   if (!v) return null
-  if (v.startsWith('http://') || v.startsWith('https://')) return optimizeImageUrl(v, { width: 48, quality: 40 })
+  if (v.startsWith('http://') || v.startsWith('https://')) return optimizeImageUrl(v, { width: 72, quality: 40 })
   if (v.startsWith('data:')) return v
   if (/^<svg[\s>]/i.test(v)) return `data:image/svg+xml;utf8,${encodeURIComponent(v)}`
   if (/^[A-Za-z0-9+/=\r\n]+$/.test(v) && v.length >= 40) return `data:image/png;base64,${v.replace(/\s+/g, '')}`
-  if (/^[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(v)) return optimizeImageUrl(`https://${v}`, { width: 48, quality: 40 })
+  if (/^[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(v)) return optimizeImageUrl(`https://${v}`, { width: 72, quality: 40 })
   return null
 }
 

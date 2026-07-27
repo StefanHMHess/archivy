@@ -34,7 +34,7 @@ function useIsMobile() {
 
 export default function VorgangDetail({ vorgang_id, vorgangIds = [], stickyTop = 0, onNavigate, onClose }) {
   const containerRef = useRef(null)
-  const touchStartX = useRef(0)
+  const edgeSwipeFromLeft = useRef(false)
   const isMobile = useIsMobile()
   const [vorgang, setVorgang] = useState(null)
   const [entwurf, setEntwurf] = useState(null)
@@ -56,28 +56,39 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], stickyTop =
   const [vorgangOptionen, setVorgangOptionen] = useState(DEFAULT_VORGANG_OPTIONEN)
 
   useEffect(() => {
+    if (!isMobile) return
+
     const container = containerRef.current
     if (!container) return
 
     const handleTouchStart = (e) => {
-      touchStartX.current = e.touches[0].clientX
+      const touch = e.touches?.[0]
+      if (!touch) return
+      edgeSwipeFromLeft.current = touch.clientX <= 28
     }
 
-    const handleTouchEnd = (e) => {
-      const touchEndX = e.changedTouches[0].clientX
-      const swipeDistance = touchEndX - touchStartX.current
-      if (swipeDistance > 80) {
-        onClose?.()
-      }
+    const handleTouchMove = (e) => {
+      if (!edgeSwipeFromLeft.current) return
+      // Stop iOS history swipe-back in Vorgang view.
+      e.preventDefault()
     }
 
-    container.addEventListener('touchstart', handleTouchStart)
-    container.addEventListener('touchend', handleTouchEnd)
+    const resetTouchState = () => {
+      edgeSwipeFromLeft.current = false
+    }
+
+    container.addEventListener('touchstart', handleTouchStart, { passive: true })
+    container.addEventListener('touchmove', handleTouchMove, { passive: false })
+    container.addEventListener('touchend', resetTouchState)
+    container.addEventListener('touchcancel', resetTouchState)
+
     return () => {
       container.removeEventListener('touchstart', handleTouchStart)
-      container.removeEventListener('touchend', handleTouchEnd)
+      container.removeEventListener('touchmove', handleTouchMove)
+      container.removeEventListener('touchend', resetTouchState)
+      container.removeEventListener('touchcancel', resetTouchState)
     }
-  }, [onClose])
+  }, [isMobile])
 
   useEffect(() => {
     laddenVorgang()
@@ -401,7 +412,7 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], stickyTop =
   }
 
   return (
-    <div ref={containerRef} style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <div ref={containerRef} style={{ maxWidth: 1000, margin: '0 auto', touchAction: 'pan-y', overscrollBehaviorX: 'contain' }}>
       {/* PDF Vollbild-Overlay */}
       {pdfVollbild && dateiUrl && (
         <div
