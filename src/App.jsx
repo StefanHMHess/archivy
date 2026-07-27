@@ -27,6 +27,7 @@ export default function App() {
   const [aktiv, setAktiv] = useState('dashboard')
   const [selectedVorgangId, setSelectedVorgangId] = useState(null)
   const [selectedContractId, setSelectedContractId] = useState(null)
+  const [vertragScrollTargetId, setVertragScrollTargetId] = useState(null)
   const [vertragVorgangScrollTargetId, setVertragVorgangScrollTargetId] = useState(null)
   const [vorgangIds, setVorgangIds] = useState([])
   const [vertragIds, setVertragIds] = useState([])
@@ -45,6 +46,7 @@ export default function App() {
     if (!id) return
     const contractId = typeof options?.contractId === 'string' ? options.contractId : null
     setSelectedContractId(contractId || null)
+    setVertragScrollTargetId(contractId || null)
     setVertragVorgangScrollTargetId(contractId ? id : null)
     if (contractId) {
       setVertragIds([contractId])
@@ -244,6 +246,7 @@ export default function App() {
               if (!next) return
               setSelectedOwner(next)
               setSelectedContractId(null)
+              setVertragScrollTargetId(null)
               setSelectedVorgangId(null)
               setVertragVorgangScrollTargetId(null)
             }}
@@ -289,6 +292,7 @@ export default function App() {
               onClick={() => {
                 setAktiv(n.id)
                 setSelectedContractId(null)
+                setVertragScrollTargetId(null)
                 setSelectedVorgangId(null)
                 setVertragVorgangScrollTargetId(null)
               }}
@@ -332,7 +336,9 @@ export default function App() {
               setVorgangIds(ids || [])
             }}
             scrollToVorgangId={vertragVorgangScrollTargetId}
+            onScrollToVorgangHandled={() => setVertragVorgangScrollTargetId(null)}
             onClose={() => {
+              setVertragScrollTargetId(selectedContractId)
               setSelectedContractId(null)
               setVertragVorgangScrollTargetId(null)
             }}
@@ -344,7 +350,11 @@ export default function App() {
               <Vertraege
                 owner={selectedOwner}
                 stickyTop={stickyOffsets.header + stickyOffsets.nav}
+                scrollToContractId={vertragScrollTargetId}
+                onScrollToContractHandled={() => setVertragScrollTargetId(null)}
                 onSelectContract={(id, ids = []) => {
+                  setVertragScrollTargetId(id)
+                  setVertragVorgangScrollTargetId(null)
                   setSelectedContractId(id)
                   setVertragIds(ids?.length ? ids : [id])
                 }}

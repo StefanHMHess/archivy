@@ -51,7 +51,7 @@ function useIsMobile() {
   return isMobile
 }
 
-export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
+export default function Vertraege({ owner, onSelectContract, stickyTop = 0, scrollToContractId = null, onScrollToContractHandled }) {
   const isMobile = useIsMobile()
   const ownerIds = useMemo(() => ownerVarianten(owner?.id), [owner?.id])
   const filterStorageKey = useMemo(() => `${FILTERS_STORAGE_PREFIX}:${owner?.id ?? '__all__'}`, [owner?.id])
@@ -270,6 +270,20 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
     ladeLogos()
     return () => { aktiv = false }
   }, [owner, owner?.id, ownerIds, zeilen])
+
+  useEffect(() => {
+    if (!scrollToContractId || laden) return
+
+    const escapedId = String(scrollToContractId).replace(/"/g, '\\"')
+    const raf = requestAnimationFrame(() => {
+      const target = document.querySelector(`[data-vertrag-id="${escapedId}"]`)
+      if (!target) return
+      target.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      onScrollToContractHandled?.()
+    })
+
+    return () => cancelAnimationFrame(raf)
+  }, [scrollToContractId, laden, zeilen.length, isMobile, onScrollToContractHandled])
 
   useEffect(() => {
     if (!owner) return
@@ -876,7 +890,7 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
             </thead>
             <tbody>
               {zeilen.map((v, idx) => (
-                <tr key={String(v.id ?? v.vertrag_id ?? idx)} style={{ borderBottom: `1px solid ${T.border}`, opacity: v.aktiv ? 1 : 0.5, cursor: 'pointer' }}
+                <tr key={String(v.id ?? v.vertrag_id ?? idx)} data-vertrag-id={v.vertrag_id} style={{ borderBottom: `1px solid ${T.border}`, opacity: v.aktiv ? 1 : 0.5, cursor: 'pointer' }}
                   onClick={() => onSelectContract(v.vertrag_id, zeilen.map(z => z.vertrag_id))}
                   onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
                   onMouseLeave={e => e.currentTarget.style.background = ''}>

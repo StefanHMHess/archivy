@@ -25,10 +25,12 @@ function useIsMobile() {
   return isMobile
 }
 
-export default function VertragDetail({ vertragId, vertragIds = [], owner, stickyTop = 0, scrollToVorgangId = null, onNavigate, onSelectVorgang, onClose }) {
+export default function VertragDetail({ vertragId, vertragIds = [], owner, stickyTop = 0, scrollToVorgangId = null, onScrollToVorgangHandled, onNavigate, onSelectVorgang, onClose }) {
   const containerRef = useRef(null)
   const toolbarRef = useRef(null)
   const touchStartX = useRef(0)
+  const touchStartY = useRef(0)
+  const swipeFromLeftEdge = useRef(false)
   const isMobile = useIsMobile()
   const ownerIds = useMemo(() => ownerVarianten(owner?.id), [owner?.id])
   const [vertrag, setVertrag] = useState(null)
@@ -96,17 +98,35 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
   }, [stickyTop, isMobile, vertragId])
 
   useEffect(() => {
+    if (!isMobile) return
+
     const container = containerRef.current
     if (!container) return
 
     const handleTouchStart = (e) => {
-      touchStartX.current = e.touches[0].clientX
+      const touch = e.touches?.[0]
+      if (!touch) return
+      touchStartX.current = touch.clientX
+      touchStartY.current = touch.clientY
+      swipeFromLeftEdge.current = touch.clientX <= 26
     }
 
     const handleTouchEnd = (e) => {
-      const touchEndX = e.changedTouches[0].clientX
-      const swipeDistance = touchEndX - touchStartX.current
-      if (swipeDistance > 80) {
+      const touch = e.changedTouches?.[0]
+      if (!touch || !swipeFromLeftEdge.current) return
+
+      const deltaX = touch.clientX - touchStartX.current
+      const deltaY = touch.clientY - touchStartY.current
+      const absX = Math.abs(deltaX)
+      const absY = Math.abs(deltaY)
+
+      const isIntentionalBackSwipe = (
+        deltaX > 96 &&
+        absY < 44 &&
+        absX > absY * 1.35
+      )
+
+      if (isIntentionalBackSwipe) {
         onClose?.()
       }
     }
@@ -117,7 +137,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
       container.removeEventListener('touchstart', handleTouchStart)
       container.removeEventListener('touchend', handleTouchEnd)
     }
-  }, [onClose])
+  }, [onClose, isMobile])
 
   useEffect(() => {
     async function ladeZahlungsweisen() {
@@ -273,10 +293,11 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
       const target = root.querySelector(`[data-vorgang-id="${escapedId}"]`)
       if (!target) return
       target.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      onScrollToVorgangHandled?.()
     })
 
     return () => cancelAnimationFrame(raf)
-  }, [scrollToVorgangId, laden, vorgaenge.length, datumSortAsc])
+  }, [scrollToVorgangId, laden, vorgaenge.length, datumSortAsc, onScrollToVorgangHandled])
 
   if (laden) return <p style={{ color: T.textMuted }}>Lädt Vertrag…</p>
   if (!vertrag) return <p style={{ color: T.danger }}>Vertrag nicht gefunden</p>

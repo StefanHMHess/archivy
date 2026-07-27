@@ -9,27 +9,23 @@ const BUCKET = 'archivy-dokumente'
 export default function PdfThumbnail({ pfad, width = 60, onClick }) {
   const [url, setUrl] = useState(null)
   const [fehler, setFehler] = useState(false)
-  const [sichtbar, setSichtbar] = useState(false)
   const ref = useRef()
 
   useEffect(() => {
-    if (!pfad) return
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setSichtbar(true) },
-      { threshold: 0.05 }
-    )
-    const el = ref.current
-    if (el) observer.observe(el)
-    return () => { if (el) observer.unobserve(el) }
-  }, [pfad])
+    let aktiv = true
+    setUrl(null)
+    setFehler(false)
 
-  useEffect(() => {
-    if (!sichtbar || !pfad) return
+    if (!pfad) return () => { aktiv = false }
+
     getSignedUrl(BUCKET, pfad).then(u => {
+      if (!aktiv) return
       if (u) setUrl(u)
       else setFehler(true)
     })
-  }, [sichtbar, pfad])
+
+    return () => { aktiv = false }
+  }, [pfad])
 
   const h = Math.round(width * 1.414)
 
