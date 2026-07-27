@@ -746,7 +746,7 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0, scro
                   borderRadius: 16,
                   background: T.bgCard,
                   boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)',
-                  padding: '10px 12px 12px',
+                  padding: '8px 10px 8px',
                   opacity: v.aktiv ? 1 : 0.55,
                   cursor: 'pointer',
                 }}
@@ -762,10 +762,10 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0, scro
                       {cleanText(v.firma) || '—'}
                     </h3>
                   </div>
-                  <LogoCell logo={logoMap[normalisiereVertragId(v.vertrag_id)]} firma={v.firma} />
+                  <LogoCell logo={logoMap[normalisiereVertragId(v.vertrag_id)]} firma={v.firma} size={40} />
                 </div>
 
-                <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
+                <div style={{ marginTop: 6, display: 'grid', gap: 6 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr', alignItems: 'center', gap: 8 }}>
                     <span style={{ color: T.textMuted, fontSize: 13, fontWeight: 600 }}>Untergruppe</span>
                     {untergruppeText ? (
@@ -824,15 +824,15 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0, scro
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                    <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, background: '#f0fdf4', padding: 8 }}>
+                    <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, background: '#f0fdf4', padding: 6 }}>
                       <div style={{ color: '#166534', fontSize: 10, letterSpacing: '0.06em', fontWeight: 700, textTransform: 'uppercase' }}>Kosten/Monat</div>
-                      <div style={{ color: '#166534', fontSize: 20, fontWeight: 750, lineHeight: 1.15, marginTop: 2 }}>
+                      <div style={{ color: '#166534', fontSize: 18, fontWeight: 750, lineHeight: 1.15, marginTop: 2 }}>
                         {formatKostenMonatlich(v.kosten_monatlich, v.kosten_jaehrlich)}
                       </div>
                     </div>
-                    <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, background: '#f8fafc', padding: 8 }}>
+                    <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, background: '#f8fafc', padding: 6 }}>
                       <div style={{ color: '#334155', fontSize: 10, letterSpacing: '0.06em', fontWeight: 700, textTransform: 'uppercase' }}>Kosten/Jahr</div>
-                      <div style={{ color: '#334155', fontSize: 20, fontWeight: 750, lineHeight: 1.15, marginTop: 2 }}>
+                      <div style={{ color: '#334155', fontSize: 18, fontWeight: 750, lineHeight: 1.15, marginTop: 2 }}>
                         {formatKostenJaehrlich(v.kosten_jaehrlich)}
                       </div>
                     </div>
@@ -840,7 +840,7 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0, scro
 
                   <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr auto', alignItems: 'center', gap: 8 }}>
                     <span style={{ color: T.textMuted, fontSize: 13, fontWeight: 600 }}>Ablauf</span>
-                    <span style={{ fontSize: 20, fontWeight: 700, color: ablaufFarbe(v.vertrags_ablauf), lineHeight: 1.1 }}>{formatDateDisplay(v.vertrags_ablauf)}</span>
+                    <span style={{ fontSize: 16, fontWeight: 700, color: ablaufFarbe(v.vertrags_ablauf), lineHeight: 1.1 }}>{formatDateDisplay(v.vertrags_ablauf)}</span>
                     <button
                       type="button"
                       onClick={(e) => {
@@ -850,8 +850,8 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0, scro
                       disabled={busy}
                       aria-label="Vertrag löschen"
                       style={{
-                        width: 30,
-                        height: 30,
+                        width: 28,
+                        height: 28,
                         borderRadius: 999,
                         border: `1px solid ${T.border}`,
                         background: '#f8fafc',
@@ -927,7 +927,7 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0, scro
                       <Kostenwert value={formatKostenJaehrlich(v.kosten_jaehrlich)} />
                     </div>
                   </td>
-                  <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap', color: ablaufFarbe(v.vertrags_ablauf) }}>{formatDateDisplay(v.vertrags_ablauf)}</td>
+                  <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap', color: ablaufFarbe(v.vertrags_ablauf), fontSize: 13 }}>{formatDateDisplay(v.vertrags_ablauf)}</td>
                   <td style={{ padding: `${T.sp2} ${T.sp3}`, whiteSpace: 'nowrap' }}>
                     <button
                       type="button"
@@ -1366,12 +1366,12 @@ function splitKostenTeile(text) {
   }
 }
 
-function LogoCell({ logo, firma }) {
+function LogoCell({ logo, firma, size = 48 }) {
   const [error, setError] = useState(false)
   const src = normalisiereLogoQuelle(logo)
   const boxStyle = {
-    width: 48,
-    height: 48,
+    width: size,
+    height: size,
     borderRadius: 8,
     border: 'none',
     background: 'transparent',

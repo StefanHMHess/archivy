@@ -610,10 +610,8 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
       <div
         ref={toolbarRef}
         style={{
-          position: 'fixed',
+          position: 'sticky',
           top: stickyTop,
-          left: 0,
-          right: 0,
           zIndex: 65,
           background: T.bg,
         }}
@@ -762,8 +760,6 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
           </div>
         </div>
       </div>
-      <div style={{ height: toolbarHeight + 83 }} />
-
       {fehler && (
         <div style={{ background: '#fee', color: T.danger, padding: T.sp3, borderRadius: T.r2, marginBottom: T.sp4 }}>
           {fehler}
@@ -776,9 +772,8 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
         </div>
       )}
 
-      <div className="vertrag-detail-dreispalten" style={{ gap: T.sp4, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', alignItems: 'start', marginTop: 6 }}>
+      <div className="vertrag-detail-dreispalten" style={{ gap: T.sp4, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', alignItems: 'start', marginTop: isMobile ? 10 : 6 }}>
         <div className="vertrag-detail-karte" style={{ borderColor: T.border, borderRadius: T.r2, padding: T.sp3 }}>
-          <Field label="Firma" value={daten.firma} onChange={v => setFeldMitMarkierung('firma', v)} showInlineSave={showSaveFor('firma')} onInlineSave={speichereVertrag} inlineSaving={speichert} isDirty={isDirty('firma')} />
           <SelectField
             label="Gruppe"
             value={daten.gruppe}
