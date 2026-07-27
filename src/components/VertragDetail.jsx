@@ -25,7 +25,7 @@ function useIsMobile() {
   return isMobile
 }
 
-export default function VertragDetail({ vertragId, vertragIds = [], owner, stickyTop = 0, onNavigate, onSelectVorgang, onClose }) {
+export default function VertragDetail({ vertragId, vertragIds = [], owner, stickyTop = 0, scrollToVorgangId = null, onNavigate, onSelectVorgang, onClose }) {
   const containerRef = useRef(null)
   const toolbarRef = useRef(null)
   const touchStartX = useRef(0)
@@ -261,6 +261,22 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
 
     ladeUntergruppenOptionen()
   }, [aktiveGruppe, zahlungsweisenOwnerId, entwurf?.untergruppe])
+
+  useEffect(() => {
+    if (!scrollToVorgangId || laden) return
+
+    const escapedId = String(scrollToVorgangId).replace(/"/g, '\\"')
+    const root = containerRef.current
+    if (!root) return
+
+    const raf = requestAnimationFrame(() => {
+      const target = root.querySelector(`[data-vorgang-id="${escapedId}"]`)
+      if (!target) return
+      target.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    })
+
+    return () => cancelAnimationFrame(raf)
+  }, [scrollToVorgangId, laden, vorgaenge.length, datumSortAsc])
 
   if (laden) return <p style={{ color: T.textMuted }}>Lädt Vertrag…</p>
   if (!vertrag) return <p style={{ color: T.danger }}>Vertrag nicht gefunden</p>
@@ -826,6 +842,95 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
         </div>
         {angezeigteVorgaenge.length === 0 ? (
           <p style={{ padding: T.sp4, color: T.textMuted, margin: 0 }}>Keine Vorgänge zu diesem Vertrag vorhanden.</p>
+        ) : isMobile ? (
+          <div style={{ display: 'grid', gap: T.sp2, padding: T.sp2 }}>
+            {angezeigteVorgaenge.map(v => {
+              const note = vorgangNotiz(v)
+              const wichtig = istWichtigeNotiz(note)
+
+              return (
+              <article
+                key={v.vorgang_id}
+                data-vorgang-id={v.vorgang_id}
+                onClick={() => onSelectVorgang?.(v.vorgang_id, angezeigteVorgaenge.map(x => x.vorgang_id))}
+                style={{
+                  border: `1px solid ${wichtig ? '#fcd34d' : '#cfe0f5'}`,
+                  borderRadius: 14,
+                  background: wichtig ? '#fffdf4' : '#f8fbff',
+                  boxShadow: `inset 3px 0 0 ${wichtig ? '#f59e0b' : '#60a5fa'}`,
+                  padding: `10px ${T.sp2}`,
+                  cursor: 'pointer',
+                  display: 'grid',
+                  gap: 8,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: T.sp2 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, lineHeight: 1.2, overflowWrap: 'anywhere', color: '#0f172a' }}>
+                      {vorgangTitel(v)}
+                    </div>
+                    <div style={{ color: T.textMuted, fontSize: 11, marginTop: 1 }}>{formatVorgangKurzId(v.vorgang_id)}</div>
+                  </div>
+                  <div
+                    style={{
+                      borderRadius: 999,
+                      padding: '3px 9px',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      background: wichtig ? '#fef3c7' : '#e2e8f0',
+                      color: wichtig ? '#92400e' : '#475569',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {fristBadgeText(v)}
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: T.sp2, alignItems: 'stretch' }}>
+                  <div style={{ display: 'grid', gap: T.sp2 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: T.sp2 }}>
+                      <div style={{ border: `1px solid #dbe7f5`, borderRadius: 10, padding: '7px 8px', background: '#fff' }}>
+                        <div style={{ color: '#64748b', fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Datum</div>
+                        <div style={{ marginTop: 2, fontWeight: 700, color: '#0f172a' }}>{formatVorgangDatum(v)}</div>
+                      </div>
+                      <div style={{ border: `1px solid #dbe7f5`, borderRadius: 10, padding: '7px 8px', background: '#fff' }}>
+                        <div style={{ color: '#64748b', fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Frist</div>
+                        <div style={{ marginTop: 2, fontWeight: 700, color: fristFarbe(v.frist, v.erledigt) }}>{formatVorgangFrist(v)}</div>
+                      </div>
+                    </div>
+
+                    <div style={{ border: `1px solid ${wichtig ? '#fcd34d' : '#dbe7f5'}`, borderRadius: 10, padding: '7px 8px', background: wichtig ? '#fff8dc' : '#fff' }}>
+                      <div style={{ color: wichtig ? '#92400e' : '#64748b', fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Notiz</div>
+                      <div style={{ marginTop: 2, lineHeight: 1.3, fontWeight: 700, color: wichtig ? '#7c2d12' : T.textMain }}>{note}</div>
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={e => e.stopPropagation()}
+                    style={{
+                      border: `1px solid #dbe7f5`,
+                      borderRadius: 10,
+                      background: '#fff',
+                      padding: 6,
+                      minWidth: 66,
+                      display: 'grid',
+                      gridTemplateRows: 'auto 1fr',
+                      placeItems: 'center',
+                      alignSelf: 'stretch',
+                    }}
+                  >
+                    <span style={{ color: '#64748b', fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 3 }}>PDF</span>
+                    {v.datei_pfad ? (
+                      <PdfThumbnail pfad={v.datei_pfad} width={50} onClick={() => oeffnePdfSofort(v.datei_pfad)} />
+                    ) : (
+                      <span style={{ color: T.textMuted, fontSize: 12, fontWeight: 700 }}>—</span>
+                    )}
+                  </div>
+                </div>
+              </article>
+              )
+            })}
+          </div>
         ) : (
           <div className="vertrag-vorgaenge-scroll" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <table style={{ width: '100%', minWidth: 860, borderCollapse: 'collapse', fontSize: 14 }}>
@@ -840,6 +945,7 @@ export default function VertragDetail({ vertragId, vertragIds = [], owner, stick
                 {angezeigteVorgaenge.map(v => (
                   <tr
                     key={v.vorgang_id}
+                    data-vorgang-id={v.vorgang_id}
                     onClick={() => onSelectVorgang?.(v.vorgang_id, angezeigteVorgaenge.map(x => x.vorgang_id))}
                     style={{ borderBottom: `1px solid ${T.border}`, cursor: 'pointer', verticalAlign: 'middle' }}
                     onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
@@ -1620,6 +1726,42 @@ function webHref(value) {
   if (!text) return null
   if (text.startsWith('http://') || text.startsWith('https://')) return text
   return `https://${text}`
+}
+
+function vorgangTitel(v) {
+  return cleanText(v?.beschreibung) || cleanText(v?.vorgang_art) || cleanText(v?.kurzbeschreibung) || '—'
+}
+
+function vorgangNotiz(v) {
+  return cleanText(v?.kurzbeschreibung) || '—'
+}
+
+function formatVorgangDatum(v) {
+  return formatDateDisplay(v?.datum) || '—'
+}
+
+function formatVorgangFrist(v) {
+  return formatDateDisplay(v?.frist) || '—'
+}
+
+function fristBadgeText(v) {
+  const fristText = formatVorgangFrist(v)
+  if (!fristText || fristText === '—') return 'Ohne Frist'
+  return `Frist ${fristText}`
+}
+
+function formatVorgangKurzId(vorgangId) {
+  const text = String(vorgangId ?? '').trim()
+  if (!text) return 'IID —'
+  const match = text.match(/(\d{4,})$/)
+  const shortId = match ? match[1] : text
+  return `IID ${shortId}`
+}
+
+function istWichtigeNotiz(value) {
+  const text = String(value ?? '').trim()
+  if (!text || text === '—') return false
+  return /(^!+)|(\bwichtig\b)|(\bdringend\b)|(\bachtung\b)|(^\[wichtig\])/i.test(text)
 }
 
 function fristFarbe(frist, erledigt) {

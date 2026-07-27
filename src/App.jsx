@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { T } from './tokens'
+import packageInfo from '../package.json'
 import Dashboard from './components/Dashboard'
 import VorgangDetail from './components/VorgangDetail'
 import Vertraege from './components/Vertraege'
@@ -20,10 +21,13 @@ const NAV = [
   { id: 'admin',      label: 'Admin' },
 ]
 
+const APP_VERSION = `v${packageInfo.version}`
+
 export default function App() {
   const [aktiv, setAktiv] = useState('dashboard')
   const [selectedVorgangId, setSelectedVorgangId] = useState(null)
   const [selectedContractId, setSelectedContractId] = useState(null)
+  const [vertragVorgangScrollTargetId, setVertragVorgangScrollTargetId] = useState(null)
   const [vorgangIds, setVorgangIds] = useState([])
   const [vertragIds, setVertragIds] = useState([])
   const [user, setUser] = useState(null)
@@ -37,9 +41,14 @@ export default function App() {
   const [stickyOffsets, setStickyOffsets] = useState({ header: 0, nav: 0 })
   const mainTopPadding = aktiv === 'vertraege' ? '6px' : 'clamp(12px, 3vw, 24px)'
 
-  function openVorgang(id, ids = []) {
+  function openVorgang(id, ids = [], options = {}) {
     if (!id) return
-    setSelectedContractId(null)
+    const contractId = typeof options?.contractId === 'string' ? options.contractId : null
+    setSelectedContractId(contractId || null)
+    setVertragVorgangScrollTargetId(contractId ? id : null)
+    if (contractId) {
+      setVertragIds([contractId])
+    }
     setVorgangIds(ids?.length ? ids : [id])
     setSelectedVorgangId(id)
   }
@@ -58,6 +67,7 @@ export default function App() {
         setSelectedOwner(null)
         setSelectedContractId(null)
         setSelectedVorgangId(null)
+        setVertragVorgangScrollTargetId(null)
         setIsAdmin(false)
       }
     })
@@ -174,7 +184,10 @@ export default function App() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: '0 0 auto' }}>
           <img src={appIcon} alt="Archivy" style={{ width: 48, height: 48, flex: '0 0 auto', marginTop: -3 }} />
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 18, letterSpacing: '-0.3px' }}>Archivy</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: '-0.3px' }}>Archivy</span>
+              <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.72 }}>{APP_VERSION}</span>
+            </div>
             <div style={{ fontSize: 11, color: T.textOnTeal, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '40vw' }}>
               {user.email}
             </div>
@@ -232,6 +245,7 @@ export default function App() {
               setSelectedOwner(next)
               setSelectedContractId(null)
               setSelectedVorgangId(null)
+              setVertragVorgangScrollTargetId(null)
             }}
             title="Inhaber wechseln"
             style={{
@@ -272,7 +286,12 @@ export default function App() {
           (n.id !== 'admin' || isAdmin) && (
             <button
               key={n.id}
-              onClick={() => { setAktiv(n.id); setSelectedContractId(null); setSelectedVorgangId(null) }}
+              onClick={() => {
+                setAktiv(n.id)
+                setSelectedContractId(null)
+                setSelectedVorgangId(null)
+                setVertragVorgangScrollTargetId(null)
+              }}
               style={{
                 padding: `${T.sp3} ${T.sp5}`,
                 color: T.textOnTeal,
@@ -308,10 +327,15 @@ export default function App() {
             stickyTop={stickyOffsets.header + stickyOffsets.nav}
             onNavigate={(id) => setSelectedContractId(id)}
             onSelectVorgang={(id, ids) => {
+              setVertragVorgangScrollTargetId(id)
               setSelectedVorgangId(id)
               setVorgangIds(ids || [])
             }}
-            onClose={() => setSelectedContractId(null)}
+            scrollToVorgangId={vertragVorgangScrollTargetId}
+            onClose={() => {
+              setSelectedContractId(null)
+              setVertragVorgangScrollTargetId(null)
+            }}
           />
         ) : (
           <>

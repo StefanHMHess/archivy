@@ -98,7 +98,10 @@ export default function Dashboard({ onNavigate, owner, onSelectVorgang }) {
             <div
               key={v.vorgang_id}
               style={{ padding: T.sp4, borderBottom: `1px solid ${T.border}`, cursor: 'pointer' }}
-              onClick={() => onSelectVorgang?.(v.vorgang_id, faellige.map(x => x.vorgang_id))}
+              onClick={() => {
+                const vertrag = vertragMap[normalisiereVertragId(v.vertrag)]
+                onSelectVorgang?.(v.vorgang_id, faellige.map(x => x.vorgang_id), { contractId: vertrag?.vertrag_id || v.vertrag || null })
+              }}
               onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
               onMouseLeave={e => e.currentTarget.style.background = ''}
             >

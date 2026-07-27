@@ -9,6 +9,15 @@ import { uploadFile, getSignedUrl, deleteFile, optimizeImageUrl } from '../lib/s
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
 
 const BUCKET = 'archivy-dokumente'
+const DEFAULT_VORGANG_OPTIONEN = [
+  'Dokument',
+  'To Do',
+  'Kündigung',
+  'Anforderung',
+  'Abrechnung',
+  'Prüfen',
+  'Erledigen',
+]
 
 // Hook für responsive Design
 function useIsMobile() {
@@ -44,6 +53,7 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], stickyTop =
   const [pdfVollbild, setPdfVollbild] = useState(false)
   const [fotoVollbild, setFotoVollbild] = useState(false)
   const [pdfRotation, setPdfRotation] = useState(0)
+  const [vorgangOptionen, setVorgangOptionen] = useState(DEFAULT_VORGANG_OPTIONEN)
 
   useEffect(() => {
     const container = containerRef.current
@@ -87,6 +97,38 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], stickyTop =
     }
     ladenUrls()
   }, [vorgang])
+
+  useEffect(() => {
+    let aktiv = true
+
+    async function ladeVorgangOptionen() {
+      const ownerId = cleanText(entwurf?.vertragsbesitzer_id ?? vorgang?.vertragsbesitzer_id)
+      let query = supabase
+        .from('vorgaenge')
+        .select('beschreibung, vorgang_art')
+        .limit(1500)
+
+      if (ownerId) {
+        query = query.eq('vertragsbesitzer_id', ownerId)
+      }
+
+      const { data } = await query
+      if (!aktiv) return
+
+      const list = [
+        ...DEFAULT_VORGANG_OPTIONEN,
+        ...(data ?? []).map(r => cleanText(r?.beschreibung)).filter(Boolean),
+        ...(data ?? []).map(r => cleanText(r?.vorgang_art)).filter(Boolean),
+      ]
+
+      const unique = [...new Set(list.map(v => String(v).trim()).filter(Boolean))]
+      const sorted = unique.sort((a, b) => a.localeCompare(b, 'de', { sensitivity: 'base' }))
+      setVorgangOptionen(sorted)
+    }
+
+    ladeVorgangOptionen()
+    return () => { aktiv = false }
+  }, [entwurf?.vertragsbesitzer_id, vorgang?.vertragsbesitzer_id])
 
   async function laddenVorgang() {
     setLaden(true)
@@ -558,19 +600,19 @@ export default function VorgangDetail({ vorgang_id, vorgangIds = [], stickyTop =
         </div>
       )}
 
-      {/* Zwei Spalten: Links Felder, rechts PDF */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: T.sp6, marginBottom: T.sp6 }}>
+      {/* Zwei Spalten: Links Felder, rechts PDF (mobil untereinander) */}
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? T.sp4 : T.sp6, marginBottom: T.sp6 }}>
 
         {/* Linke Spalte: Infos */}
         <div>
           <h2 style={{ fontSize: 14, fontWeight: 700, color: T.textMuted, marginBottom: T.sp3 }}>Details</h2>
           <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.r2, padding: T.sp4 }}>
-            <EditTextFeld label="Vorgang" value={daten.beschreibung} onChange={v => setFeld('beschreibung', v)} multiline />
+            <EditOptionTextFeld label="Vorgang" value={daten.beschreibung} onChange={v => setFeld('beschreibung', v)} options={vorgangOptionen} />
             <EditTextFeld label="Notiz" value={daten.kurzbeschreibung} onChange={v => setFeld('kurzbeschreibung', v)} multiline />
-            <EditDateFeld label="Datum" value={daten.datum} onChange={v => setFeld('datum', v)} />
-            <EditDateFeld label="Frist" value={daten.frist} onChange={v => setFeld('frist', v)} />
+            <EditDateFeld label="Datum" value={daten.datum} onChange={v => setFeld('datum', v)} isMobile={isMobile} stickyTop={stickyTop} />
+            <EditDateFeld label="Frist" value={daten.frist} onChange={v => setFeld('frist', v)} isMobile={isMobile} stickyTop={stickyTop} />
             <EditCheckFeld label="Erledigt" value={Boolean(daten.erledigt)} onChange={v => setFeld('erledigt', v)} />
-            <EditDateFeld label="Erledigungsdatum" value={daten.erledigung} onChange={v => setFeld('erledigung', v)} />
+            <EditDateFeld label="Erledigungsdatum" value={daten.erledigung} onChange={v => setFeld('erledigung', v)} isMobile={isMobile} stickyTop={stickyTop} />
             <EditTextFeld label="Verantwortlich" value={daten.verantwortlicher} onChange={v => setFeld('verantwortlicher', v)} />
           </div>
         </div>
@@ -801,6 +843,109 @@ function EditTextFeld({ label, value, onChange, type = 'text', multiline = false
   )
 }
 
+function EditOptionTextFeld({ label, value, onChange, options = [] }) {
+  const containerRef = useRef(null)
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+
+    function onDocClick(e) {
+      if (!containerRef.current?.contains(e.target)) {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', onDocClick)
+    document.addEventListener('touchstart', onDocClick)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('touchstart', onDocClick)
+    }
+  }, [open])
+
+  return (
+    <div ref={containerRef} style={{ marginBottom: T.sp3, paddingBottom: T.sp3, borderBottom: `1px solid ${T.border}`, position: 'relative' }}>
+      <div style={{ fontSize: 12, color: T.textMuted, fontWeight: 600 }}>{label}</div>
+      <div style={{ marginTop: T.sp1, display: 'grid', gridTemplateColumns: '1fr auto', gap: T.sp2, alignItems: 'end' }}>
+        <input
+          type="text"
+          value={value ?? ''}
+          onChange={e => onChange(e.target.value)}
+          onFocus={() => setOpen(true)}
+          style={{ width: '100%', padding: '6px 8px', border: `1px solid ${T.border}`, borderRadius: 8, background: '#fff', outline: 'none' }}
+        />
+        <button
+          type="button"
+          onClick={() => setOpen(v => !v)}
+          style={{
+            padding: '6px 10px',
+            borderRadius: 8,
+            border: `1px solid ${T.border}`,
+            background: T.bg,
+            color: T.textMain,
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Optionen
+        </button>
+      </div>
+
+      {open ? (
+        <div
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            marginTop: 6,
+            border: `1px solid ${T.border}`,
+            borderRadius: 10,
+            background: T.bgCard,
+            boxShadow: '0 8px 22px rgba(15,23,42,0.14)',
+            zIndex: 60,
+            maxHeight: 220,
+            overflowY: 'auto',
+            padding: 6,
+          }}
+        >
+          {options.length === 0 ? (
+            <div style={{ color: T.textMuted, fontSize: 12, padding: '6px 8px' }}>Keine Optionen vorhanden</div>
+          ) : (
+            options.map(option => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => {
+                  onChange(option)
+                  setOpen(false)
+                }}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '4px 8px',
+                  borderRadius: 8,
+                  border: `1px solid ${T.border}`,
+                  background: '#fff',
+                  marginBottom: 3,
+                  fontSize: 12,
+                  lineHeight: 1.2,
+                  color: T.textMain,
+                }}
+              >
+                {option}
+              </button>
+            ))
+          )}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 function EditCheckFeld({ label, value, onChange }) {
   return (
     <div style={{ marginBottom: T.sp2 }}>
@@ -813,7 +958,7 @@ function EditCheckFeld({ label, value, onChange }) {
   )
 }
 
-function EditDateFeld({ label, value, onChange }) {
+function EditDateFeld({ label, value, onChange, isMobile = false, stickyTop = 0 }) {
   const containerRef = useRef(null)
   const [open, setOpen] = useState(false)
   const [text, setText] = useState(formatDateDisplay(value) || '')
@@ -835,7 +980,11 @@ function EditDateFeld({ label, value, onChange }) {
     }
 
     document.addEventListener('mousedown', onDocClick)
-    return () => document.removeEventListener('mousedown', onDocClick)
+    document.addEventListener('touchstart', onDocClick)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('touchstart', onDocClick)
+    }
   }, [open])
 
   useEffect(() => {
@@ -898,6 +1047,8 @@ function EditDateFeld({ label, value, onChange }) {
         <KalenderPopup
           viewMonth={viewMonth}
           selectedDate={selectedDate}
+          isMobile={isMobile}
+          stickyTop={stickyTop}
           onPrev={() => setViewMonth(prevMonth(viewMonth))}
           onNext={() => setViewMonth(nextMonth(viewMonth))}
           onSelectDay={waehleTag}
@@ -907,12 +1058,13 @@ function EditDateFeld({ label, value, onChange }) {
   )
 }
 
-function KalenderPopup({ viewMonth, selectedDate, onPrev, onNext, onSelectDay }) {
+function KalenderPopup({ viewMonth, selectedDate, isMobile = false, stickyTop = 0, onPrev, onNext, onSelectDay }) {
   const year = viewMonth.getFullYear()
   const month = viewMonth.getMonth()
   const first = new Date(year, month, 1)
   const startOffset = mondayIndex(first.getDay())
   const dayCount = daysInMonth(year, month)
+  const today = new Date()
   const cells = []
 
   for (let i = 0; i < startOffset; i += 1) cells.push(null)
@@ -920,7 +1072,36 @@ function KalenderPopup({ viewMonth, selectedDate, onPrev, onNext, onSelectDay })
   while (cells.length % 7 !== 0) cells.push(null)
 
   return (
-    <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 6, zIndex: 30, width: 260, background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: 8 }}>
+    <div
+      style={isMobile
+        ? {
+            position: 'fixed',
+            top: Math.max(stickyTop + 72, 72),
+            left: 10,
+            right: 10,
+            zIndex: 220,
+            background: T.bgCard,
+            border: `1px solid ${T.border}`,
+            borderRadius: 12,
+            boxShadow: '0 16px 34px rgba(15,23,42,0.2)',
+            padding: 10,
+            maxHeight: '62vh',
+            overflowY: 'auto',
+          }
+        : {
+            position: 'absolute',
+            top: '100%',
+            right: 0,
+            marginTop: 6,
+            zIndex: 30,
+            width: 260,
+            background: T.bgCard,
+            border: `1px solid ${T.border}`,
+            borderRadius: 10,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            padding: 8,
+          }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
         <button type="button" onClick={onPrev} style={kalNavBtnStyle}>‹</button>
         <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'capitalize' }}>{viewMonth.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}</div>
@@ -944,6 +1125,12 @@ function KalenderPopup({ viewMonth, selectedDate, onPrev, onNext, onSelectDay })
             selectedDate.getDate() === day
           )
 
+          const isToday = (
+            today.getFullYear() === year &&
+            today.getMonth() === month &&
+            today.getDate() === day
+          )
+
           return (
             <button
               key={day}
@@ -952,11 +1139,12 @@ function KalenderPopup({ viewMonth, selectedDate, onPrev, onNext, onSelectDay })
               style={{
                 height: 28,
                 borderRadius: 6,
-                border: `1px solid ${isSelected ? T.primary : T.border}`,
-                background: isSelected ? '#dbeafe' : T.bg,
-                color: T.textMain,
+                border: `1px solid ${isSelected ? T.primary : (isToday ? '#0ea5e9' : T.border)}`,
+                background: isSelected ? '#dbeafe' : (isToday ? '#ecfeff' : T.bg),
+                color: isToday && !isSelected ? '#0c4a6e' : T.textMain,
                 cursor: 'pointer',
                 fontSize: 12,
+                fontWeight: isSelected || isToday ? 700 : 500,
               }}
             >
               {day}

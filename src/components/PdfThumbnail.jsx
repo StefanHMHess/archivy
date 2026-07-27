@@ -82,7 +82,7 @@ export default function PdfThumbnail({ pfad, width = 60, onClick }) {
               renderAnnotationLayer={false}
             />
           </Document>
-          <span style={{ position: 'absolute', right: 6, bottom: 6, background: 'rgba(15, 23, 42, 0.72)', color: '#fff', borderRadius: 999, padding: '2px 6px', fontSize: 11, fontWeight: 700, pointerEvents: 'none' }}>🔍</span>
+          <span style={{ position: 'absolute', right: 6, bottom: 6, background: 'transparent', color: '#0f172a', fontSize: 12, fontWeight: 700, pointerEvents: 'none' }}>🔍</span>
         </>
       )}
     </button>

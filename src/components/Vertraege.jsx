@@ -39,7 +39,20 @@ const SORTIERUNGEN = {
   kosten_desc: { column: 'kosten_jaehrlich', ascending: false, label: 'Kosten/Jahr (hoch zuerst)' },
 }
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 760)
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 760)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  return isMobile
+}
+
 export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
+  const isMobile = useIsMobile()
   const ownerIds = useMemo(() => ownerVarianten(owner?.id), [owner?.id])
   const filterStorageKey = useMemo(() => `${FILTERS_STORAGE_PREFIX}:${owner?.id ?? '__all__'}`, [owner?.id])
   const gruppenStorageKey = useMemo(() => `${GROUPEN_STORAGE_PREFIX}:${owner?.id ?? '__all__'}`, [owner?.id])
@@ -63,10 +76,12 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
   const [neuFirma, setNeuFirma] = useState('Neuer Vertrag')
   const [neuGruppe, setNeuGruppe] = useState('')
   const [neuUntergruppe, setNeuUntergruppe] = useState('')
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
   const [filtersHydrated, setFiltersHydrated] = useState(false)
   const [hydratedFilterKey, setHydratedFilterKey] = useState(null)
   const toolbarRef = useRef(null)
   const [toolbarHeight, setToolbarHeight] = useState(0)
+  const [vorgaengeCountMap, setVorgaengeCountMap] = useState({})
   const kostenSummen = useMemo(() => berechneKostenSummen(zeilen), [zeilen])
 
   useEffect(() => {
@@ -77,7 +92,7 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
     updateToolbarHeight()
     window.addEventListener('resize', updateToolbarHeight)
     return () => window.removeEventListener('resize', updateToolbarHeight)
-  }, [suche, gruppeFilter, sortierung, gruppen.length, untergruppen.length, busy])
+  }, [suche, gruppeFilter, sortierung, gruppen.length, untergruppen.length, busy, isMobile, mobileFilterOpen])
 
   useEffect(() => {
     if (!owner) return
@@ -256,6 +271,61 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
     return () => { aktiv = false }
   }, [owner, owner?.id, ownerIds, zeilen])
 
+  useEffect(() => {
+    if (!owner) return
+    let aktiv = true
+
+    async function ladeVorgaengeAnzahlen() {
+      if (!Array.isArray(zeilen) || zeilen.length === 0) {
+        setVorgaengeCountMap({})
+        return
+      }
+
+      const ids = [...new Set(
+        zeilen
+          .map(v => String(v?.vertrag_id ?? '').trim())
+          .filter(Boolean)
+      )]
+
+      if (ids.length === 0) {
+        setVorgaengeCountMap({})
+        return
+      }
+
+      const counts = {}
+      const CHUNK_SIZE = 120
+
+      for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+        const chunk = ids.slice(i, i + CHUNK_SIZE)
+        let query = supabase
+          .from('vorgaenge')
+          .select('vertrag')
+          .in('vertrag', chunk)
+
+        if (owner.id !== '__all__') {
+          query = query.in('vertragsbesitzer_id', ownerIds)
+        }
+
+        const { data, error } = await query
+        if (!aktiv) return
+        if (error) continue
+
+        for (const row of data ?? []) {
+          const key = String(row?.vertrag ?? '').trim()
+          if (!key) continue
+          counts[key] = (counts[key] || 0) + 1
+        }
+      }
+
+      if (aktiv) {
+        setVorgaengeCountMap(counts)
+      }
+    }
+
+    ladeVorgaengeAnzahlen()
+    return () => { aktiv = false }
+  }, [owner, owner?.id, ownerIds, zeilen])
+
   function bearbeiteGruppen() {
     setGruppenEditorText((gruppen.length > 0 ? gruppen : DEFAULT_GROUPEN).join('\n'))
     setGruppenEditorOpen(true)
@@ -270,6 +340,7 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
     setSuche('')
     setGruppeFilter('__all__')
     setSortierung('firma_asc')
+    setMobileFilterOpen(false)
   }
 
   function speichereGruppen() {
@@ -435,81 +506,190 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
           background: T.bg,
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: T.sp2,
-            width: '100%',
-            maxWidth: 1200,
-            margin: '0 auto',
-            paddingLeft: 'clamp(12px, 3vw, 24px)',
-            paddingRight: 'clamp(12px, 3vw, 24px)',
-            boxSizing: 'border-box',
-            paddingTop: 2,
-            paddingBottom: 2,
-          }}
-        >
-          <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, marginLeft: 3, lineHeight: 1.1 }}>Verträge</h1>
-          <input
-            value={suche}
-            onChange={e => setSuche(e.target.value)}
-            placeholder="Firma, Beschreibung, Nr…"
+        {isMobile ? (
+          <div
             style={{
-              flex: '1 1 220px', maxWidth: 260,
-              border: `1px solid ${T.border}`, borderRadius: T.r2,
-              padding: `${T.sp2} ${T.sp3}`, outline: 'none',
+              width: '100%',
+              maxWidth: 1200,
+              margin: '0 auto',
+              paddingLeft: '12px',
+              paddingRight: '12px',
+              boxSizing: 'border-box',
+              paddingTop: 6,
+              paddingBottom: 8,
             }}
-          />
-          <select
-            value={gruppeFilter}
-            onChange={e => setGruppeFilter(e.target.value)}
-            style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, maxWidth: 170 }}
           >
-            <option value="__all__">Alle Gruppen</option>
-            {gruppen.map(g => <option key={g} value={g}>{g}</option>)}
-          </select>
-          <button
-            type="button"
-            onClick={bearbeiteGruppen}
-            style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: 'pointer', whiteSpace: 'nowrap' }}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <h1 style={{ fontSize: 26, fontWeight: 750, margin: 0, lineHeight: 1 }}>Verträge</h1>
+              <input
+                value={suche}
+                onChange={e => setSuche(e.target.value)}
+                placeholder="Firma, Beschreibung, Nr…"
+                style={{
+                  flex: '1 1 auto',
+                  minWidth: 0,
+                  border: `1px solid ${T.border}`,
+                  borderRadius: T.r2,
+                  padding: `${T.sp2} ${T.sp3}`,
+                  outline: 'none',
+                }}
+              />
+              <button
+                type="button"
+                onClick={neuVertrag}
+                disabled={busy}
+                style={{
+                  border: `1px solid #bfdbfe`,
+                  borderRadius: T.r2,
+                  padding: `${T.sp2} ${T.sp2}`,
+                  background: '#eff6ff',
+                  color: '#1d4ed8',
+                  cursor: busy ? 'not-allowed' : 'pointer',
+                  whiteSpace: 'nowrap',
+                  fontWeight: 600,
+                }}
+              >
+                + Neu
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setMobileFilterOpen(v => !v)}
+              style={{
+                border: `1px solid ${T.border}`,
+                borderRadius: T.r2,
+                padding: `${T.sp1} ${T.sp2}`,
+                background: T.bgCard,
+                color: '#3b82f6',
+                fontWeight: 600,
+              }}
+            >
+              Filter
+            </button>
+
+            {mobileFilterOpen ? (
+              <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
+                <select
+                  value={gruppeFilter}
+                  onChange={e => setGruppeFilter(e.target.value)}
+                  style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, width: '100%' }}
+                >
+                  <option value="__all__">Alle Gruppen</option>
+                  {gruppen.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+                <select
+                  value={sortierung}
+                  onChange={e => setSortierung(e.target.value)}
+                  style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, width: '100%' }}
+                >
+                  {Object.entries(SORTIERUNGEN).map(([key, def]) => (
+                    <option key={key} value={key}>{def.label}</option>
+                  ))}
+                </select>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={bearbeiteGruppen}
+                    style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard }}
+                  >
+                    Gruppen
+                  </button>
+                  <button
+                    type="button"
+                    onClick={bearbeiteUntergruppen}
+                    style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard }}
+                  >
+                    Untergruppen
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetFilter}
+                    style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard }}
+                  >
+                    Zurücksetzen
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: T.sp2,
+              width: '100%',
+              maxWidth: 1200,
+              margin: '0 auto',
+              paddingLeft: 'clamp(12px, 3vw, 24px)',
+              paddingRight: 'clamp(12px, 3vw, 24px)',
+              boxSizing: 'border-box',
+              paddingTop: 2,
+              paddingBottom: 2,
+            }}
           >
-            Gruppen bearbeiten
-          </button>
-          <button
-            type="button"
-            onClick={bearbeiteUntergruppen}
-            style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: 'pointer', whiteSpace: 'nowrap' }}
-          >
-            Untergruppen bearbeiten
-          </button>
-          <button
-            type="button"
-            onClick={resetFilter}
-            style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: 'pointer', whiteSpace: 'nowrap' }}
-            title="Suche, Gruppenfilter und Sortierung zurücksetzen"
-          >
-            Filter zurücksetzen
-          </button>
-          <select
-            value={sortierung}
-            onChange={e => setSortierung(e.target.value)}
-            style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, maxWidth: 190 }}
-          >
-            {Object.entries(SORTIERUNGEN).map(([key, def]) => (
-              <option key={key} value={key}>{def.label}</option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={neuVertrag}
-            disabled={busy}
-            style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: busy ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
-          >
-            + Neuer Vertrag
-          </button>
-        </div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, marginLeft: 3, lineHeight: 1.1 }}>Verträge</h1>
+            <input
+              value={suche}
+              onChange={e => setSuche(e.target.value)}
+              placeholder="Firma, Beschreibung, Nr…"
+              style={{
+                flex: '1 1 220px', maxWidth: 260,
+                border: `1px solid ${T.border}`, borderRadius: T.r2,
+                padding: `${T.sp2} ${T.sp3}`, outline: 'none',
+              }}
+            />
+            <select
+              value={gruppeFilter}
+              onChange={e => setGruppeFilter(e.target.value)}
+              style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, maxWidth: 170 }}
+            >
+              <option value="__all__">Alle Gruppen</option>
+              {gruppen.map(g => <option key={g} value={g}>{g}</option>)}
+            </select>
+            <button
+              type="button"
+              onClick={bearbeiteGruppen}
+              style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: 'pointer', whiteSpace: 'nowrap' }}
+            >
+              Gruppen bearbeiten
+            </button>
+            <button
+              type="button"
+              onClick={bearbeiteUntergruppen}
+              style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: 'pointer', whiteSpace: 'nowrap' }}
+            >
+              Untergruppen bearbeiten
+            </button>
+            <button
+              type="button"
+              onClick={resetFilter}
+              style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: 'pointer', whiteSpace: 'nowrap' }}
+              title="Suche, Gruppenfilter und Sortierung zurücksetzen"
+            >
+              Filter zurücksetzen
+            </button>
+            <select
+              value={sortierung}
+              onChange={e => setSortierung(e.target.value)}
+              style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, maxWidth: 190 }}
+            >
+              {Object.entries(SORTIERUNGEN).map(([key, def]) => (
+                <option key={key} value={key}>{def.label}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={neuVertrag}
+              disabled={busy}
+              style={{ border: `1px solid ${T.border}`, borderRadius: T.r2, padding: `${T.sp2} ${T.sp3}`, background: T.bgCard, cursor: busy ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+            >
+              + Neuer Vertrag
+            </button>
+          </div>
+        )}
       </div>
 
       <div style={{ height: toolbarHeight + 8 }} />
@@ -534,6 +714,147 @@ export default function Vertraege({ owner, onSelectContract, stickyTop = 0 }) {
               Aktive Filter zurücksetzen
             </button>
           )}
+        </div>
+      ) : isMobile ? (
+        <div style={{ display: 'grid', gap: 12 }}>
+          {zeilen.map((v, idx) => {
+            const cardId = String(v.id ?? v.vertrag_id ?? idx)
+            const gruppe = normalizeGruppe(v.gruppe) ?? '—'
+            const untergruppeText = cleanText(v.untergruppe)
+            const beschreibungText = cleanText(v.beschreibung) || '—'
+            const vorgaengeCount = Number(vorgaengeCountMap[v.vertrag_id] || 0)
+
+            return (
+              <article
+                key={cardId}
+                style={{
+                  border: `1px solid ${T.border}`,
+                  borderRadius: 16,
+                  background: T.bgCard,
+                  boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)',
+                  padding: '10px 12px 12px',
+                  opacity: v.aktiv ? 1 : 0.55,
+                  cursor: 'pointer',
+                }}
+                onClick={() => onSelectContract(v.vertrag_id, zeilen.map(z => z.vertrag_id))}
+                data-vertrag-id={v.vertrag_id}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ color: '#64748b', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                      {gruppe}
+                    </div>
+                    <h3 style={{ margin: '2px 0 0', fontSize: 22, lineHeight: 1.08, fontWeight: 700 }}>
+                      {cleanText(v.firma) || '—'}
+                    </h3>
+                  </div>
+                  <LogoCell logo={logoMap[normalisiereVertragId(v.vertrag_id)]} firma={v.firma} />
+                </div>
+
+                <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr', alignItems: 'center', gap: 8 }}>
+                    <span style={{ color: T.textMuted, fontSize: 13, fontWeight: 600 }}>Untergruppe</span>
+                    {untergruppeText ? (
+                      <span
+                        style={{
+                          justifySelf: 'start',
+                          border: '1px solid #99f6e4',
+                          borderRadius: 999,
+                          background: '#ecfeff',
+                          color: '#0f766e',
+                          fontSize: 15,
+                          fontWeight: 600,
+                          padding: '2px 10px',
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {untergruppeText}
+                      </span>
+                    ) : (
+                      <span style={{ fontWeight: 600 }}>—</span>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr', gap: 8 }}>
+                    <span style={{ color: T.textMuted, fontSize: 13, fontWeight: 600 }}>Beschreibung</span>
+                    <span style={{
+                      overflow: 'hidden',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      lineHeight: 1.2,
+                      fontSize: 15,
+                      fontWeight: 500,
+                    }}>
+                      {beschreibungText}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr', alignItems: 'center', gap: 8 }}>
+                    <span style={{ color: T.textMuted, fontSize: 13, fontWeight: 600 }}>Vorgänge</span>
+                    <span
+                      style={{
+                        justifySelf: 'start',
+                        border: '1px solid #bfdbfe',
+                        borderRadius: 999,
+                        background: '#eff6ff',
+                        color: '#1d4ed8',
+                        fontSize: 15,
+                        fontWeight: 700,
+                        padding: '2px 10px',
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {`${vorgaengeCount} Einträge`}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, background: '#f0fdf4', padding: 8 }}>
+                      <div style={{ color: '#166534', fontSize: 10, letterSpacing: '0.06em', fontWeight: 700, textTransform: 'uppercase' }}>Kosten/Monat</div>
+                      <div style={{ color: '#166534', fontSize: 20, fontWeight: 750, lineHeight: 1.15, marginTop: 2 }}>
+                        {formatKostenMonatlich(v.kosten_monatlich, v.kosten_jaehrlich)}
+                      </div>
+                    </div>
+                    <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, background: '#f8fafc', padding: 8 }}>
+                      <div style={{ color: '#334155', fontSize: 10, letterSpacing: '0.06em', fontWeight: 700, textTransform: 'uppercase' }}>Kosten/Jahr</div>
+                      <div style={{ color: '#334155', fontSize: 20, fontWeight: 750, lineHeight: 1.15, marginTop: 2 }}>
+                        {formatKostenJaehrlich(v.kosten_jaehrlich)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr auto', alignItems: 'center', gap: 8 }}>
+                    <span style={{ color: T.textMuted, fontSize: 13, fontWeight: 600 }}>Ablauf</span>
+                    <span style={{ fontSize: 20, fontWeight: 700, color: ablaufFarbe(v.vertrags_ablauf), lineHeight: 1.1 }}>{formatDateDisplay(v.vertrags_ablauf)}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        loescheVertrag(v)
+                      }}
+                      disabled={busy}
+                      aria-label="Vertrag löschen"
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 999,
+                        border: `1px solid ${T.border}`,
+                        background: '#f8fafc',
+                        color: '#94a3b8',
+                        fontSize: 16,
+                        display: 'grid',
+                        placeItems: 'center',
+                        cursor: busy ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      🗑
+                    </button>
+                  </div>
+                </div>
+              </article>
+            )
+          })}
         </div>
       ) : (
         <>
